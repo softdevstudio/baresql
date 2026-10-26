@@ -14,6 +14,9 @@ BareSQL Audit (PostgreSQL 13 to 18):
   security-definer functions, row security) and whether it holds personal
   data, found from column names and sampled values that never leave the
   program. It writes report.html and audit.json and has 20 findings.
+- Views are followed the way PostgreSQL checks them: every column a view's
+  query reads, with the owner's or (security_invoker) the reader's rights.
+  A view that PostgreSQL would refuse is listed as one that fails.
 - It works in a read-only transaction and never calls a user-defined
   function; what it could not see is listed in the report.
 - `baresql diff old.json new.json` and `baresql audit --baseline` exit 1

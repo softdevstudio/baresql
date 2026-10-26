@@ -142,9 +142,16 @@ words:
 - `through view orders_v (rights of app)`: a view reads the table with its
   owner's rights, so the reader needs no access to the table itself. With
   `security_invoker` (PostgreSQL 15 and later) it says `rights of the
-  reader`.
+  reader`; PostgreSQL checks such a view as the reader even when another
+  view reads it.
 - `; all rows (...)`, `; rows allowed by policy ...` or `; no rows (...)`:
   what row security lets the login see on that route.
+- `; reading it fails: the view needs app.accounts.email, which the reader
+  may not read`: PostgreSQL checks every column a view's query reads (in the
+  select list, joins, WHERE and subqueries), with the rights the view runs
+  with, and refuses the whole query when one is missing, even a query that
+  selects other columns of the view. The grant is there, and gives nothing
+  until the missing access is added.
 - `with grant option`: the login may pass the access on.
 - `may run billing.charge(integer)`: a security-definer function that reads
   the table with its owner's rights. BareSQL never runs it.
@@ -225,10 +232,12 @@ baresql audit --baseline last-week.json postgres://...
 
 `baresql diff` lists what grew (a login reaches something it did not reach
 before, or a column it reads now holds more kinds of personal data), what
-is gone and the other changes, such as new routes and new findings. It exits
-1 when any login reaches more than before, so a scheduled job can run the
-audit with `--baseline` and fail when access grows. `--format json` gives
-the comparison as JSON.
+is gone and the other changes, such as new routes and new findings. Routes
+that give no rows today (row security with no policy for the login, a view
+that fails) don't count as reach, so a policy or a grant that makes them
+give rows counts as growth. It exits 1 when any login reaches more than
+before, so a scheduled job can run the audit with `--baseline` and fail
+when access grows. `--format json` gives the comparison as JSON.
 
 ### Limits
 

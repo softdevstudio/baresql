@@ -96,6 +96,8 @@ type Relation struct {
 	// Lineage of each view or materialized view column, by attnum.
 	Lineage    map[int]colLineage
 	LineageErr string
+	// Needs: every column a view's query reads under permission checks.
+	Needs []colRef
 }
 
 type Column struct {
@@ -559,6 +561,10 @@ func (l *loader) views() error {
 		}
 		lin, err := viewLineage(r[1].String())
 		if err != nil {
+			rel.LineageErr = err.Error()
+			continue
+		}
+		if rel.Needs, err = viewNeeds(r[1].String()); err != nil {
 			rel.LineageErr = err.Error()
 			continue
 		}

@@ -64,11 +64,20 @@ CREATE VIEW support.ticket_context AS
   SELECT t.id, t.subject, a.email, a.full_name
   FROM app.tickets t JOIN app.accounts a ON a.id = t.account_id;
 --@ pg>=15
--- The same view done right: it runs with the reader's rights.
+-- The same view with the reader's rights. The agent may not read
+-- app.accounts, so PostgreSQL refuses every query on this view, even one
+-- that selects only the ticket columns.
 CREATE VIEW support.ticket_context_invoker WITH (security_invoker = true) AS
   SELECT t.id, t.subject, a.email, a.full_name
   FROM app.tickets t JOIN app.accounts a ON a.id = t.account_id;
 GRANT SELECT ON support.ticket_context_invoker TO saas_support;
+-- Done right: tickets only, with the reader's rights, so the support policy
+-- picks the rows. The view on top runs with saas_owner's rights, and
+-- PostgreSQL still checks the one below it as the reader.
+CREATE VIEW support.ticket_list WITH (security_invoker = true) AS
+  SELECT id, subject FROM app.tickets;
+CREATE VIEW support.ticket_overview AS SELECT id, subject FROM support.ticket_list;
+GRANT SELECT ON support.ticket_list, support.ticket_overview TO saas_support;
 --@ end
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON app.accounts, app.tickets TO saas_app;

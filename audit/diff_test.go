@@ -48,3 +48,35 @@ func TestCompareAfterGrant(t *testing.T) {
 		t.Errorf("an unchanged database compared as changed: %+v", again)
 	}
 }
+
+// TestCompareRowSecurity: a route that row security filters down to no rows
+// isn't reach, so a policy that lets rows through makes reach grow.
+func TestCompareRowSecurity(t *testing.T) {
+	f := loadFixture(t, "saas")
+	before := auditFixture(t, f, true)
+	ctx := context.Background()
+	c, err := pgwire.Connect(ctx, f.admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	// invoices forces row security, so support.invoice_summary (saas_owner's
+	// rights) handed out no rows until saas_owner gets a policy.
+	if err := c.Exec(ctx, `CREATE POLICY owner_read ON app.invoices FOR SELECT TO saas_owner USING (true)`); err != nil {
+		t.Fatal(err)
+	}
+	after := auditFixture(t, f, true)
+	cmp := Compare(before, after)
+	var grew []string
+	for _, ch := range cmp.Grew {
+		grew = append(grew, ch.Kind+" "+ch.Login+" "+ch.Object)
+	}
+	if got, want := strings.Join(grew, "|"), "read saas_agent app.invoices.amount|read saas_agent app.invoices.id"; got != want {
+		t.Errorf("grew: %s, want %s", got, want)
+	}
+	for _, l := range before.Logins {
+		if l.Name == "saas_agent" && l.Summary.Columns >= len(l.Read) {
+			t.Errorf("saas_agent's summary counts columns that give no rows: %d of %d", l.Summary.Columns, len(l.Read))
+		}
+	}
+}

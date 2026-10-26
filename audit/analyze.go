@@ -63,6 +63,20 @@ func (a *analysis) canSelect(role uint32, rel *Relation, attnum int) bool {
 	return len(gs.colRoutes(attnum)) > 0
 }
 
+// canSelectAny reports whether a role may read at least one column of rel.
+func (a *analysis) canSelectAny(role uint32, rel *Relation) bool {
+	gs := a.eval(role)[rel.OID]["SELECT"]
+	if gs != nil && gs.All {
+		return true
+	}
+	for _, c := range rel.Columns {
+		if len(gs.colRoutes(c.Attnum)) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // rowsFor says which rows of rel a role sees, when rel has row security.
 func (a *analysis) rowsFor(role uint32, rel *Relation) string {
 	if !rel.RLS {
@@ -122,11 +136,12 @@ type exposure struct {
 	rights uint32 // whose rights read the base relation
 }
 
-// expose follows a view column down to the base columns it reads. reader
+// expose follows a view column down to the base columns it reads. current
 // is the role reading the view; each hop reads with the view owner's
-// rights, or the reader's for security_invoker views. A hop the rights
-// don't cover would fail at run time, so it exposes nothing.
-func (a *analysis) expose(reader uint32, v *Relation, attnum int, hops []ViewHop, depth int, out *[]exposure) {
+// rights, or with current's for security_invoker views (PostgreSQL checks
+// those as the current user even inside another view). A hop that fails
+// (see viewFailure) or whose rights don't cover a column exposes nothing.
+func (a *analysis) expose(current uint32, v *Relation, attnum int, hops []ViewHop, depth int, out *[]exposure) {
 	if depth > 30 || v.Lineage == nil {
 		return
 	}
@@ -136,7 +151,7 @@ func (a *analysis) expose(reader uint32, v *Relation, attnum int, hops []ViewHop
 	}
 	rights, who := v.Owner, a.s.RoleName(v.Owner)
 	if v.SecurityInvoker {
-		rights, who = reader, "the reader"
+		rights, who = current, "the reader"
 	}
 	next := append(append([]ViewHop{}, hops...), ViewHop{View: a.s.QualifiedName(v), Owner: who})
 	for _, src := range lin.Sources {
@@ -156,12 +171,70 @@ func (a *analysis) expose(reader uint32, v *Relation, attnum int, hops []ViewHop
 				continue
 			}
 			if srel.Kind == 'v' {
-				a.expose(rights, srel, an, next, depth+1, out)
+				if a.viewFailure(srel, current, depth+1) == "" {
+					a.expose(current, srel, an, next, depth+1, out)
+				}
 				continue
 			}
 			*out = append(*out, exposure{rel: srel, attnum: an, hops: next, rights: rights})
 		}
 	}
+}
+
+// viewFailure says why reading view v fails for role current, or "" when
+// it doesn't. PostgreSQL checks every column the view's query reads (its
+// Needs) with the owner's rights, or current's for a security_invoker
+// view, and refuses the whole query when one is missing, even when the
+// query names only columns that don't need it.
+func (a *analysis) viewFailure(v *Relation, current uint32, depth int) string {
+	if v.Kind != 'v' || depth > 30 {
+		return ""
+	}
+	rights, who := v.Owner, "its owner "+a.s.RoleName(v.Owner)
+	if v.SecurityInvoker {
+		rights, who = current, "the reader"
+	}
+	var missing []string
+	for _, n := range v.Needs {
+		srel := a.s.Relations[n.Rel]
+		if srel == nil {
+			continue // outside the audited schemas: BareSQL can't tell
+		}
+		ok := a.canSelect(rights, srel, n.Attnum)
+		if n.Attnum == anyColumn {
+			ok = a.canSelectAny(rights, srel)
+		}
+		if !ok {
+			name := a.s.QualifiedName(srel)
+			if c := srel.Column(n.Attnum); c != nil {
+				name += "." + quoteIdent(c.Name)
+			}
+			missing = append(missing, name)
+			continue
+		}
+		if srel.Kind == 'v' {
+			if why := a.viewFailure(srel, current, depth+1); why != "" {
+				return "it reads view " + a.s.QualifiedName(srel) + ", which fails: " + why
+			}
+		}
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	sort.Strings(missing)
+	list := missing
+	if len(list) > 3 {
+		list = append(list[:3:3], fmt.Sprintf("%d more", len(missing)-3))
+	}
+	return "the view needs " + andList(list) + ", which " + who + " may not read"
+}
+
+// andList joins words as in a sentence: a, b and c.
+func andList(xs []string) string {
+	if len(xs) < 2 {
+		return strings.Join(xs, "")
+	}
+	return strings.Join(xs[:len(xs)-1], ", ") + " and " + xs[len(xs)-1]
 }
 
 // subjects lists the roles to ask the server about: the logins, the roles

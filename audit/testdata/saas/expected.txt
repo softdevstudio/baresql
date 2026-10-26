@@ -29,10 +29,12 @@ read saas_agent app.tickets.body [-] granted to saas_support; rows allowed by po
 read saas_agent app.tickets.created_at [-] granted to saas_support; rows allowed by policy support_read
 read saas_agent app.tickets.id [-] granted to saas_support; rows allowed by policy support_read
 read saas_agent app.tickets.id [-] through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)
-pg>=15: read saas_agent app.tickets.id [-] through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read
+pg>=15: read saas_agent app.tickets.id [-] through view support.ticket_list (rights of the reader); rows allowed by policy support_read
+pg>=15: read saas_agent app.tickets.id [-] through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read
 read saas_agent app.tickets.subject [-] granted to saas_support; rows allowed by policy support_read
 read saas_agent app.tickets.subject [-] through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)
-pg>=15: read saas_agent app.tickets.subject [-] through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read
+pg>=15: read saas_agent app.tickets.subject [-] through view support.ticket_list (rights of the reader); rows allowed by policy support_read
+pg>=15: read saas_agent app.tickets.subject [-] through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read
 read saas_agent app.tickets.tenant_id [-] granted to saas_support; rows allowed by policy support_read
 read saas_agent support.invoice_summary.amount [-] granted to saas_support
 read saas_agent support.invoice_summary.id [-] granted to saas_support
@@ -40,10 +42,14 @@ read saas_agent support.ticket_context.email [email] granted to saas_support
 read saas_agent support.ticket_context.full_name [name] granted to saas_support
 read saas_agent support.ticket_context.id [-] granted to saas_support
 read saas_agent support.ticket_context.subject [-] granted to saas_support
-pg>=15: read saas_agent support.ticket_context_invoker.email [email] granted to saas_support
-pg>=15: read saas_agent support.ticket_context_invoker.full_name [name] granted to saas_support
-pg>=15: read saas_agent support.ticket_context_invoker.id [-] granted to saas_support
-pg>=15: read saas_agent support.ticket_context_invoker.subject [-] granted to saas_support
+pg>=15: read saas_agent support.ticket_context_invoker.email [email] granted to saas_support; reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read
+pg>=15: read saas_agent support.ticket_context_invoker.full_name [name] granted to saas_support; reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read
+pg>=15: read saas_agent support.ticket_context_invoker.id [-] granted to saas_support; reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read
+pg>=15: read saas_agent support.ticket_context_invoker.subject [-] granted to saas_support; reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read
+pg>=15: read saas_agent support.ticket_list.id [-] granted to saas_support
+pg>=15: read saas_agent support.ticket_list.subject [-] granted to saas_support
+pg>=15: read saas_agent support.ticket_overview.id [-] granted to saas_support
+pg>=15: read saas_agent support.ticket_overview.subject [-] granted to saas_support
 read saas_app app.accounts.email [email] granted to saas_app; rows allowed by policy tenant_isolation
 read saas_app app.accounts.full_name [name] granted to saas_app; rows allowed by policy tenant_isolation
 read saas_app app.accounts.id [-] granted to saas_app; rows allowed by policy tenant_isolation

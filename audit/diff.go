@@ -48,7 +48,18 @@ func facts(r *Result) map[string]fact {
 	out := map[string]fact{}
 	for _, l := range append(append([]LoginReport{}, r.Logins...), r.Public) {
 		for _, c := range l.Read {
-			f := fact{kind: "read", login: l.Name, object: c.Relation + "." + quoteIdent(c.Column), routes: routeStrings(c.Routes)}
+			// Routes that give no rows today aren't reach: when one starts
+			// to give rows, reach grows.
+			var routes []Route
+			for _, r := range c.Routes {
+				if r.GivesRows() {
+					routes = append(routes, r)
+				}
+			}
+			if len(routes) == 0 {
+				continue
+			}
+			f := fact{kind: "read", login: l.Name, object: c.Relation + "." + quoteIdent(c.Column), routes: routeStrings(routes)}
 			if c.Personal != nil {
 				f.cats = c.Personal.Categories
 			}

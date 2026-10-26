@@ -25,8 +25,29 @@ type Route struct {
 	// each read with its owner's rights.
 	Views []ViewHop `json:"views,omitempty"`
 	// Rows says which rows row security lets through, for tables that
-	// have it on: "all rows (...)", "rows allowed by policy ...", "no rows (...)".
+	// have it on: "all rows (...)", "rows allowed by policy ...", "no rows
+	// (...)"; or, for a view that can't be read, "reading it fails: ...".
 	Rows string `json:"rows,omitempty"`
+}
+
+// failsPrefix starts the Rows of a route to a view whose query PostgreSQL
+// refuses (see viewFailure).
+const failsPrefix = "reading it fails: "
+
+// GivesRows reports whether the route hands out data today: row security
+// doesn't filter it down to no rows, and it isn't a view that fails.
+func (r Route) GivesRows() bool {
+	return !strings.HasPrefix(r.Rows, "no rows") && !strings.HasPrefix(r.Rows, failsPrefix)
+}
+
+// givesRows reports whether any of the routes hands out data.
+func givesRows(routes []Route) bool {
+	for _, r := range routes {
+		if r.GivesRows() {
+			return true
+		}
+	}
+	return false
 }
 
 type ViewHop struct {

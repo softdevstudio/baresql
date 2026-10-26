@@ -103,6 +103,14 @@ func (a *analysis) reads(login uint32, public bool) readSet {
 			if sr != "" {
 				role = a.s.RoleByName[sr].OID
 			}
+			if why := a.viewFailure(rel, role, 0); why != "" {
+				for i := range rs[k] {
+					if rs[k][i].SetRole == sr {
+						rs[k][i].Rows = failsPrefix + why
+					}
+				}
+				continue
+			}
 			var exps []exposure
 			a.expose(role, rel, k.attnum, nil, 0, &exps)
 			for _, e := range exps {
@@ -478,6 +486,9 @@ func (a *analysis) summary(lr LoginReport) LoginSummary {
 	pTables := map[string]bool{}
 	cats := map[string]bool{}
 	for _, c := range lr.Read {
+		if !givesRows(c.Routes) {
+			continue
+		}
 		rels[c.Relation] = true
 		s.Columns++
 		if c.Personal != nil && c.Kind != "view" {

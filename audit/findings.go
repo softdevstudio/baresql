@@ -21,7 +21,7 @@ func (a *analysis) findings(res *Result) []Finding {
 	// What any role can read, today and in the future.
 	byRel := map[string][]string{}
 	for _, c := range res.Public.Read {
-		if c.Personal != nil && c.Kind != "view" {
+		if c.Personal != nil && c.Kind != "view" && givesRows(c.Routes) {
 			byRel[c.Relation] = append(byRel[c.Relation], c.Column+" ("+strings.Join(c.Personal.Categories, ", ")+")")
 		}
 	}
