@@ -45,6 +45,10 @@ type Entry struct {
 	// Since names the oldest engine versions the example and rewrite
 	// answers hold for, when that is newer than what BareSQL supports.
 	Since map[string]string `json:"since,omitempty"`
+	// Requires names a build feature the answers assume: "math" (SQLite's
+	// math functions, which some builds leave out) or "ascii-case" (SQLite
+	// without ICU, which folds case for A to Z only).
+	Requires map[string]string `json:"requires,omitempty"`
 	// Items are the functions, operators or types of a table entry, each
 	// with a statement that uses it.
 	Items []Item `json:"items,omitempty"`
@@ -52,11 +56,12 @@ type Entry struct {
 
 // Item is one row of a table entry.
 type Item struct {
-	Name   string            `json:"name"`
-	Setup  string            `json:"setup,omitempty"`
-	Probe  string            `json:"probe"`
-	Advice string            `json:"advice"`
-	Since  map[string]string `json:"since,omitempty"`
+	Name     string            `json:"name"`
+	Setup    string            `json:"setup,omitempty"`
+	Probe    string            `json:"probe"`
+	Advice   string            `json:"advice"`
+	Since    map[string]string `json:"since,omitempty"`
+	Requires map[string]string `json:"requires,omitempty"`
 }
 
 // Recorded is an engine's answer as kept in answers.json: the rows as
@@ -70,8 +75,9 @@ type Recorded struct {
 }
 
 // Answers are the recorded answers of one entry, per engine. A key is an
-// engine name ("mysql"), or an engine and version prefix ("mysql 9.7") for
-// a version that answers differently.
+// engine name ("mysql"), an engine and a version prefix ("postgres 13")
+// for one version line that answers differently, or an engine and a
+// lowest version ("mysql >=9.7") for versions from then on.
 type Answers struct {
 	Example map[string]Recorded            `json:"example,omitempty"`
 	Rewrite map[string]Recorded            `json:"rewrite,omitempty"`
@@ -129,27 +135,83 @@ func RecordedAnswers(code string) *Answers {
 }
 
 // Pick returns the answer recorded for an engine at a version: the most
-// specific key that matches ("mariadb 11.8", then "mariadb 11", then
-// "mariadb").
+// specific version prefix that matches ("mariadb 11.8", then "mariadb
+// 11"), then the newest "engine >=x.y" the version reaches, then the plain
+// engine name.
 func Pick(m map[string]Recorded, engine, version string) (Recorded, bool) {
 	v := cleanVersion(version)
-	for {
-		if r, ok := m[engine+" "+v]; ok && v != "" {
+	for p := v; p != ""; {
+		if r, ok := m[engine+" "+p]; ok {
 			return r, true
 		}
-		i := strings.LastIndexByte(v, '.')
+		i := strings.LastIndexByte(p, '.')
 		if i < 0 {
 			break
 		}
-		v = v[:i]
+		p = p[:i]
 	}
-	if v != "" {
-		if r, ok := m[engine+" "+v]; ok {
-			return r, true
+	best := ""
+	for k := range m {
+		if from, ok := strings.CutPrefix(k, engine+" >="); ok && v != "" && !versionLess(v, from) {
+			if best == "" || versionLess(best, from) {
+				best = from
+			}
 		}
+	}
+	if best != "" {
+		return m[engine+" >="+best], true
 	}
 	r, ok := m[engine]
 	return r, ok
+}
+
+// VersionNotes says, per engine, how an item's answer changes with the
+// engine's version or build: "from 3.44" (since), "before 9.6" (an
+// "engine >=9.6" answer that refuses where the plain one works, or the
+// other way round), "except 8.0" (an "engine 8.0" answer that does so),
+// "with math functions" (a build feature the answer needs).
+func VersionNotes(m map[string]Recorded, since, requires map[string]string) map[string][]string {
+	out := map[string][]string{}
+	for _, eng := range EngineOrder {
+		base, found := m[eng]
+		if !found {
+			continue
+		}
+		works := base.Error == ""
+		if v := since[eng]; v != "" && works {
+			out[eng] = append(out[eng], "from "+strings.TrimSuffix(v, ".0"))
+		}
+		if f := requires[eng]; f != "" && works {
+			out[eng] = append(out[eng], "with "+featureNames[f])
+		}
+		var keys []string
+		for k := range m {
+			if strings.HasPrefix(k, eng+" ") {
+				keys = append(keys, strings.TrimPrefix(k, eng+" "))
+			}
+		}
+		sort.Slice(keys, func(i, j int) bool {
+			return versionLess(strings.TrimPrefix(keys[i], ">="), strings.TrimPrefix(keys[j], ">="))
+		})
+		for _, k := range keys {
+			if (m[eng+" "+k].Error == "") == works {
+				continue
+			}
+			if v, ok := strings.CutPrefix(k, ">="); ok {
+				out[eng] = append(out[eng], "before "+v)
+			} else {
+				out[eng] = append(out[eng], "except "+k)
+			}
+		}
+	}
+	return out
+}
+
+// featureNames are the build features an answer can need, as Requires
+// names them.
+var featureNames = map[string]string{
+	"math":       "math functions",
+	"ascii-case": "ASCII-only case folding",
 }
 
 // cleanVersion is the version number an engine reports, without what

@@ -1279,32 +1279,43 @@ func ruleTypeNotEverywhere(r *rule, c *lintCtx) {
 // recorded answers.
 func itemMessage(code string, it *Item, what string) string {
 	rec := RecordedAnswers(code).Items[it.Name]
+	notes := VersionNotes(rec, it.Since, it.Requires)
+	named := func(eng string) string {
+		if n := notes[eng]; len(n) > 0 {
+			return EngineTitle(eng) + " (" + strings.Join(n, ", ") + ")"
+		}
+		return EngineTitle(eng)
+	}
 	var ok, no []string
+	var all []string
 	for _, eng := range EngineOrder {
 		a, found := rec[eng]
 		switch {
 		case !found:
+			continue
 		case a.Error == "":
-			ok = append(ok, eng)
+			ok = append(ok, named(eng))
 		default:
-			no = append(no, eng)
+			no = append(no, named(eng))
 		}
-	}
-	since := ""
-	if v := it.Since[SQLite]; v != "" && contains(ok, SQLite) {
-		since = " (SQLite from " + strings.TrimSuffix(v, ".0") + ")"
+		for _, n := range notes[eng] {
+			all = append(all, EngineTitle(eng)+" "+n)
+		}
 	}
 	switch {
 	case len(ok) == 0 && len(no) == 0:
 		return what + " does not work on every engine."
 	case len(no) == 0:
-		return what + " works on every engine" + since + "."
+		if len(all) > 0 {
+			return what + " works on every engine (" + strings.Join(all, ", ") + ")."
+		}
+		return what + " works on every engine."
 	case len(ok) == 0:
 		return what + " works on none of the four engines."
 	case len(ok) == 1:
-		return what + " works on " + engineList(ok) + " only" + since + "."
+		return what + " works on " + ok[0] + " only; " + titlesOf(no) + " refuse" + plural(no) + " it."
 	}
-	return what + " works on " + engineList(ok) + since + "; " + engineList(no) + " refuse" + plural(no) + " it."
+	return what + " works on " + titlesOf(ok) + "; " + titlesOf(no) + " refuse" + plural(no) + " it."
 }
 
 func plural(xs []string) string {

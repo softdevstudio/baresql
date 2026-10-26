@@ -90,6 +90,12 @@ func Compare(ctx context.Context, engines []Engine, scripts []Script) (*Comparis
 				if err != nil {
 					return nil, fmt.Errorf("%s, at %s line %d: %w", EngineTitle(e.Name()), sc.Name, st.Line, err)
 				}
+				// The scratch database's random name says nothing to the
+				// reader and would make every report different.
+				a.Err = scratchRe.ReplaceAllString(a.Err, "baresql_compare")
+				for i, n := range a.Notes {
+					a.Notes[i] = scratchRe.ReplaceAllString(n, "baresql_compare")
+				}
 				sr.Answers[e.Name()] = a
 			}
 			judge(&sr, engines, st)

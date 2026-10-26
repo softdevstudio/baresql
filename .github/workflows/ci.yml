@@ -16,7 +16,7 @@ jobs:
   version:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: scripts/check-version.sh
 
   # Everything that runs without a server, on all three systems. SQLite tests
@@ -31,10 +31,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache: false
       - name: gofmt
         if: runner.os == 'Linux'
         run: |
@@ -60,10 +61,11 @@ jobs:
     env:
       BARESQL_REQUIRE_ENGINES: pg
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache: false
       - run: scripts/ci-engine.sh postgres ${{ matrix.version }}
       - run: scripts/ci-test.sh -count=1 -race -timeout 30m ./...
 
@@ -84,10 +86,11 @@ jobs:
     env:
       BARESQL_REQUIRE_ENGINES: ${{ matrix.engine }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache: false
       - run: scripts/ci-engine.sh ${{ matrix.engine }} ${{ matrix.version }}
       - run: scripts/ci-test.sh -count=1 -race -timeout 30m ./...
 
@@ -98,10 +101,11 @@ jobs:
     env:
       BARESQL_REQUIRE_ENGINES: all
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache: false
       - run: command -v sqlite3 || { sudo apt-get update -qq && sudo apt-get install -y -qq sqlite3; }
       - run: scripts/ci-engine.sh postgres 18
       - run: scripts/ci-engine.sh mysql 8.4
@@ -111,8 +115,9 @@ jobs:
   fuzz:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: stable
+          cache: false
       - run: scripts/fuzz.sh 20s

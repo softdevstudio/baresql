@@ -1,6 +1,7 @@
 package portable
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -84,6 +85,10 @@ func TestCatalog(t *testing.T) {
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var firstErr error
+	features := map[string]map[string]bool{}
+	for _, o := range ops {
+		features[o.name] = engineFeatures(t, ctx, o)
+	}
 	for _, o := range ops {
 		wg.Add(1)
 		go func(o opener) {
@@ -119,6 +124,10 @@ func TestCatalog(t *testing.T) {
 				t.Logf("%s: %s %s is older than %s, skipped", e.Code, eng, run.version, v)
 				continue
 			}
+			if f := e.Requires[eng]; f != "" && !features[eng][f] {
+				t.Logf("%s: this %s lacks %s, skipped", e.Code, eng, f)
+				continue
+			}
 			check := func(what string, m map[string]Recorded, a *Answer) {
 				got := Record(a, e.Columns)
 				want, ok := Pick(m, eng, run.version)
@@ -128,8 +137,8 @@ func TestCatalog(t *testing.T) {
 				}
 				if !want.Same(got) {
 					js, _ := json.Marshal(got)
-					t.Errorf("%s %s on %s %s: recorded %q, got %q; to accept it, add \"%s %s\": %s",
-						e.Code, what, eng, run.version, want.String(), got.String(), eng, majorMinor(run.version), js)
+					t.Errorf("%s %s on %s %s: recorded %q, got %q; to accept it, add \"%s %s\" (this version line) or \"%s >=%s\" (from this version on): %s",
+						e.Code, what, eng, run.version, want.String(), got.String(), eng, versionLine(eng, run.version), eng, versionLine(eng, run.version), js)
 				}
 			}
 			check("example", rec.Example, run.example)
@@ -141,6 +150,9 @@ func TestCatalog(t *testing.T) {
 			}
 			for _, it := range e.Items {
 				if v := it.Since[eng]; v != "" && versionLess(run.version, v) {
+					continue
+				}
+				if f := it.Requires[eng]; f != "" && !features[eng][f] {
 					continue
 				}
 				check("item "+it.Name, rec.Items[it.Name], run.items[it.Name])
@@ -172,6 +184,34 @@ func TestCatalog(t *testing.T) {
 	}
 }
 
+// engineFeatures finds the build features of an engine that some answers
+// depend on, by trying them.
+func engineFeatures(t *testing.T, ctx context.Context, o opener) map[string]bool {
+	out := map[string]bool{}
+	if o.name != SQLite {
+		return out
+	}
+	e, err := o.open(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	if a, err := e.Run(ctx, "SELECT power(2, 3)"); err == nil && a.Err == "" {
+		out["math"] = true
+	}
+	if a, err := e.Run(ctx, "SELECT lower('É') = 'É'"); err == nil && a.Err == "" && len(a.Rows) == 1 && a.Rows[0][0].Text == "1" {
+		out["ascii-case"] = true
+	}
+	opts := []string{}
+	if a, err := e.Run(ctx, "PRAGMA compile_options"); err == nil {
+		for _, r := range a.Rows {
+			opts = append(opts, r[0].Text)
+		}
+	}
+	t.Logf("sqlite %s: features %v; compile options %s", e.Version(), out, strings.Join(opts, " "))
+	return out
+}
+
 func lastStatement(src string) sqltext.Statement {
 	st := sqltext.Split(src)
 	if len(st) == 0 {
@@ -180,12 +220,14 @@ func lastStatement(src string) sqltext.Statement {
 	return st[len(st)-1]
 }
 
-func majorMinor(v string) string {
+// versionLine is the part of a version that names a release line: the
+// major version of PostgreSQL (16), major.minor elsewhere (8.4, 11.8).
+func versionLine(engine, v string) string {
 	p := strings.SplitN(v, ".", 3)
-	if len(p) >= 2 {
-		return p[0] + "." + p[1]
+	if engine == Postgres || len(p) < 2 {
+		return p[0]
 	}
-	return v
+	return p[0] + "." + p[1]
 }
 
 // writeRecording replaces the plain engine keys of answers.json with this
@@ -241,11 +283,15 @@ func writeRecording(t *testing.T, runs map[string]map[string]*entryRun) {
 			delete(rec.Entries, code)
 		}
 	}
-	b, err := json.MarshalIndent(rec, "", "  ")
-	if err != nil {
+	// Keys like "mysql >=9.6" are written by hand too, so ">" stays ">".
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(rec); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile("answers.json", append(b, '\n'), 0o644); err != nil {
+	if err := os.WriteFile("answers.json", b.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("wrote answers.json: %d entries", len(rec.Entries))

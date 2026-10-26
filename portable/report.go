@@ -45,7 +45,7 @@ func LintSummary(ps []Problem, hidden int) string {
 		out = fmt.Sprintf("%d %s: %s.", len(ps), map[bool]string{true: "problem", false: "problems"}[len(ps) == 1], strings.Join(parts, ", "))
 	}
 	if hidden > 0 {
-		out += fmt.Sprintf(" %d %s about differences that depend on the data not shown; --all shows them.", hidden, map[bool]string{true: "note", false: "notes"}[hidden == 1])
+		out += fmt.Sprintf(" %d %s not shown (differences that depend on the data); --all shows them.", hidden, map[bool]string{true: "note", false: "notes"}[hidden == 1])
 	}
 	return out
 }
@@ -285,11 +285,23 @@ func WriteEntry(w io.Writer, e *Entry) {
 					cells = append(cells, "yes")
 				}
 			}
-			fmt.Fprintf(w, "%-24s %-7s %-10s %-7s %-7s %s\n", it.Name, cells[0], cells[1], cells[2], cells[3], it.Advice)
+			advice := it.Advice
+			notes := VersionNotes(m, it.Since, it.Requires)
+			for _, eng := range EngineOrder {
+				if n := notes[eng]; len(n) > 0 {
+					advice += " The " + EngineTitle(eng) + " answer holds " + strings.Join(n, ", ") + "."
+				}
+			}
+			fmt.Fprintf(w, "%-24s %-7s %-10s %-7s %-7s %s\n", it.Name, cells[0], cells[1], cells[2], cells[3], advice)
 		}
 	}
 	if since := sinceNote(e.Since); since != "" {
 		fmt.Fprintf(w, "\n%s\n", since)
+	}
+	for _, eng := range EngineOrder {
+		if f := e.Requires[eng]; f != "" {
+			fmt.Fprintf(w, "\nThe %s answers assume a build with %s.\n", EngineTitle(eng), featureNames[f])
+		}
 	}
 }
 
@@ -324,7 +336,11 @@ func writeRecorded(w io.Writer, m map[string]Recorded) {
 	sort.Strings(extra)
 	for _, k := range extra {
 		eng, v, _ := strings.Cut(k, " ")
-		fmt.Fprintf(w, "    %-20s %s\n", EngineTitle(eng)+" "+v, oneLine(m[k].String(), 120))
+		label := EngineTitle(eng) + " " + v
+		if from, ok := strings.CutPrefix(v, ">="); ok {
+			label = EngineTitle(eng) + " " + from + " and later"
+		}
+		fmt.Fprintf(w, "    %-20s %s\n", label, oneLine(m[k].String(), 120))
 	}
 }
 

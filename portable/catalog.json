@@ -197,9 +197,12 @@
     "title": "LOWER and UPPER outside A to Z",
     "severity": "info",
     "summary": "SQLite's LOWER and UPPER change only the letters A to Z, so LOWER('ÉCOLE') is 'École' there and 'école' elsewhere.",
-    "detail": "SQLite without the ICU extension folds case for ASCII letters only, and so do its LIKE and COLLATE NOCASE. Comparisons that use LOWER() to ignore case work on the other engines and fail on SQLite for names like Émile or Ødegaard.",
+    "detail": "SQLite folds case for ASCII letters only, and so do its LIKE and COLLATE NOCASE, unless it is built with the ICU extension, as some systems ship it. Comparisons that use LOWER() to ignore case work on the other engines and fail on SQLite for names like Émile or Ødegaard.",
     "advice": "Fold case in the application before storing or comparing, or keep a lower-case copy of the column.",
-    "example": "SELECT LOWER('ÉCOLE')"
+    "example": "SELECT LOWER('ÉCOLE')",
+    "requires": {
+      "sqlite": "ascii-case"
+    }
   },
   {
     "code": "substring-start",
@@ -235,10 +238,13 @@
     "title": "LOG with one argument",
     "severity": "warning",
     "summary": "LOG(x) is the base-10 logarithm on SQLite and PostgreSQL and the natural logarithm on MySQL and MariaDB.",
-    "detail": "LOG(100) is 2 on SQLite and PostgreSQL and 4.605 on MySQL and MariaDB. With two arguments, LOG(b, x) is the logarithm of x to base b on all four.",
+    "detail": "LOG(100) is 2 on SQLite and PostgreSQL and 4.605 on MySQL and MariaDB. With two arguments, LOG(b, x) is the logarithm of x to base b on all four. SQLite has LOG, LN, LOG10 and POWER only when it is built with its math functions: the sqlite3 program is by default since version 3.35, and some systems ship it without them.",
     "advice": "Say which one you mean: LN(x) for the natural logarithm, LOG10(x) for base 10.",
     "example": "SELECT LOG(100)",
-    "rewrite": "SELECT LOG10(100)"
+    "rewrite": "SELECT LOG10(100)",
+    "requires": {
+      "sqlite": "math"
+    }
   },
   {
     "code": "caret-operator",
@@ -246,9 +252,12 @@
     "severity": "warning",
     "summary": "2 ^ 3 is 8 on PostgreSQL, where ^ is a power, 1 on MySQL and MariaDB, where it is a bitwise exclusive or, and an error on SQLite.",
     "detail": "PostgreSQL raises the left side to the power of the right one. MySQL and MariaDB combine the bits of both numbers. SQLite has no ^ operator.",
-    "advice": "Use POWER(a, b), which all four engines have.",
+    "advice": "Use POWER(a, b), which all four engines have (SQLite when it is built with its math functions).",
     "example": "SELECT 2 ^ 3",
-    "rewrite": "SELECT POWER(2, 3)"
+    "rewrite": "SELECT POWER(2, 3)",
+    "requires": {
+      "sqlite": "math"
+    }
   },
   {
     "code": "dash-comment",
@@ -892,7 +901,10 @@
       {
         "name": "TRUNC",
         "probe": "SELECT TRUNC(5.7)",
-        "advice": "No form works on all four engines; TRUNCATE(x, 0) on MySQL and MariaDB."
+        "advice": "No form works on all four engines; TRUNCATE(x, 0) on MySQL and MariaDB. MariaDB's own TRUNC, from 12.2, truncates dates and answers NULL for a number.",
+        "requires": {
+          "sqlite": "math"
+        }
       },
       {
         "name": "TRUNCATE",
@@ -966,12 +978,12 @@
       },
       {
         "name": "FROM_UNIXTIME",
-        "probe": "SELECT FROM_UNIXTIME(0) IS NOT NULL",
+        "probe": "SELECT FROM_UNIXTIME(1700000000) IS NOT NULL",
         "advice": "No form works on all four engines; TO_TIMESTAMP() on PostgreSQL, datetime(n, 'unixepoch') on SQLite."
       },
       {
         "name": "TO_TIMESTAMP",
-        "probe": "SELECT TO_TIMESTAMP(0) IS NOT NULL",
+        "probe": "SELECT TO_TIMESTAMP(1700000000) IS NOT NULL",
         "advice": "No form works on all four engines; FROM_UNIXTIME() on MySQL and MariaDB, datetime(n, 'unixepoch') on SQLite."
       },
       {
@@ -1022,17 +1034,15 @@
       {
         "name": "REGEXP_LIKE",
         "probe": "SELECT REGEXP_LIKE('abc', 'b')",
-        "advice": "No form works on all four engines; REGEXP on SQLite's shell, MySQL and MariaDB, ~ on PostgreSQL."
+        "advice": "No form works on all four engines; REGEXP on SQLite's shell, MySQL and MariaDB, ~ on PostgreSQL.",
+        "since": {
+          "postgres": "15"
+        }
       },
       {
         "name": "MD5",
         "probe": "SELECT MD5('a')",
-        "advice": "Hash in the application."
-      },
-      {
-        "name": "SHA1",
-        "probe": "SELECT SHA1('a')",
-        "advice": "Hash in the application."
+        "advice": "Hash in the application. MySQL 9.6 moved MD5 into its optional legacy hashing component."
       },
       {
         "name": "SHA2",

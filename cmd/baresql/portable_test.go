@@ -34,7 +34,7 @@ func TestCLILint(t *testing.T) {
 	bad := writeSQL(t, "SELECT 7 / 2;\nSELECT name FROM t WHERE name = 'x';\n")
 	code, out, _ := runCLI(t, "lint", bad)
 	if code != 1 || !strings.Contains(out, "q.sql:1:8: warning:") || !strings.Contains(out, "[integer-division]") ||
-		strings.Contains(out, "text-compare-case") || !strings.Contains(out, "1 note about differences that depend on the data not shown") {
+		strings.Contains(out, "text-compare-case") || !strings.Contains(out, "1 note not shown (differences that depend on the data)") {
 		t.Fatalf("exit %d:\n%s", code, out)
 	}
 	code, out, _ = runCLI(t, "lint", "--all", bad)

@@ -1547,6 +1547,11 @@
           },
           "sqlite": {
             "error": "no such function: IF"
+          },
+          "sqlite >=3.48": {
+            "rows": [
+              "'yes'"
+            ]
           }
         },
         "IFNULL": {
@@ -1777,6 +1782,9 @@
             "rows": [
               "'0cc175b9c0f1b6a831c399e269772661'"
             ]
+          },
+          "mysql >=9.6": {
+            "error": "FUNCTION baresql_compare.MD5 does not exist"
           },
           "postgres": {
             "rows": [
@@ -2015,24 +2023,6 @@
             "error": "no such function: RPAD"
           }
         },
-        "SHA1": {
-          "mariadb": {
-            "rows": [
-              "'86f7e437faa5a7fce15d1ddcb9eaeaea377667b8'"
-            ]
-          },
-          "mysql": {
-            "rows": [
-              "'86f7e437faa5a7fce15d1ddcb9eaeaea377667b8'"
-            ]
-          },
-          "postgres": {
-            "error": "function sha1(unknown) does not exist"
-          },
-          "sqlite": {
-            "error": "no such function: SHA1"
-          }
-        },
         "SHA2": {
           "mariadb": {
             "rows": [
@@ -2265,6 +2255,11 @@
           "mariadb": {
             "error": "FUNCTION baresql_compare.TO_DATE does not exist"
           },
+          "mariadb >=12.3": {
+            "rows": [
+              "2024-05-06 00:00:00"
+            ]
+          },
           "mysql": {
             "error": "FUNCTION baresql_compare.TO_DATE does not exist"
           },
@@ -2312,6 +2307,11 @@
         "TRUNC": {
           "mariadb": {
             "error": "FUNCTION baresql_compare.TRUNC does not exist"
+          },
+          "mariadb >=12.2": {
+            "rows": [
+              "NULL"
+            ]
           },
           "mysql": {
             "error": "FUNCTION baresql_compare.TRUNC does not exist"
@@ -2919,10 +2919,10 @@
     "limit-in-subquery": {
       "example": {
         "mariadb": {
-          "error": "This version of MariaDB doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'"
+          "error": "This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'"
         },
         "mysql": {
-          "error": "This version of MySQL doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'"
+          "error": "This version of MySQL doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'"
         },
         "postgres": {
           "rows": [
@@ -3202,7 +3202,7 @@
             "error": "unrecognized token: \"!\""
           }
         },
-        "\u0026\u0026": {
+        "&&": {
           "mariadb": {
             "rows": [
               "0"
@@ -3214,21 +3214,21 @@
             ]
           },
           "postgres": {
-            "error": "operator does not exist: integer \u0026\u0026 integer"
+            "error": "operator does not exist: integer && integer"
           },
           "sqlite": {
-            "error": "near \"\u0026\": syntax error"
+            "error": "near \"&\": syntax error"
           }
         },
-        "-\u003e\u003e": {
+        "->>": {
           "mariadb": {
-            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\u003e\u003e '$.a'' at line 1"
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '>> '$.a'' at line 1"
           },
           "mysql": {
-            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '-\u003e\u003e '$.a'' at line 1"
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '->> '$.a'' at line 1"
           },
           "postgres": {
-            "error": "operator is not unique: unknown -\u003e\u003e unknown"
+            "error": "operator is not unique: unknown ->> unknown"
           },
           "sqlite": {
             "rows": [
@@ -3252,7 +3252,7 @@
             "error": "unrecognized token: \":\""
           }
         },
-        "\u003c=\u003e": {
+        "<=>": {
           "mariadb": {
             "rows": [
               "0"
@@ -3264,10 +3264,10 @@
             ]
           },
           "postgres": {
-            "error": "operator does not exist: integer \u003c=\u003e unknown"
+            "error": "operator does not exist: integer <=> unknown"
           },
           "sqlite": {
-            "error": "near \"\u003e\": syntax error"
+            "error": "near \">\": syntax error"
           }
         },
         "==": {

@@ -67,8 +67,14 @@ content and config values only; never touch the theme).
   answers with `scripts/dev-engines.sh run env BARESQL_RECORD=1 go test
   ./portable -run 'TestCatalog$'`. `TestCatalogRules` checks that lint
   flags each example and not its rewrite. When a CI engine version answers
-  differently, its annotation prints the `"engine x.y": {...}` key to add to
-  answers.json by hand (recording keeps such keys).
+  differently, its annotation prints the key to add to answers.json by hand
+  (recording keeps such keys): `"mysql 8.4"` for one release line,
+  `"mysql >=9.6"` from a version on (find the version that changed it in
+  the engine's release notes). An answer that holds only from some version
+  is `since` in catalog.json instead; one that needs a SQLite build feature
+  is `requires` (`math`, `ascii-case`; detected in `engineFeatures`).
+  Lint's messages and `baresql rules` describe all of these
+  (`VersionNotes`).
 - Engine versions in CI: PostgreSQL 13 to 18, MySQL 8.0, 8.4 and 9.7,
   MariaDB 10.11, 11.4, 11.8 and 12.3. When a version is released or
   reaches end of life, change the lists in `.github/workflows/ci.yml`.
