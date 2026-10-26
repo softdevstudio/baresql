@@ -59,7 +59,7 @@ func (t Token) IsOp(ops ...string) bool {
 // Significant reports whether the token is neither space nor comment.
 func (t Token) Significant() bool { return t.Kind != Space && t.Kind != Comment }
 
-// StringValue is the content of a plain '...' string with ” unescaped.
+// StringValue is the content of a plain '...' string, with doubled quotes undone.
 // For other string forms it returns the text between the quotes as is.
 func (t Token) StringValue() string {
 	s := t.Text

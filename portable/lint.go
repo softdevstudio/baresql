@@ -428,7 +428,7 @@ func (c *lintCtx) alterAdd() (string, []columnDef) {
 		if c.at(s).Is("IF") && c.at(s+1).Is("NOT") && c.at(s+2).Is("EXISTS") {
 			s += 3
 		}
-		if s >= len(c.ts) || isConstraintWord(c.ts[s]) {
+		if s >= len(c.ts) || c.constraintStart(s) {
 			continue
 		}
 		e := s

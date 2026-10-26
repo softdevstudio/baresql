@@ -1,6 +1,7 @@
 package sqltext
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -167,5 +168,48 @@ func TestBackslashQuotes(t *testing.T) {
 	toks := Tokenize(`SELECT "say \"hi\"" x`)
 	if toks[2].Kind != QuotedIdent || toks[2].Text != `"say \"hi\""` {
 		t.Errorf("double-quoted: %q", toks[2].Text)
+	}
+}
+
+func TestMySQLCode(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"SELECT 1 # comment\n, 2", "SELECT 1 , 2"},
+		{"SELECT 1 --1", "SELECT 1 - -1"},
+		{"SELECT 1 -- note", "SELECT 1"},
+		{"CREATE /*! DATABASE */ x", "CREATE DATABASE x"},
+		{"INSERT /*!40101 INTO db.t */ VALUES (1)", "INSERT INTO db.t VALUES (1)"},
+		{"/*M!100100 SET GLOBAL x = 1 */", "SET GLOBAL x = 1"},
+		{"SELECT /* a */ 'it\\'s' , \"q\"", "SELECT '' , ''"},
+		{"SELECT 'a /*! b */' FROM `t``x`", "SELECT '' FROM `t``x`"},
+		{"SELECT /*+ BKA(t) */ 1", "SELECT 1"},
+		{"SELECT 'unterminated", "SELECT"},
+	}
+	for _, c := range cases {
+		got := MySQLCode(c.in)
+		if norm := strings.Join(strings.Fields(got), " "); norm != c.want {
+			t.Errorf("MySQLCode(%q) = %q, want %q", c.in, norm, c.want)
+		}
+		if strings.Count(got, "\n") != strings.Count(c.in, "\n") {
+			t.Errorf("MySQLCode(%q) lost line breaks: %q", c.in, got)
+		}
+	}
+}
+
+func TestSplitDelimiter(t *testing.T) {
+	src := "DELIMITER //\nCREATE PROCEDURE p() BEGIN SELECT 1; SELECT 2; END //\nDELIMITER ;\nSELECT 3;\n" +
+		"delimiter $$\nCREATE FUNCTION f() RETURNS INT BEGIN RETURN ';'; END$$\nSELECT '$$', 4 $$\nDELIMITER ;\nSELECT 5"
+	var got []string
+	for _, st := range Split(src) {
+		got = append(got, fmt.Sprintf("%d:%d %s", st.Line, st.Col, st.Text))
+	}
+	want := []string{
+		"2:1 CREATE PROCEDURE p() BEGIN SELECT 1; SELECT 2; END",
+		"4:1 SELECT 3",
+		"6:1 CREATE FUNCTION f() RETURNS INT BEGIN RETURN ';'; END",
+		"7:1 SELECT '$$', 4",
+		"9:1 SELECT 5",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Errorf("got\n%s\nwant\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
 }

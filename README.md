@@ -360,19 +360,47 @@ runs in one transaction that is rolled back at the end, with a scratch
 schema first on the search path. On MySQL and MariaDB it runs in a new
 scratch database (`baresql_compare_` and random letters) that is dropped at
 the end. On SQLite it runs in a temporary file, through `sqlite3 -safe`,
-which refuses ATTACH, VACUUM INTO, the functions that read and write files
-and the shell's own commands.
+which refuses ATTACH, VACUUM INTO, readfile(), writefile(),
+load_extension() and the shell's own commands.
 
 compare skips statements that would leave that space: transaction control
-(BEGIN, COMMIT, ROLLBACK, SAVEPOINT), USE, statements about databases,
-schemas, users and roles, GRANT and REVOKE, and server commands such as SET
-GLOBAL, LOAD DATA, COPY and SELECT ... INTO OUTFILE. On MySQL and MariaDB,
-where table changes cannot be undone, it also refuses statements that
-change a table in another database (`INSERT INTO other_db.t ...`).
+(BEGIN, COMMIT, ROLLBACK, SAVEPOINT, PREPARE TRANSACTION, XA), USE,
+statements about databases, schemas, users and roles, GRANT and REVOKE,
+server commands such as LOAD DATA, COPY and SELECT ... INTO OUTFILE, SET
+statements that change a global or persisted setting anywhere in their
+list, dynamic SQL (MySQL's PREPARE ... FROM and EXECUTE IMMEDIATE, also
+inside routines), tables that connect to other servers (FEDERATED, CONNECT,
+SPIDER) and the calls that read files where the engine runs (fsdir() in the
+sqlite3 shell, which `-safe` leaves on, and LOAD_FILE()). These checks read
+each statement the way MySQL and MariaDB do as well, so code inside a
+`/*! ... */` comment counts.
 
-That keeps ordinary scripts from touching anything else, and it is no
-sandbox: a script runs with the rights of the logins you give. Use logins
-that may do no more than the script needs, on servers meant for testing.
+Each engine also makes sure it runs one statement at a time. PostgreSQL
+gets every statement on its own through the extended query protocol, which
+takes exactly one: a second statement hidden from BareSQL's splitter (behind
+a `#`, which PostgreSQL reads as an operator, or a backslash it keeps in a
+string) is refused, and if the transaction ends anyway compare stops at once.
+sqlite3 gets nothing that SQLite would read as two statements, and MySQL
+and MariaDB refuse more than one by themselves, since BareSQL's client never
+asks for multi-statements. On MySQL and MariaDB, where changes can't be
+undone, compare also refuses every statement that names a table in another
+database (`other_db.t`, anywhere in the statement); the list of databases
+comes from the server when compare starts.
+
+A statement may run for 60 seconds on every engine (PostgreSQL's
+statement_timeout, MySQL's max_execution_time for SELECT, MariaDB's
+max_statement_time, a timer for sqlite3). Other statements on MySQL meet a
+client limit of 75 seconds, after which compare stops.
+
+That keeps an ordinary script, and the usual ways one goes wrong, inside
+the throwaway space. It is no sandbox against a script written to get out:
+a script runs with the rights of the logins you give. Use logins that may
+do no more than the script needs, on servers meant for testing.
+
+Scripts written for the mysql program may switch the delimiter: between
+`DELIMITER //` and `DELIMITER ;` statements end at `//`, so a procedure's
+body stays in one statement. `--sqlite shop.db`, with a space, would make
+shop.db a script; compare points to `--sqlite=shop.db` instead.
 
 **Answers are compared by meaning.** Two answers are the same when they
 hold the same rows with the same values:
@@ -384,9 +412,11 @@ hold the same rows with the same values:
 - dates and times however they are printed (`2024-02-01 00:00:00` equals
   `2024-02-01T00:00:00+00:00`);
 - JSON documents by structure, bytes by value;
-- text exactly, so `'a'` and `'A'` differ, and NULL differs from the empty
-  string;
-- row order only when the statement has an ORDER BY of its own.
+- text exactly, so `'a'` and `'A'` differ, NULL differs from the empty
+  string, and text is never a number: `'7'` differs from `7`;
+- row order only when the statement has an ORDER BY of its own. Rows that
+  tie in that ORDER BY may come in any order, and compare reports that too:
+  sort on a column that makes the order unique.
 
 Column names count only when the values match and the names differ in case
 (PostgreSQL folds unquoted names to lower case), since code that reads
@@ -483,6 +513,13 @@ Rule codes never change.
 - lint reads tokens and recognizes the shapes of expressions. It does not
   parse SQL fully, so it can miss a construct written in an unusual way,
   and it knows column types only from the CREATE TABLE statements it reads.
+- Some differences have no rule yet: ALTER TABLE syntax (ALTER COLUMN ...
+  TYPE, MODIFY, CHANGE), names that are reserved words on some engines
+  (user, key, rank, groups), aggregate FILTER (WHERE ...), FROM DUAL,
+  TRIM(LEADING ... FROM ...) and SUBSTRING(x FROM ... FOR ...), the digits
+  of AVG over integers, ROUND of floating point halves (SQLite rounds 2.5
+  away from zero, the others to even), and GROUP BY and DISTINCT under MySQL's case
+  folding. compare shows them when they come up.
 - JSON functions and operators, stored procedures and triggers are left
   out: their syntax differs too much between engines to compare.
 - Answers are recorded with the engines' default settings. Server modes

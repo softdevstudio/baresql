@@ -34,7 +34,10 @@ func cellsEqual(a, b Cell) bool {
 	if isDateKind(a.Kind) || isDateKind(b.Kind) {
 		return normalizeDate(a.Text) == normalizeDate(b.Text)
 	}
-	if numericKind(a.Kind) || numericKind(b.Kind) {
+	if numericKind(a.Kind) != numericKind(b.Kind) {
+		return false // text is never a number: '007' differs from 7
+	}
+	if numericKind(a.Kind) {
 		x, okx := numberOf(a)
 		y, oky := numberOf(b)
 		if okx && oky {

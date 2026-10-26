@@ -5,6 +5,8 @@ import (
 	"io"
 	"sort"
 	"strings"
+
+	"github.com/softdevstudio/baresql/internal/sqltext"
 )
 
 // WriteProblems prints lint problems: a file:line:col line editors can
@@ -99,7 +101,7 @@ func WriteComparison(w io.Writer, cmp *Comparison, all bool) {
 		if !all && !sr.Differs() && !failed {
 			continue
 		}
-		fmt.Fprintf(w, "\n%s:%d  %s\n", sr.File, sr.Line, oneLine(sr.SQL, 100))
+		fmt.Fprintf(w, "\n%s:%d  %s\n", sr.File, sr.Line, oneLineSQL(sr.SQL, 100))
 		switch {
 		case sr.Skipped != "":
 			fmt.Fprintf(w, "  skipped: %s\n", sr.Skipped)
@@ -152,7 +154,7 @@ func WriteComparison(w io.Writer, cmp *Comparison, all bool) {
 		}
 	}
 	s := cmp.Summary
-	fmt.Fprintf(w, "\n%d statements: %d answered alike, %d differ", s.Statements, s.Same, s.Differ)
+	fmt.Fprintf(w, "\n%s: %d answered alike, %d differ", count(s.Statements, "statement"), s.Same, s.Differ)
 	if s.Failed > 0 {
 		fmt.Fprintf(w, ", %d refused by every engine", s.Failed)
 	}
@@ -205,6 +207,29 @@ func writeAnswer(w io.Writer, label string, a *Answer, query bool) {
 }
 
 // oneLine puts text on one line, cut to n characters.
+// oneLineSQL is oneLine for a statement: its -- and # comments become
+// /* ... */ first, so that joining the lines can't seem to comment out the
+// rest of the statement.
+func oneLineSQL(s string, n int) string {
+	var b strings.Builder
+	for _, t := range sqltext.Tokenize(s) {
+		if t.Kind == sqltext.Comment && !strings.HasPrefix(t.Text, "/*") {
+			text := strings.TrimSpace(strings.TrimLeft(t.Text, "-#"))
+			b.WriteString("/* " + strings.ReplaceAll(text, "*/", "* /") + " */")
+			continue
+		}
+		b.WriteString(t.Text)
+	}
+	return oneLine(b.String(), n)
+}
+
+func count(n int, word string) string {
+	if n == 1 {
+		return "1 " + word
+	}
+	return fmt.Sprintf("%d %ss", n, word)
+}
+
 func oneLine(s string, n int) string {
 	s = strings.Join(strings.Fields(s), " ")
 	if r := []rune(s); len(r) > n {

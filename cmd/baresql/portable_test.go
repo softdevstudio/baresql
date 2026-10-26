@@ -173,3 +173,16 @@ func TestReadmeDocumentsCodes(t *testing.T) {
 		t.Errorf("found only %d finding codes in audit/findings.go", n)
 	}
 }
+
+// TestCompareSQLiteFileHint: --sqlite shop.db (with a space) makes shop.db
+// a script; compare says how to start from the database instead.
+func TestCompareSQLiteFileHint(t *testing.T) {
+	db := filepath.Join(t.TempDir(), "shop.db")
+	if err := os.WriteFile(db, []byte("SQLite format 3\x00rest of the file"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	code, _, errs := runCLI(t, "compare", "--sqlite", "--postgres", "postgres://nobody@127.0.0.1:1/x", db)
+	if code != 2 || !strings.Contains(errs, "is an SQLite database, not SQL") || !strings.Contains(errs, "--sqlite="+db) {
+		t.Fatalf("exit %d: %s", code, errs)
+	}
+}

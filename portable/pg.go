@@ -2,6 +2,7 @@ package portable
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -55,11 +56,19 @@ func OpenPostgres(ctx context.Context, cfg pgwire.Config) (Engine, error) {
 func (e *pgEngine) Name() string    { return Postgres }
 func (e *pgEngine) Version() string { return e.version }
 
+// Run sends the statement with the extended query protocol, which takes
+// exactly one statement: whatever BareSQL's splitter made of the text, a
+// second statement hidden in it (behind a # that PostgreSQL reads as an
+// operator, or a backslash it keeps in a string) is refused by the server
+// instead of run. If the transaction still ends, compare stops at once.
 func (e *pgEngine) Run(ctx context.Context, stmt string) (*Answer, error) {
 	if err := e.c.Exec(ctx, "SAVEPOINT baresql_stmt"); err != nil {
 		return nil, err
 	}
-	res, err := e.c.Query(ctx, stmt)
+	r, err := e.c.QueryArgs(ctx, stmt)
+	if st := e.c.TxStatus(); st != 'T' && st != 'E' {
+		return nil, errors.New("the statement ended compare's transaction, so compare stopped; what the statements before it changed may have been committed")
+	}
 	if err != nil {
 		var pe *pgwire.Error
 		if !asPgError(err, &pe) {
@@ -74,10 +83,6 @@ func (e *pgEngine) Run(ctx context.Context, stmt string) (*Answer, error) {
 		return nil, err
 	}
 	a := &Answer{}
-	if len(res) == 0 {
-		return a, nil
-	}
-	r := res[len(res)-1]
 	for _, n := range r.Notices {
 		if n.Severity == "WARNING" {
 			a.Notes = append(a.Notes, n.Message)

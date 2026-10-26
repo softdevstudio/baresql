@@ -255,7 +255,7 @@ func ruleTextNumberCompare(r *rule, c *lintCtx) {
 			form = c.textNumberMix(rs, re, ls, le)
 		}
 		if form != "" {
-			c.hitForm(r, ls, re, form, "", "")
+			c.hitForm(r, ls, re, form, c.span(ls, re), "")
 		}
 	}
 }
@@ -266,10 +266,10 @@ func (c *lintCtx) textNumberMix(as, ae, bs, be int) string {
 	aLit := as == ae && isPlainString(c.ts[as])
 	bNum := bs == be && c.ts[bs].Kind == sqltext.Number || be == bs+1 && c.ts[bs].IsOp("-") && c.ts[be].Kind == sqltext.Number
 	switch {
-	case aLit && bNum:
+	case aLit && bNum && numericText(c.ts[as].StringValue()):
 		return "'1' = 1"
-	case aLit && !numericText(c.ts[as].StringValue()) && c.kindOf(bs, be).numeric():
-		return "'abc' = number column"
+	case aLit && !numericText(c.ts[as].StringValue()) && (bNum || c.kindOf(bs, be).numeric()):
+		return "'abc' = number"
 	case !aLit && c.kindOf(as, ae) == kText && bNum:
 		return "text column = number"
 	}
@@ -561,11 +561,27 @@ func ruleDateArithmetic(r *rule, c *lintCtx) {
 		lk, rk := c.kindOfPrimary(ls, i-1), c.kindOfPrimary(i+1, re)
 		switch {
 		case lk == kInterval || rk == kInterval:
-			c.hitForm(r, ls, re, "INTERVAL", "", "")
+			form := "INTERVAL"
+			for k := ls; k <= re && k+1 < len(c.ts); k++ {
+				// INTERVAL '1 day', the unit inside the quotes, is
+				// PostgreSQL's own form.
+				if c.ts[k].Is("INTERVAL") && c.ts[k+1].Kind == sqltext.String && !intervalUnits[c.at(k+2).Upper()] {
+					form = "INTERVAL 'n unit'"
+				}
+			}
+			c.hitForm(r, ls, re, form, "", "")
 		case lk == kDate && (rk.numeric() || rk == kDate), rk == kDate && lk.numeric():
 			c.hitForm(r, ls, re, "date + number", "", "")
 		}
 	}
+}
+
+// intervalUnits are the units MySQL and MariaDB take after INTERVAL n.
+var intervalUnits = map[string]bool{
+	"MICROSECOND": true, "SECOND": true, "MINUTE": true, "HOUR": true, "DAY": true, "WEEK": true, "MONTH": true,
+	"QUARTER": true, "YEAR": true, "SECOND_MICROSECOND": true, "MINUTE_MICROSECOND": true, "MINUTE_SECOND": true,
+	"HOUR_MICROSECOND": true, "HOUR_SECOND": true, "HOUR_MINUTE": true, "DAY_MICROSECOND": true, "DAY_SECOND": true,
+	"DAY_MINUTE": true, "DAY_HOUR": true, "YEAR_MONTH": true,
 }
 
 func ruleDivisionByZero(r *rule, c *lintCtx) {
@@ -856,17 +872,25 @@ func ruleTypeNotEnforced(r *rule, c *lintCtx) {
 	}
 	for k++; k < len(c.ts) && c.ts[k].IsOp("("); {
 		for n, a := range c.args(k) {
-			if n >= len(cols) || a[0] != a[1] || !isPlainString(c.ts[a[0]]) {
+			if n >= len(cols) || a[0] != a[1] {
 				continue
 			}
 			ci := c.schema.cols[table][cols[n]]
+			if t := c.ts[a[0]]; t.Kind == sqltext.Number && typeKind(ci.typ) == kInt && strings.ContainsAny(t.Text, ".eE") && !strings.HasPrefix(strings.ToLower(t.Text), "0x") {
+				c.hitForm(r, a[0], a[0], "a fraction in an integer column", "",
+					"SQLite keeps "+t.Text+" as it is in the "+ci.typ+" column "+cols[n]+"; PostgreSQL, MySQL and MariaDB round it to a whole number.")
+				continue
+			}
+			if !isPlainString(c.ts[a[0]]) {
+				continue
+			}
 			v := c.ts[a[0]].StringValue()
 			switch kind := typeKind(ci.typ); {
 			case kind.numeric() && !numericText(v):
 				c.hitForm(r, a[0], a[0], "text in a number column", "",
 					"SQLite stores the text "+c.ts[a[0]].Text+" in the "+ci.typ+" column "+cols[n]+"; PostgreSQL, MySQL and MariaDB refuse it.")
 			case kind == kInt && strings.ContainsAny(v, ".eE"):
-				c.hitForm(r, a[0], a[0], "a fraction in an integer column", "",
+				c.hitForm(r, a[0], a[0], "a quoted fraction in an integer column", "",
 					"PostgreSQL refuses the text "+c.ts[a[0]].Text+" for the "+ci.typ+" column "+cols[n]+"; MySQL and MariaDB round it to a whole number, and SQLite keeps a fraction as it is.")
 			case kind == kText && ci.length > 0 && len([]rune(v)) > ci.length:
 				c.hitForm(r, a[0], a[0], "too long for VARCHAR(n)", "",

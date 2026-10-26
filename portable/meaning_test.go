@@ -29,7 +29,8 @@ func TestCellsEqual(t *testing.T) {
 		{c(KindBytes, "0aff"), c(KindBytes, "0AFF"), true},
 		{c(KindBytes, "61"), c(KindText, "61"), false},
 		{c(KindText, "a"), c(KindText, "A"), false},
-		{c(KindText, "1"), c(KindInt, "1"), true}, // the text of a number column
+		{c(KindText, "1"), c(KindInt, "1"), false}, // text is never a number
+		{c(KindText, "true"), c(KindBool, "t"), false},
 		{null, null, true},
 		{null, c(KindText, ""), false},
 		{c(KindFloat, "Inf"), c(KindFloat, "Infinity"), true},
@@ -93,6 +94,11 @@ func TestSQLiteRefusal(t *testing.T) {
 		"CREATE TRIGGER tr AFTER INSERT ON t BEGIN\n  UPDATE t SET a = 1;\n  SELECT CASE WHEN 1 THEN 2 END;\nEND": false,
 		"CREATE TRIGGER tr AFTER INSERT ON t BEGIN UPDATE t SET a = 1 END":                                        true,
 		"SELECT $$a;\nb$$": true,
+		// Found by the review: statements hidden on one line.
+		"SELECT #a; DELETE FROM t":           true,
+		"SELECT 'a\\'x; DELETE FROM t; -- '": true,
+		"SELECT 1; -- only a comment after":  false,
+		"SELECT 'a;b' -- c;d":                false,
 	} {
 		if got := sqliteRefusal(stmt); (got != "") != refuse {
 			t.Errorf("%q: refusal %q", stmt, got)

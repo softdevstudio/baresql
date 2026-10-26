@@ -151,8 +151,22 @@ func TestSkipReason(t *testing.T) {
 		"SELECT 1": false, "CREATE TABLE t (x INT)": false, "CREATE TEMPORARY TABLE t (x INT)": false,
 		"DROP TABLE IF EXISTS t": false, "SET @x = 1": false, "INSERT INTO t VALUES (1)": false,
 		"CREATE INDEX i ON t (x)": false, "CREATE VIEW v AS SELECT 1": false,
+		// Found by the review: forms that reach past the scratch space.
+		"CREATE /*! DATABASE */ made_by_compare": true, "SET @x = 1, @@global.max_connect_errors = 101": true,
+		"SET sql_mode = DEFAULT, GLOBAL max_connect_errors = 102": true, "/*!40101 SET GLOBAL x = 1 */": true,
+		"SELECT 1 /*! INTO OUTFILE '/tmp/x' */": true, "PREPARE TRANSACTION 'x'": true, "XA START 'x'": true,
+		"END": true, "ABORT": true, "PREPARE s FROM 'DROP TABLE t'": true, "EXECUTE IMMEDIATE 'DROP TABLE t'": true,
+		"CREATE PROCEDURE p() BEGIN PREPARE s FROM @q; EXECUTE s; END": true,
+		"SELECT CAST(data AS TEXT) FROM fsdir('/etc/hostname')":        true, "SELECT LOAD_FILE('/etc/passwd')": true,
+		"SELECT * FROM \"FsDir\"('/')": true, "SET DEFAULT ROLE ALL TO u": true, "SET RESOURCE GROUP g FOR 7": true,
+		"CREATE TABLE t (x INT) ENGINE=FEDERATED CONNECTION='mysql://u@h/db/t'": true,
+		"SELECT 1 /*!40101 , @@CHARACTER_SET_CLIENT */":                         false, "CREATE TABLE t (x INT) /*!50100 PARTITION BY HASH (x) */": false,
+		"PREPARE p (int) AS SELECT $1": false, "SELECT upload_file FROM t": false, "SET NAMES utf8mb4": false,
 	} {
 		st := sqltext.Split(sql)
+		if len(st) == 0 && skip {
+			continue // a statement of comments only never runs
+		}
 		if len(st) != 1 {
 			t.Fatalf("%s: %d statements", sql, len(st))
 		}
@@ -160,25 +174,31 @@ func TestSkipReason(t *testing.T) {
 			t.Errorf("%s: skip reason %q", sql, got)
 		}
 	}
+	others := map[string]bool{"prod": true, "mysql": true}
 	for sql, want := range map[string]string{
-		"INSERT INTO prod.users VALUES (1)":  "prod.users",
-		"UPDATE prod.users SET x = 1":        "prod.users",
-		"DELETE FROM prod.users":             "prod.users",
-		"DROP TABLE IF EXISTS prod.users":    "prod.users",
-		"CREATE INDEX i ON prod.users (x)":   "prod.users",
-		"CREATE TABLE prod.users (x INT)":    "prod.users",
-		"TRUNCATE TABLE prod.users":          "prod.users",
-		"SELECT * FROM prod.users":           "",
-		"INSERT INTO t SELECT * FROM prod.u": "",
-		"UPDATE t SET x = t.y":               "",
+		"INSERT INTO prod.users VALUES (1)":                  "prod",
+		"UPDATE prod.users SET x = 1":                        "prod",
+		"DELETE FROM prod.users":                             "prod",
+		"DROP TABLE IF EXISTS t, prod.users":                 "prod",
+		"CREATE INDEX i ON prod.users (x)":                   "prod",
+		"TRUNCATE prod.users":                                "prod",
+		"INSERT prod.t VALUES (100)":                         "prod",
+		"REPLACE prod.t VALUES (200)":                        "prod",
+		"UPDATE local_t, prod.t SET prod.t.v = prod.t.v + 1": "prod",
+		"RENAME TABLE a TO b, prod.t4 TO moved":              "prod",
+		"INSERT /*! INTO prod.t */ VALUES (300)":             "prod",
+		"INSERT INTO `prod` . `t` VALUES (1)":                "prod",
+		"SELECT * FROM PROD.users":                           "PROD",
+		"INSERT INTO t SELECT * FROM prod.u":                 "prod",
+		"UPDATE mysql.user SET plugin = ''":                  "mysql",
+		"UPDATE t SET x = t.y":                               "",
+		"SELECT table_name FROM information_schema.tables":   "",
+		"SELECT 'prod.users', 1.5":                           "",
+		"SELECT x FROM t -- prod.users":                      "",
 	} {
-		db, table := qualifiedTarget(sqltext.Split(sql)[0].Significant())
-		got := ""
-		if db != "" {
-			got = db + "." + table
-		}
+		got := otherDatabase(significant(sqltext.Tokenize(sqltext.MySQLCode(sql))), others)
 		if got != want {
-			t.Errorf("%s: target %q, want %q", sql, got, want)
+			t.Errorf("%s: other database %q, want %q", sql, got, want)
 		}
 	}
 }

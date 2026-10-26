@@ -81,18 +81,21 @@
         "name": "text column = number",
         "setup": "CREATE TABLE items (code VARCHAR(10), n INTEGER);\nINSERT INTO items VALUES ('abc', 0)",
         "probe": "SELECT COUNT(*) FROM items WHERE code = 0",
-        "advice": ""
+        "advice": "",
+        "message": "{what} compares a text column with a number: MySQL and MariaDB turn the text into a number, so 'abc' matches 0, SQLite compares it as text and finds nothing, and PostgreSQL refuses it."
       },
       {
         "name": "'1' = 1",
         "probe": "SELECT '1' = 1",
-        "advice": ""
+        "advice": "",
+        "message": "{what} compares text with a number: false on SQLite, true on PostgreSQL, MySQL and MariaDB."
       },
       {
-        "name": "'abc' = number column",
-        "setup": "CREATE TABLE items (code VARCHAR(10), n INTEGER);\nINSERT INTO items VALUES ('abc', 0)",
-        "probe": "SELECT COUNT(*) FROM items WHERE n = 'abc'",
-        "advice": ""
+        "name": "'abc' = number",
+        "setup": "CREATE TABLE scores (n INTEGER);\nINSERT INTO scores VALUES (0)",
+        "probe": "SELECT COUNT(*) FROM scores WHERE n = 'abc'",
+        "advice": "",
+        "message": "{what} compares text that is no number with a number: PostgreSQL refuses it, MySQL and MariaDB read the text as 0, and SQLite finds no match."
       }
     ]
   },
@@ -280,7 +283,7 @@
     "title": "Adding numbers to dates",
     "severity": "warning",
     "summary": "A date plus 1 is the next day on PostgreSQL, the number 20240132 on MySQL and MariaDB, and 2025 on SQLite.",
-    "detail": "MySQL and MariaDB turn the date into the number 20240131 and add 1. SQLite turns the text into the number 2024. PostgreSQL adds a day. Subtracting two dates goes the same way: PostgreSQL counts days and MySQL and MariaDB subtract the numbers. INTERVAL arithmetic works on PostgreSQL, MySQL and MariaDB, with different result types, and SQLite has no INTERVAL.",
+    "detail": "MySQL and MariaDB turn the date into the number 20240131 and add 1. SQLite turns the text into the number 2024. PostgreSQL adds a day. Subtracting two dates goes the same way: PostgreSQL counts days and MySQL and MariaDB subtract the numbers. INTERVAL arithmetic works on PostgreSQL, MySQL and MariaDB, with different result types, and SQLite has no INTERVAL. PostgreSQL's usual INTERVAL '1 day', with the unit inside the quotes, works on PostgreSQL only.",
     "advice": "No date arithmetic reads the same on all four engines. Use date(d, '+1 day') on SQLite and d + INTERVAL '1' DAY on the other three, or do the arithmetic in the application.",
     "example": "SELECT CAST('2024-01-31' AS DATE) + 1",
     "items": [
@@ -294,6 +297,12 @@
         "probe": "SELECT CAST('2024-01-31' AS DATE) + INTERVAL '1' DAY",
         "advice": "",
         "message": "SQLite has no INTERVAL, and the other engines give the result different types."
+      },
+      {
+        "name": "INTERVAL 'n unit'",
+        "probe": "SELECT CAST('2024-01-31' AS DATE) + INTERVAL '1 day'",
+        "advice": "",
+        "message": "INTERVAL '1 day', with the unit inside the quotes, works on PostgreSQL only: SQLite has no INTERVAL, and MySQL and MariaDB want the unit outside them, INTERVAL '1' DAY."
       }
     ]
   },
@@ -494,8 +503,13 @@
         "advice": ""
       },
       {
-        "name": "a fraction in an integer column",
+        "name": "a quoted fraction in an integer column",
         "probe": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('12.50');\nSELECT n FROM t",
+        "advice": ""
+      },
+      {
+        "name": "a fraction in an integer column",
+        "probe": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES (12.5);\nSELECT n FROM t",
         "advice": ""
       },
       {
@@ -772,10 +786,10 @@
     "severity": "error",
     "summary": "GREATEST and LEAST are missing on SQLite, skip NULL on PostgreSQL and return NULL on MySQL and MariaDB.",
     "detail": "GREATEST(1, NULL) is 1 on PostgreSQL and NULL on MySQL and MariaDB. SQLite has the same idea under the names MAX(a, b) and MIN(a, b) with two or more arguments; they return NULL when any argument is NULL, and the other engines read MAX and MIN as aggregates.",
-    "advice": "Use CASE WHEN a >= b THEN a ELSE b END, which is NULL when either side is NULL on all four. Wrap the arguments in COALESCE to skip NULL instead.",
-    "setup": "CREATE TABLE t (a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, NULL)",
-    "example": "SELECT GREATEST(a, b) FROM t",
-    "rewrite": "SELECT CASE WHEN a >= b THEN a ELSE b END FROM t"
+    "advice": "Write it out with CASE and say what NULL should do. CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a >= b THEN a ELSE b END skips NULL, as PostgreSQL's GREATEST does, on all four engines. A plain CASE WHEN a >= b THEN a ELSE b END answers b whenever the comparison meets a NULL, so it gives 5 for (NULL, 5) and NULL for (1, NULL).",
+    "setup": "CREATE TABLE t (id INTEGER, a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 1, NULL), (2, NULL, 5)",
+    "example": "SELECT GREATEST(a, b) FROM t ORDER BY id",
+    "rewrite": "SELECT CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a >= b THEN a ELSE b END FROM t ORDER BY id"
   },
   {
     "code": "insert-ignore",

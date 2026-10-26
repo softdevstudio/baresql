@@ -334,11 +334,17 @@ func sqliteRefusal(stmt string) string {
 	if commandTerminator(lines[0]) {
 		return "the sqlite3 program reads a line holding only / or GO as the end of a statement"
 	}
-	for i := 1; i < len(lines); i++ {
-		prefix := strings.Join(lines[:i], "\n")
-		if sqliteComplete(prefix + "\n") {
+	// The shell hands SQLite the text once it is complete, and SQLite runs
+	// every statement in it, so a semicolon that ends a statement by
+	// SQLite's rules anywhere before the end means more than one: a # or a
+	// backslash that BareSQL read as a comment or an escape can hide one.
+	for i := 0; i < len(stmt); i++ {
+		if stmt[i] == ';' && sqliteComplete(stmt[:i+1]) && !sqliteBlank(stmt[i+1:]) {
 			return "SQLite reads this as more than one statement: a semicolon that another engine reads inside a comment or string ends it early"
 		}
+	}
+	for i := 1; i < len(lines); i++ {
+		prefix := strings.Join(lines[:i], "\n")
 		if commandTerminator(lines[i]) && sqliteComplete(prefix+"\n;") {
 			return "the sqlite3 program reads a line holding only / or GO as the end of a statement"
 		}
@@ -347,6 +353,32 @@ func sqliteRefusal(stmt string) string {
 		return "incomplete as SQLite reads it: a string, name or comment that does not end, or a CREATE TRIGGER without ; END"
 	}
 	return ""
+}
+
+// sqliteBlank reports whether s holds only spaces and comments, as SQLite
+// reads them.
+func sqliteBlank(s string) bool {
+	for {
+		s = strings.TrimLeft(s, " \t\r\n\f")
+		switch {
+		case s == "":
+			return true
+		case strings.HasPrefix(s, "--"):
+			nl := strings.IndexByte(s, '\n')
+			if nl < 0 {
+				return true
+			}
+			s = s[nl+1:]
+		case strings.HasPrefix(s, "/*"):
+			end := strings.Index(s[2:], "*/")
+			if end < 0 {
+				return true
+			}
+			s = s[2+end+2:]
+		default:
+			return false
+		}
+	}
 }
 
 // commandTerminator: the shell takes a line holding only "/" or "GO"

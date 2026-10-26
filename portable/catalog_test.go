@@ -59,8 +59,8 @@ func runCatalogOn(ctx context.Context, o opener) (map[string]*entryRun, error) {
 					return nil, fmt.Errorf("%s item %s on %s: %w", e.Code, it.Name, o.name, err)
 				}
 				run.items[it.Name] = a
-				// Rows share the engine: drop what their setups make.
-				for _, drop := range []string{"DROP VIEW IF EXISTS v", "DROP TABLE IF EXISTS t", "DROP TABLE IF EXISTS u"} {
+				// Rows share the engine: drop what their setups and probes make.
+				for _, drop := range dropsFor(it.Setup + "\n" + it.Probe) {
 					if _, err := eng.Run(ctx, drop); err != nil {
 						eng.Close()
 						return nil, err
@@ -446,5 +446,56 @@ func TestFormNames(t *testing.T) {
 	}
 	if n < 40 {
 		t.Errorf("found only %d form names in rules.go", n)
+	}
+}
+
+var createdRe = regexp.MustCompile(`(?i)\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP(?:ORARY)?\s+)?(TABLE|VIEW)\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][A-Za-z0-9_]*)`)
+
+// dropsFor lists the statements that drop every view and table the SQL
+// creates, views first, and t, u and v in any case.
+func dropsFor(sql string) []string {
+	views, tables := map[string]bool{"v": true}, map[string]bool{"t": true, "u": true}
+	for _, m := range createdRe.FindAllStringSubmatch(sql, -1) {
+		if strings.EqualFold(m[1], "VIEW") {
+			views[strings.ToLower(m[2])] = true
+		} else {
+			tables[strings.ToLower(m[2])] = true
+		}
+	}
+	var out []string
+	for _, set := range []struct {
+		kind  string
+		names map[string]bool
+	}{{"VIEW", views}, {"TABLE", tables}} {
+		names := make([]string, 0, len(set.names))
+		for n := range set.names {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for _, n := range names {
+			out = append(out, "DROP "+set.kind+" IF EXISTS "+n)
+		}
+	}
+	return out
+}
+
+// TestRecordedAnswersSane: no recorded answer is the failure of a setup
+// statement or a leftover of an earlier row ("already exists"). Every CI
+// version would record such a failure alike, so only this check sees it.
+func TestRecordedAnswersSane(t *testing.T) {
+	check := func(where string, m map[string]Recorded) {
+		for k, r := range m {
+			if strings.HasPrefix(r.Error, "setup failed:") || strings.Contains(r.Error, "already exists") {
+				t.Errorf("%s on %s: recorded %q", where, k, r.Error)
+			}
+		}
+	}
+	for _, e := range Catalog() {
+		a := RecordedAnswers(e.Code)
+		check(e.Code+" example", a.Example)
+		check(e.Code+" rewrite", a.Rewrite)
+		for name, m := range a.Items {
+			check(e.Code+" row "+name, m)
+		}
 	}
 }

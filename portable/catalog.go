@@ -388,8 +388,19 @@ func RenderCell(c Cell) string {
 // RunEntry runs an entry's setup and example (or rewrite) on one engine,
 // which should be fresh, and returns the answer of the last statement or
 // the first refusal.
+//
+// A setup statement must work on every engine: when one fails, the answer
+// says so with a "setup failed:" prefix, which the catalog tests refuse to
+// record, instead of passing for the engine's answer to the example.
 func RunEntry(ctx context.Context, e Engine, setup, sql string) (*Answer, error) {
-	return runScript(ctx, e, setup+"\n;\n"+sql)
+	a, err := runScript(ctx, e, setup)
+	if err != nil {
+		return nil, err
+	}
+	if a.Err != "" {
+		return &Answer{Err: "setup failed: " + a.Err}, nil
+	}
+	return runScript(ctx, e, sql)
 }
 
 func runScript(ctx context.Context, e Engine, src string) (*Answer, error) {

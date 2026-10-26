@@ -1374,6 +1374,22 @@
             "error": "near \"DAY\": syntax error"
           }
         },
+        "INTERVAL 'n unit'": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "2024-02-01 00:00:00"
+            ]
+          },
+          "sqlite": {
+            "error": "no such column: INTERVAL"
+          }
+        },
         "date + number": {
           "mariadb": {
             "rows": [
@@ -3333,17 +3349,20 @@
       "example": {
         "mariadb": {
           "rows": [
+            "NULL",
             "NULL"
           ]
         },
         "mysql": {
           "rows": [
+            "NULL",
             "NULL"
           ]
         },
         "postgres": {
           "rows": [
-            "1"
+            "1",
+            "5"
           ]
         },
         "sqlite": {
@@ -3353,22 +3372,26 @@
       "rewrite": {
         "mariadb": {
           "rows": [
-            "NULL"
+            "1",
+            "5"
           ]
         },
         "mysql": {
           "rows": [
-            "NULL"
+            "1",
+            "5"
           ]
         },
         "postgres": {
           "rows": [
-            "NULL"
+            "1",
+            "5"
           ]
         },
         "sqlite": {
           "rows": [
-            "NULL"
+            "1",
+            "5"
           ]
         }
       }
@@ -4988,18 +5011,24 @@
             ]
           }
         },
-        "'abc' = number column": {
+        "'abc' = number": {
           "mariadb": {
-            "error": "Table 'items' already exists"
+            "rows": [
+              "1"
+            ]
           },
           "mysql": {
-            "error": "Table 'items' already exists"
+            "rows": [
+              "1"
+            ]
           },
           "postgres": {
-            "error": "relation \"items\" already exists"
+            "error": "invalid input syntax for type integer: \"abc\""
           },
           "sqlite": {
-            "error": "table items already exists"
+            "rows": [
+              "0"
+            ]
           }
         },
         "text column = number": {
@@ -5087,6 +5116,28 @@
       },
       "items": {
         "a fraction in an integer column": {
+          "mariadb": {
+            "rows": [
+              "13"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "13"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "13"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "12.5"
+            ]
+          }
+        },
+        "a quoted fraction in an integer column": {
           "mariadb": {
             "rows": [
               "13"

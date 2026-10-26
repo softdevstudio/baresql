@@ -3,6 +3,7 @@ package portable
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/softdevstudio/baresql/internal/sqltext"
@@ -143,9 +144,41 @@ func skipReason(st sqltext.Statement) string {
 			return "an unterminated string, name or comment at line " + fmt.Sprint(t.Line)
 		}
 	}
-	ts := st.Significant()
-	if len(ts) == 0 {
+	if len(st.Significant()) == 0 {
 		return "empty"
+	}
+	if m := fileFunctionRe.FindStringSubmatch(strings.ToLower(st.Text)); m != nil {
+		return strings.ToUpper(m[2]) + " reads files on the machine it runs on"
+	}
+	// MySQL and MariaDB run the code inside /*! ... */ comments and end
+	// strings and comments by their own rules, so the statement is also
+	// checked the way they read it.
+	for _, ts := range [][]sqltext.Token{st.Significant(), significant(sqltext.Tokenize(sqltext.MySQLCode(st.Text)))} {
+		if why := skipTokens(ts); why != "" {
+			return why
+		}
+	}
+	return ""
+}
+
+// fileFunctionRe finds calls that read files where the engine runs: the
+// sqlite3 shell's fsdir() (which -safe leaves on) and MySQL's LOAD_FILE().
+// The raw text is searched, so no comment or quoting trick hides them.
+var fileFunctionRe = regexp.MustCompile(`(^|[^a-z0-9_$])(fsdir|load_file)([^a-z0-9_$]|$)`)
+
+func significant(ts []sqltext.Token) []sqltext.Token {
+	var out []sqltext.Token
+	for _, t := range ts {
+		if t.Significant() {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+func skipTokens(ts []sqltext.Token) string {
+	if len(ts) == 0 {
+		return ""
 	}
 	word := func(i int) string {
 		if i < len(ts) && ts[i].Kind == sqltext.Word {
@@ -155,7 +188,7 @@ func skipReason(st sqltext.Statement) string {
 	}
 	first, second := word(0), word(1)
 	switch {
-	case transactionControl(first):
+	case transactionControl(first), first == "XA", first == "PREPARE" && second == "TRANSACTION":
 		return "transaction control: compare runs each engine in its own throwaway transaction"
 	case first == "USE" || first == "CONNECT":
 		return "USE would leave compare's scratch database"
@@ -166,8 +199,10 @@ func skipReason(st sqltext.Statement) string {
 		return first + " reaches beyond compare's scratch space"
 	case (first == "START" || first == "STOP") && (second == "SLAVE" || second == "REPLICA" || second == "GROUP_REPLICATION"):
 		return "replication control reaches beyond compare's scratch space"
-	case first == "ALTER" && second == "SYSTEM", first == "SET" && (second == "GLOBAL" || second == "PERSIST" || second == "PERSIST_ONLY" || second == "PASSWORD" || second == "ROLE" || second == "SESSION_AUTHORIZATION" || strings.HasPrefix(strings.ToUpper(tokenText(ts, 1)), "@@GLOBAL")):
+	case first == "ALTER" && second == "SYSTEM", first == "SET" && setReachesServer(ts):
 		return "this changes the server or the login, beyond compare's scratch space"
+	case first == "PREPARE" && dynamicPrepare(ts, 0), first == "EXECUTE" && second == "IMMEDIATE":
+		return "dynamic SQL: compare can't see what the statement will run"
 	case first == "CREATE" || first == "DROP" || first == "ALTER" || first == "RENAME":
 		obj := ""
 	words:
@@ -183,6 +218,22 @@ func skipReason(st sqltext.Statement) string {
 		case "DATABASE", "SCHEMA", "USER", "ROLE", "TABLESPACE", "SERVER", "EXTENSION", "LOGFILE", "RESOURCE", "SUBSCRIPTION", "PUBLICATION":
 			return obj + " statements reach beyond compare's scratch space"
 		}
+		for i, t := range ts {
+			switch {
+			case t.Is("PREPARE") && dynamicPrepare(ts, i), t.Is("EXECUTE") && i+1 < len(ts) && ts[i+1].Is("IMMEDIATE"):
+				return "dynamic SQL in a routine: compare can't see what it will run"
+			case t.Is("CONNECTION") && i+1 < len(ts) && (ts[i+1].IsOp("=") || ts[i+1].Kind == sqltext.String):
+				return "a table that connects to another server reaches beyond compare's scratch space"
+			case t.Is("ENGINE"):
+				j := i + 1
+				if j < len(ts) && ts[j].IsOp("=") {
+					j++
+				}
+				if j < len(ts) && (ts[j].Is("FEDERATED") || ts[j].Is("FEDERATEDX") || ts[j].Is("CONNECT") || ts[j].Is("SPIDER")) {
+					return "a table that connects to another server reaches beyond compare's scratch space"
+				}
+			}
+		}
 	}
 	for i, t := range ts {
 		if t.Is("INTO") && (word(i+1) == "OUTFILE" || word(i+1) == "DUMPFILE") {
@@ -192,40 +243,37 @@ func skipReason(st sqltext.Statement) string {
 	return ""
 }
 
+// setReachesServer reports whether a SET statement changes something
+// beyond the session: a global or persisted variable anywhere in its list,
+// a password, roles or resource groups.
+func setReachesServer(ts []sqltext.Token) bool {
+	if len(ts) > 1 && (ts[1].Is("PASSWORD") || ts[1].Is("ROLE") || ts[1].Is("SESSION_AUTHORIZATION") || ts[1].Is("RESOURCE") ||
+		ts[1].Is("DEFAULT") && len(ts) > 2 && ts[2].Is("ROLE")) {
+		return true
+	}
+	for _, t := range ts[1:] {
+		if t.Is("GLOBAL") || t.Is("PERSIST") || t.Is("PERSIST_ONLY") {
+			return true
+		}
+		u := strings.ToUpper(t.Text)
+		if t.Kind == sqltext.Param && (strings.HasPrefix(u, "@@GLOBAL.") || strings.HasPrefix(u, "@@PERSIST.") || strings.HasPrefix(u, "@@PERSIST_ONLY.")) {
+			return true
+		}
+	}
+	return false
+}
+
+// dynamicPrepare: MySQL's PREPARE name FROM 'text' runs SQL made at run time
+// (PostgreSQL's PREPARE name AS statement shows its statement).
+func dynamicPrepare(ts []sqltext.Token, i int) bool {
+	return i+2 < len(ts) && isName(ts[i+1]) && ts[i+2].Is("FROM")
+}
+
 func tokenText(ts []sqltext.Token, i int) string {
 	if i < len(ts) {
 		return ts[i].Text
 	}
 	return ""
-}
-
-// qualifiedTarget returns the qualifier and name of a qualified table
-// (db.table) that a statement changes, or "".
-func qualifiedTarget(ts []sqltext.Token) (string, string) {
-	if len(ts) == 0 {
-		return "", ""
-	}
-	switch strings.ToUpper(ts[0].Text) {
-	case "INSERT", "UPDATE", "DELETE", "REPLACE", "CREATE", "DROP", "ALTER", "TRUNCATE", "RENAME", "MERGE", "WITH":
-	default:
-		return "", ""
-	}
-	for i, t := range ts {
-		if !(t.Is("INTO") || t.Is("UPDATE") || t.Is("TABLE") || t.Is("FROM") && ts[0].Is("DELETE") || t.Is("VIEW") || t.Is("INDEX") || t.Is("ON") || t.Is("TO") || t.Is("TRIGGER") || t.Is("JOIN") && ts[0].Is("UPDATE")) {
-			continue
-		}
-		j := i + 1
-		for j < len(ts) && (ts[j].Is("IF") || ts[j].Is("NOT") || ts[j].Is("EXISTS") || ts[j].Is("ONLY")) {
-			j++
-		}
-		if j+2 < len(ts) && isName(ts[j]) && ts[j+1].IsOp(".") && isName(ts[j+2]) && !(j+3 < len(ts) && ts[j+3].IsOp(".")) {
-			if t.Is("ON") && !(ts[0].Is("CREATE") || ts[0].Is("DROP")) {
-				continue
-			}
-			return identName(ts[j]), identName(ts[j+2])
-		}
-	}
-	return "", ""
 }
 
 // ordered reports whether the statement sorts its result (an ORDER BY
@@ -388,7 +436,7 @@ func whatDiffers(a, b *Answer, sorted bool, an, bn string) []string {
 		return append(out, fmt.Sprintf("%d columns on %s, %d on %s", len(a.Columns), an, len(b.Columns), bn))
 	}
 	if sorted && rowsEqual(sortedRows(a.Rows), sortedRows(b.Rows)) {
-		return append(out, "the same rows in a different order")
+		return append(out, "the same rows in a different order (NULL sorts differently, or rows that tie in ORDER BY came in another order)")
 	}
 	ra, rb := a.Rows, b.Rows
 	if !sorted {

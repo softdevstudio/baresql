@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/softdevstudio/baresql/internal/mysqlwire"
 	"github.com/softdevstudio/baresql/internal/sqltext"
@@ -12,10 +13,22 @@ import (
 
 type myEngine struct {
 	c       *mysqlwire.Conn
+	cfg     mysqlwire.Config
 	name    string
 	version string
 	db      string
+	// others are the other databases on the server (lower case), which
+	// no statement may name.
+	others map[string]bool
 }
+
+// myStatementLimit bounds one statement on the server (MySQL limits only
+// SELECT this way, MariaDB every statement); myClientLimit is the last
+// resort for the rest, after which the session is killed.
+const (
+	myStatementLimit = 60 * time.Second
+	myClientLimit    = 75 * time.Second
+)
 
 // OpenMySQL connects to MySQL or MariaDB and creates the scratch database
 // the script runs in (utf8mb4, the server's default collation for it). It
@@ -29,7 +42,7 @@ func OpenMySQL(ctx context.Context, cfg mysqlwire.Config, name string) (Engine, 
 		c.Close()
 		return nil, fmt.Errorf("%s: the server at that address is %s %s", name, map[bool]string{true: "MariaDB", false: "MySQL"}[c.IsMariaDB()], c.ServerVersion())
 	}
-	e := &myEngine{c: c, name: name, version: c.ServerVersion(), db: scratchName()}
+	e := &myEngine{c: c, cfg: cfg, name: name, version: c.ServerVersion(), db: scratchName()}
 	if _, err := c.Query(ctx, "CREATE DATABASE `"+e.db+"` CHARACTER SET utf8mb4"); err != nil {
 		c.Close()
 		return nil, fmt.Errorf("%s: creating the scratch database: %w", name, err)
@@ -38,6 +51,22 @@ func OpenMySQL(ctx context.Context, cfg mysqlwire.Config, name string) (Engine, 
 		e.Close()
 		return nil, fmt.Errorf("%s: %w", name, err)
 	}
+	res, err := c.Query(ctx, "SHOW DATABASES")
+	if err != nil || len(res) == 0 {
+		e.Close()
+		return nil, fmt.Errorf("%s: listing the databases: %w", name, err)
+	}
+	e.others = map[string]bool{}
+	for _, row := range res[0].Rows {
+		if n := strings.ToLower(row[0].String()); n != strings.ToLower(e.db) && n != "information_schema" {
+			e.others[n] = true
+		}
+	}
+	limit := fmt.Sprintf("SET SESSION max_execution_time = %d", myStatementLimit.Milliseconds())
+	if c.IsMariaDB() {
+		limit = fmt.Sprintf("SET SESSION max_statement_time = %d", int(myStatementLimit.Seconds()))
+	}
+	c.Query(ctx, limit) // older servers lack the setting; the client limit still holds
 	return e, nil
 }
 
@@ -45,14 +74,15 @@ func (e *myEngine) Name() string    { return e.name }
 func (e *myEngine) Version() string { return e.version }
 
 func (e *myEngine) Run(ctx context.Context, stmt string) (*Answer, error) {
-	// DDL on MySQL and MariaDB is not undone, so compare refuses to change
-	// tables outside its scratch database.
-	if sts := sqltext.Split(stmt); len(sts) == 1 {
-		if db, table := qualifiedTarget(sts[0].Significant()); db != "" && !strings.EqualFold(db, e.db) {
-			return &Answer{Err: "BareSQL compare refuses to change " + db + "." + table + ": it changes only its own scratch database " + e.db}, nil
-		}
+	// Changes on MySQL and MariaDB are not undone, so compare refuses every
+	// statement that names another database, read the way the server reads
+	// it (the code in /*! ... */ comments included).
+	if db := otherDatabase(significant(sqltext.Tokenize(sqltext.MySQLCode(stmt))), e.others); db != "" {
+		return &Answer{Err: "BareSQL compare refuses statements that name another database (" + db + "): it works only in its own scratch database"}, nil
 	}
-	res, err := e.c.Query(ctx, stmt)
+	qctx, cancel := context.WithTimeout(ctx, myClientLimit)
+	defer cancel()
+	res, err := e.c.Query(qctx, stmt)
 	if err != nil {
 		var me *mysqlwire.Error
 		if errors.As(err, &me) {
@@ -140,7 +170,46 @@ func myKind(c mysqlwire.Column) Kind {
 	return KindText
 }
 
+// Close drops the scratch database. When the session was lost (a statement
+// ran past the client limit), a new one kills the old session first.
 func (e *myEngine) Close() error {
-	e.c.Query(context.Background(), "DROP DATABASE IF EXISTS `"+e.db+"`")
-	return e.c.Close()
+	drop := "DROP DATABASE IF EXISTS `" + e.db + "`"
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	_, err := e.c.Query(ctx, drop)
+	if err == nil {
+		return e.c.Close()
+	}
+	var me *mysqlwire.Error
+	if !errors.As(err, &me) {
+		id := e.c.ConnectionID()
+		e.c.Close()
+		c, cerr := mysqlwire.Connect(ctx, e.cfg)
+		if cerr != nil {
+			return fmt.Errorf("could not drop the scratch database %s: %w", e.db, cerr)
+		}
+		defer c.Close()
+		c.Query(ctx, fmt.Sprintf("KILL %d", id))
+		c.Query(ctx, "SET SESSION lock_wait_timeout = 10")
+		if _, err = c.Query(ctx, drop); err == nil {
+			return nil
+		}
+	} else {
+		e.c.Close()
+	}
+	return fmt.Errorf("could not drop the scratch database %s: %w", e.db, err)
+}
+
+// otherDatabase returns the first database in others that the tokens name
+// as the qualifier of a table, view or routine (db.t, `db`.`t`, db.t.col),
+// or "".
+func otherDatabase(ts []sqltext.Token, others map[string]bool) string {
+	for i := 0; i+2 < len(ts); i++ {
+		if isName(ts[i]) && ts[i+1].IsOp(".") && (i == 0 || !ts[i-1].IsOp(".")) {
+			if n := identName(ts[i]); others[strings.ToLower(n)] {
+				return n
+			}
+		}
+	}
+	return ""
 }

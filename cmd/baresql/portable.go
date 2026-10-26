@@ -233,6 +233,12 @@ func runCompare(ctx context.Context, args []string, stdout, stderr io.Writer) in
 		fmt.Fprintf(stderr, "baresql compare: %v\n", err)
 		return 2
 	}
+	for _, sc := range scripts {
+		if strings.HasPrefix(sc.SQL, "SQLite format 3\x00") {
+			fmt.Fprintf(stderr, "baresql compare: %s is an SQLite database, not SQL; to start from a copy of it, write --sqlite=%s\n", sc.Name, sc.Name)
+			return 2
+		}
+	}
 	engines := make([]portable.Engine, len(ops))
 	errs := make([]error, len(ops))
 	var wg sync.WaitGroup
@@ -245,9 +251,11 @@ func runCompare(ctx context.Context, args []string, stdout, stderr io.Writer) in
 	}
 	wg.Wait()
 	defer func() {
-		for _, e := range engines {
+		for i, e := range engines {
 			if e != nil {
-				e.Close()
+				if err := e.Close(); err != nil {
+					fmt.Fprintf(stderr, "baresql compare: %s: %v\n", ops[i].name, err)
+				}
 			}
 		}
 	}()

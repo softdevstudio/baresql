@@ -1,6 +1,9 @@
 package sqltext
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // Statement is one SQL statement of a script.
 type Statement struct {
@@ -24,8 +27,103 @@ func (s Statement) Significant() []Token {
 // Split cuts a script into statements at semicolons outside strings,
 // identifiers, comments and the BEGIN ... END bodies of triggers and
 // procedures. Empty statements are dropped.
+//
+// A line DELIMITER // (the mysql program's command) makes // end the
+// statements that follow, until DELIMITER ; puts the semicolon back; the
+// DELIMITER lines themselves are no statements.
 func Split(src string) []Statement {
-	toks := Tokenize(src)
+	locs := delimiterLine.FindAllStringSubmatchIndex(src, -1)
+	if len(locs) == 0 {
+		return splitTokens(src, Tokenize(src), true)
+	}
+	var out []Statement
+	delim, prev := ";", 0
+	for _, m := range locs {
+		out = append(out, splitSegment(src, prev, m[0], delim)...)
+		delim, prev = src[m[2]:m[3]], m[1]
+	}
+	return append(out, splitSegment(src, prev, len(src), delim)...)
+}
+
+var delimiterLine = regexp.MustCompile(`(?im)^[ \t]*DELIMITER[ \t]+(\S+)[ \t]*\r?$`)
+
+// splitSegment splits src[from:to], where statements end with delim.
+func splitSegment(src string, from, to int, delim string) []Statement {
+	if delim == ";" {
+		return splitTokens(src, tokenizeAt(src, from, to), true)
+	}
+	var out []Statement
+	start := from
+	for _, end := range delimiterStops(src[from:to], delim) {
+		out = append(out, splitTokens(src, tokenizeAt(src, start, from+end), false)...)
+		start = from + end + len(delim)
+	}
+	return append(out, splitTokens(src, tokenizeAt(src, start, to), false)...)
+}
+
+// delimiterStops finds delim outside quotes and comments, the way the
+// mysql program does: '...', "..." and `...` with backslash escapes, and
+// /* */, # and -- comments.
+func delimiterStops(s, delim string) []int {
+	var out []int
+	for i := 0; i < len(s); {
+		switch c := s[i]; {
+		case strings.HasPrefix(s[i:], delim):
+			out = append(out, i)
+			i += len(delim)
+		case c == '\'' || c == '"' || c == '`':
+			j := i + 1
+			for j < len(s) && s[j] != c {
+				if s[j] == '\\' && c != '`' {
+					j++
+				}
+				j++
+			}
+			i = j + 1
+		case strings.HasPrefix(s[i:], "/*"):
+			end := strings.Index(s[i+2:], "*/")
+			if end < 0 {
+				return out
+			}
+			i += 2 + end + 2
+		case c == '#', strings.HasPrefix(s[i:], "-- "), strings.HasPrefix(s[i:], "--\t"), strings.HasPrefix(s[i:], "--\n"):
+			nl := strings.IndexByte(s[i:], '\n')
+			if nl < 0 {
+				return out
+			}
+			i += nl
+		default:
+			i++
+		}
+	}
+	return out
+}
+
+// tokenizeAt tokenizes src[from:to] with positions, lines and columns that
+// count from the start of src.
+func tokenizeAt(src string, from, to int) []Token {
+	line, col := 1, 1
+	for _, r := range src[:from] {
+		if r == '\n' {
+			line, col = line+1, 1
+		} else {
+			col++
+		}
+	}
+	ts := Tokenize(src[from:to])
+	for i := range ts {
+		if ts[i].Line == 1 {
+			ts[i].Col += col - 1
+		}
+		ts[i].Line += line - 1
+		ts[i].Pos += from
+	}
+	return ts
+}
+
+// splitTokens cuts tokens of src into statements; with semicolons false
+// the tokens are one statement whatever they hold.
+func splitTokens(src string, toks []Token, semicolons bool) []Statement {
 	var out []Statement
 	start := -1 // index of the first significant token of the current statement
 	depth := 0  // BEGIN ... END nesting inside a trigger or procedure body
@@ -54,7 +152,7 @@ func Split(src string) []Statement {
 		if !t.Significant() {
 			continue
 		}
-		if t.Kind == Punct && t.Text == ";" && depth == 0 {
+		if t.Kind == Punct && t.Text == ";" && depth == 0 && semicolons {
 			flush(i)
 			continue
 		}

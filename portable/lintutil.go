@@ -554,9 +554,30 @@ func (c *lintCtx) createTable() (defs []columnDef, open, close int) {
 	return defs, open, close
 }
 
+// constraintStart reports whether the definition at s is a constraint or
+// an index rather than a column. KEY and INDEX start an index only before
+// a column list, KEY (a), or a name and one, KEY k (a): key VARCHAR(50) is
+// a column named key.
+func (c *lintCtx) constraintStart(s int) bool {
+	t := c.ts[s]
+	if !t.Is("KEY") && !t.Is("INDEX") {
+		return isConstraintWord(t) || t.Is("FULLTEXT") || t.Is("SPATIAL") || t.Is("EXCLUDE")
+	}
+	n := c.at(s + 1)
+	switch {
+	case n.IsOp("("), n.Is("USING"):
+		return true
+	case isName(n) && c.at(s+2).IsOp("("):
+		return isName(c.at(s + 3))
+	case isName(n) && c.at(s+2).Is("USING"):
+		return true
+	}
+	return false
+}
+
 func (c *lintCtx) columnDef(s, e int) columnDef {
 	d := columnDef{name: s, typ: -1, typEnd: -1, end: e}
-	if isConstraintWord(c.ts[s]) || c.ts[s].Is("FULLTEXT") || c.ts[s].Is("SPATIAL") || c.ts[s].Is("EXCLUDE") {
+	if c.constraintStart(s) {
 		d.constraint = true
 		return d
 	}
@@ -737,6 +758,10 @@ func (c *lintCtx) alias(item [2]int) (string, int, int) {
 		prev := c.ts[e-1]
 		if prev.IsOp(")") || prev.Kind == sqltext.Number || prev.Kind == sqltext.String || isName(prev) && !boundaryWord[prev.Upper()] || prev.Is("END") {
 			if c.ts[e].Kind == sqltext.Word && (boundaryWord[c.ts[e].Upper()] || c.ts[e].Is("END")) {
+				return "", -1, e
+			}
+			// The unit of INTERVAL '1' DAY is no alias.
+			if intervalUnits[c.ts[e].Upper()] && e >= s+2 && c.ts[e-2].Is("INTERVAL") {
 				return "", -1, e
 			}
 			return identName(c.ts[e]), e, e - 1
