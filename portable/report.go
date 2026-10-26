@@ -213,7 +213,8 @@ func writeAnswer(w io.Writer, label string, a *Answer, query bool) {
 func oneLineSQL(s string, n int) string {
 	var b strings.Builder
 	for _, t := range sqltext.Tokenize(s) {
-		if t.Kind == sqltext.Comment && !strings.HasPrefix(t.Text, "/*") {
+		// --1 stays as written: MySQL reads it as two minus signs.
+		if t.Kind == sqltext.Comment && !strings.HasPrefix(t.Text, "/*") && !(strings.HasPrefix(t.Text, "--") && len(t.Text) > 2 && t.Text[2] > ' ') {
 			text := strings.TrimSpace(strings.TrimLeft(t.Text, "-#"))
 			b.WriteString("/* " + strings.ReplaceAll(text, "*/", "* /") + " */")
 			continue

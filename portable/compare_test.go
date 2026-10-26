@@ -195,8 +195,17 @@ func TestSkipReason(t *testing.T) {
 		"SELECT table_name FROM information_schema.tables":   "",
 		"SELECT 'prod.users', 1.5":                           "",
 		"SELECT x FROM t -- prod.users":                      "",
+		// A table named like a database is a table where a column goes.
+		"SELECT prod.id FROM prod":                        "",
+		"SELECT p.id FROM prod AS p JOIN prod.t ON 1 = 1": "prod",
+		"UPDATE prod SET prod.x = 1":                      "",
+		"INSERT INTO prod.t SELECT prod.x FROM prod":      "prod",
+		"SELECT prod.users.name FROM prod":                "prod",
+		"SELECT prod.f(1)":                                "prod",
+		"CALL prod.p()":                                   "prod",
+		"SELECT t.x FROM t JOIN u ON prod.y = 1":          "prod",
 	} {
-		got := otherDatabase(significant(sqltext.Tokenize(sqltext.MySQLCode(sql))), others)
+		got := otherDatabase(significant(sqltext.Tokenize(sqltext.MySQLCode(sql))), others, func(n string) bool { return n == "test" })
 		if got != want {
 			t.Errorf("%s: other database %q, want %q", sql, got, want)
 		}

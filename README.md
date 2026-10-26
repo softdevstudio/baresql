@@ -384,8 +384,9 @@ sqlite3 gets nothing that SQLite would read as two statements, and MySQL
 and MariaDB refuse more than one by themselves, since BareSQL's client never
 asks for multi-statements. On MySQL and MariaDB, where changes can't be
 undone, compare also refuses every statement that names a table in another
-database (`other_db.t`, anywhere in the statement); the list of databases
-comes from the server when compare starts.
+database (`other_db.t` where a table goes, `other_db.t.col` anywhere); the
+list of databases comes from the server when compare starts. A table of the
+script that happens to share a database's name still works as a table.
 
 A statement may run for 60 seconds on every engine (PostgreSQL's
 statement_timeout, MySQL's max_execution_time for SELECT, MariaDB's
@@ -516,7 +517,8 @@ Rule codes never change.
 - Some differences have no rule yet: ALTER TABLE syntax (ALTER COLUMN ...
   TYPE, MODIFY, CHANGE), names that are reserved words on some engines
   (user, key, rank, groups), aggregate FILTER (WHERE ...), FROM DUAL,
-  TRIM(LEADING ... FROM ...) and SUBSTRING(x FROM ... FOR ...), the digits
+  TRIM(LEADING ... FROM ...) and SUBSTRING(x FROM ... FOR ...), DROP TABLE
+  ... CASCADE (SQLite), CAST(x AS DOUBLE PRECISION) (MariaDB), the digits
   of AVG over integers, ROUND of floating point halves (SQLite rounds 2.5
   away from zero, the others to even), and GROUP BY and DISTINCT under MySQL's case
   folding. compare shows them when they come up.

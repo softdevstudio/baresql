@@ -787,7 +787,7 @@
     "summary": "GREATEST and LEAST are missing on SQLite, skip NULL on PostgreSQL and return NULL on MySQL and MariaDB.",
     "detail": "GREATEST(1, NULL) is 1 on PostgreSQL and NULL on MySQL and MariaDB. SQLite has the same idea under the names MAX(a, b) and MIN(a, b) with two or more arguments; they return NULL when any argument is NULL, and the other engines read MAX and MIN as aggregates.",
     "advice": "Write it out with CASE and say what NULL should do. CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a >= b THEN a ELSE b END skips NULL, as PostgreSQL's GREATEST does, on all four engines. A plain CASE WHEN a >= b THEN a ELSE b END answers b whenever the comparison meets a NULL, so it gives 5 for (NULL, 5) and NULL for (1, NULL).",
-    "setup": "CREATE TABLE t (id INTEGER, a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 1, NULL), (2, NULL, 5)",
+    "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 1, NULL), (2, NULL, 5)",
     "example": "SELECT GREATEST(a, b) FROM t ORDER BY id",
     "rewrite": "SELECT CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a >= b THEN a ELSE b END FROM t ORDER BY id"
   },

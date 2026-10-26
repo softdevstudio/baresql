@@ -212,4 +212,9 @@ func TestSplitDelimiter(t *testing.T) {
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Errorf("got\n%s\nwant\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
 	}
+	// A column named delimiter is no DELIMITER command.
+	sts := Split("CREATE TABLE t (\n  delimiter VARCHAR(10),\n  x INT\n);\nSELECT 7 / 2;\n")
+	if len(sts) != 2 || sts[1].Text != "SELECT 7 / 2" {
+		t.Errorf("column named delimiter: %q", sts)
+	}
 }

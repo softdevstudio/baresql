@@ -77,7 +77,7 @@ func (e *myEngine) Run(ctx context.Context, stmt string) (*Answer, error) {
 	// Changes on MySQL and MariaDB are not undone, so compare refuses every
 	// statement that names another database, read the way the server reads
 	// it (the code in /*! ... */ comments included).
-	if db := otherDatabase(significant(sqltext.Tokenize(sqltext.MySQLCode(stmt))), e.others); db != "" {
+	if db := otherDatabase(significant(sqltext.Tokenize(sqltext.MySQLCode(stmt))), e.others, e.localTable(ctx)); db != "" {
 		return &Answer{Err: "BareSQL compare refuses statements that name another database (" + db + "): it works only in its own scratch database"}, nil
 	}
 	qctx, cancel := context.WithTimeout(ctx, myClientLimit)
@@ -170,6 +170,15 @@ func myKind(c mysqlwire.Column) Kind {
 	return KindText
 }
 
+// localTable reports whether the scratch database holds a table or view
+// of that name (asked only when a name is also another database's).
+func (e *myEngine) localTable(ctx context.Context) func(string) bool {
+	return func(name string) bool {
+		res, err := e.c.Query(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND LOWER(table_name) = '"+strings.ReplaceAll(strings.ToLower(name), "'", "''")+"'")
+		return err == nil && len(res) > 0 && len(res[0].Rows) > 0 && res[0].Rows[0][0].String() != "0"
+	}
+}
+
 // Close drops the scratch database. When the session was lost (a statement
 // ran past the client limit), a new one kills the old session first.
 func (e *myEngine) Close() error {
@@ -200,16 +209,78 @@ func (e *myEngine) Close() error {
 	return fmt.Errorf("could not drop the scratch database %s: %w", e.db, err)
 }
 
-// otherDatabase returns the first database in others that the tokens name
-// as the qualifier of a table, view or routine (db.t, `db`.`t`, db.t.col),
-// or "".
-func otherDatabase(ts []sqltext.Token, others map[string]bool) string {
-	for i := 0; i+2 < len(ts); i++ {
-		if isName(ts[i]) && ts[i+1].IsOp(".") && (i == 0 || !ts[i-1].IsOp(".")) {
-			if n := identName(ts[i]); others[strings.ToLower(n)] {
-				return n
+// otherDatabase returns the first database in others that the statement
+// names. A name right where a table goes (after FROM, JOIN, INTO, UPDATE,
+// TABLE ... and in their comma lists) qualifies a table, so its qualifier
+// is a database. Elsewhere x.y is a table's column, unless x is no table
+// or alias of the statement and none of the scratch database (local); a
+// third part, db.t.col, always names a database.
+func otherDatabase(ts []sqltext.Token, others map[string]bool, local func(string) bool) string {
+	isCreate := len(ts) > 0 && ts[0].Is("CREATE")
+	tableAt := map[int]bool{}
+	names := map[string]bool{} // tables and aliases the statement uses unqualified
+	skip := map[string]bool{"IF": true, "NOT": true, "EXISTS": true, "ONLY": true, "IGNORE": true, "INTO": true,
+		"LOW_PRIORITY": true, "DELAYED": true, "HIGH_PRIORITY": true, "QUICK": true, "LATERAL": true, "TEMPORARY": true}
+	starts := map[string]bool{"FROM": true, "JOIN": true, "INTO": true, "UPDATE": true, "TABLE": true, "TABLES": true,
+		"TRUNCATE": true, "REPLACE": true, "INSERT": true, "TO": true, "USING": true, "CALL": true, "DELETE": true}
+	for i := 0; i < len(ts); i++ {
+		w := ts[i].Upper()
+		if ts[i].Kind != sqltext.Word || !(starts[w] || w == "ON" && isCreate) {
+			continue
+		}
+		j := i + 1
+		for {
+			for j < len(ts) && ts[j].Kind == sqltext.Word && skip[ts[j].Upper()] {
+				j++
 			}
+			if j >= len(ts) || !isName(ts[j]) {
+				break
+			}
+			tableAt[j] = true
+			k := j
+			for k+2 < len(ts) && ts[k+1].IsOp(".") && isName(ts[k+2]) {
+				k += 2
+			}
+			if k == j {
+				names[strings.ToLower(identName(ts[j]))] = true
+			}
+			k++
+			if k < len(ts) && ts[k].Is("AS") {
+				k++
+			}
+			if k < len(ts) && isName(ts[k]) && !(ts[k].Kind == sqltext.Word && tableRefEnd[ts[k].Upper()]) {
+				names[strings.ToLower(identName(ts[k]))] = true
+				k++
+			}
+			if k < len(ts) && ts[k].IsOp(",") {
+				j = k + 1
+				continue
+			}
+			break
+		}
+	}
+	for i := 0; i+2 < len(ts); i++ {
+		if !isName(ts[i]) || !ts[i+1].IsOp(".") || i > 0 && ts[i-1].IsOp(".") {
+			continue
+		}
+		n := identName(ts[i])
+		x := strings.ToLower(n)
+		if !others[x] {
+			continue
+		}
+		threePart := i+4 < len(ts) && ts[i+3].IsOp(".") && isName(ts[i+4])
+		if threePart || tableAt[i] || !names[x] && (local == nil || !local(x)) {
+			return n
 		}
 	}
 	return ""
+}
+
+// tableRefEnd: words that end a table reference instead of naming an alias.
+var tableRefEnd = map[string]bool{
+	"WHERE": true, "SET": true, "ON": true, "USING": true, "JOIN": true, "INNER": true, "LEFT": true, "RIGHT": true,
+	"FULL": true, "CROSS": true, "NATURAL": true, "STRAIGHT_JOIN": true, "GROUP": true, "ORDER": true, "HAVING": true,
+	"LIMIT": true, "UNION": true, "VALUES": true, "VALUE": true, "SELECT": true, "TO": true, "AS": true, "PARTITION": true,
+	"WINDOW": true, "FOR": true, "LOCK": true, "INTO": true, "RETURNING": true, "DEFAULT": true, "FROM": true,
+	"OUTER": true, "USE": true, "FORCE": true, "IGNORE": true, "WITH": true, "LIKE": true, "ENGINE": true,
 }

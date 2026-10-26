@@ -39,10 +39,37 @@ func Split(src string) []Statement {
 	var out []Statement
 	delim, prev := ";", 0
 	for _, m := range locs {
+		if !atBoundary(src[prev:m[0]], delim) {
+			continue // inside a statement, such as a column named delimiter
+		}
 		out = append(out, splitSegment(src, prev, m[0], delim)...)
 		delim, prev = src[m[2]:m[3]], m[1]
 	}
 	return append(out, splitSegment(src, prev, len(src), delim)...)
+}
+
+// atBoundary reports whether seg ends between statements: after its last
+// delimiter there is nothing but space and comments.
+func atBoundary(seg, delim string) bool {
+	if delim == ";" {
+		var last Token
+		for _, t := range Tokenize(seg) {
+			if t.Significant() {
+				last = t
+			}
+		}
+		return last.Text == "" || last.Kind == Punct && last.Text == ";"
+	}
+	rest := seg
+	if stops := delimiterStops(seg, delim); len(stops) > 0 {
+		rest = seg[stops[len(stops)-1]+len(delim):]
+	}
+	for _, t := range Tokenize(rest) {
+		if t.Significant() {
+			return false
+		}
+	}
+	return true
 }
 
 var delimiterLine = regexp.MustCompile(`(?im)^[ \t]*DELIMITER[ \t]+(\S+)[ \t]*\r?$`)

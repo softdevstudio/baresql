@@ -148,7 +148,7 @@ func skipReason(st sqltext.Statement) string {
 		return "empty"
 	}
 	if m := fileFunctionRe.FindStringSubmatch(strings.ToLower(st.Text)); m != nil {
-		return strings.ToUpper(m[2]) + " reads files on the machine it runs on"
+		return "the statement mentions " + strings.ToUpper(m[2]) + "(), which reads files on the machine it runs on"
 	}
 	// MySQL and MariaDB run the code inside /*! ... */ comments and end
 	// strings and comments by their own rules, so the statement is also
