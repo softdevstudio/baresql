@@ -4,4 +4,4 @@ package baresql
 
 // Version is the BareSQL release. VERSION and CHANGELOG.md must agree with it
 // (scripts/check-version.sh). A version ending in -dev is never released.
-const Version = "0.1.0"
+const Version = "0.2.0-dev"
