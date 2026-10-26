@@ -116,10 +116,12 @@ sampling). It never writes and rolls the transaction back at the end.
 
 It never calls a function you wrote. Views are read from their stored
 query trees, never run. Sampling reads tables and materialized views only,
-each one with `ONLY`, so a partition or a child table is read as itself and
-never through its parent, and a foreign table is never read at all, not
-even as a partition (reading one would connect to another server or run a
-program). Values are turned into text by their type's own output function
+each one on its own with `ONLY`, and a foreign table is never read at all,
+not even as a partition (reading one would connect to another server or run
+a program). A partition or child table that the auditing login may not read
+on its own is sampled through its top parent instead, in one query without
+`ONLY`, and only when no foreign table hangs anywhere below that parent.
+Values are turned into text by their type's own output function
 (`format('%s', column)`), never by a cast, since the owner of a type can
 attach a function of their own to its cast to text. Types whose output
 function isn't built in are left out, and so are binary columns and
@@ -294,6 +296,8 @@ grows. `--format json` gives the comparison as JSON.
   on a route, and does not evaluate the policies' conditions.
 - Write access is listed per table and not followed through views or
   functions.
+- Phone numbers stored in arrays (`text[]`) are recognized by the column's
+  name only, such as `phone_numbers`, never by their values.
 - A parent table whose partitions or children include foreign tables is
   listed as readable: whether a query on it reaches the foreign ones
   depends on the query (partition pruning), and a foreign-data wrapper's
