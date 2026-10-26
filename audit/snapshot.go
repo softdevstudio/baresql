@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/softdevstudio/baresql/internal/pgwire"
 )
@@ -96,8 +97,12 @@ type Relation struct {
 	// Lineage of each view or materialized view column, by attnum.
 	Lineage    map[int]colLineage
 	LineageErr string
-	// Needs: every column a view's query reads under permission checks.
-	Needs []colRef
+	// Needs: every privilege a view's query is checked for when read.
+	Needs []viewNeed
+	// Foreign tables: the server they read from, and its wrapper.
+	ForeignServer uint32
+	ServerName    string
+	FDW           string
 }
 
 type Column struct {
@@ -254,7 +259,7 @@ func Load(ctx context.Context, c *pgwire.Conn, opt Options) (*Snapshot, error) {
 		Relations: map[uint32]*Relation{}, Inherits: map[uint32][]uint32{},
 	}}
 	steps := []func() error{l.server, l.roles, l.memberships, func() error { return l.schemas(opt.Schemas) },
-		l.relations, l.columns, l.views, l.policies, l.functions, l.defaultACLs, l.mappings, l.inherits}
+		l.relations, l.columns, l.views, l.policies, l.functions, l.defaultACLs, l.mappings, l.inherits, l.foreignTables}
 	for _, step := range steps {
 		if err := step(); err != nil {
 			return nil, err
@@ -704,6 +709,22 @@ func (l *loader) mappings() error {
 	return nil
 }
 
+func (l *loader) foreignTables() error {
+	rows, err := l.query(`SELECT ft.ftrelid, s.oid, s.srvname, w.fdwname
+		FROM pg_catalog.pg_foreign_table ft
+		JOIN pg_catalog.pg_foreign_server s ON s.oid = ft.ftserver
+		JOIN pg_catalog.pg_foreign_data_wrapper w ON w.oid = s.srvfdw`)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		if rel := l.snap.Relations[u32(r[0])]; rel != nil {
+			rel.ForeignServer, rel.ServerName, rel.FDW = u32(r[1]), r[2].String(), r[3].String()
+		}
+	}
+	return nil
+}
+
 func (l *loader) inherits() error {
 	rows, err := l.query(`SELECT inhrelid, inhparent FROM pg_catalog.pg_inherits ORDER BY inhrelid, inhseqno`)
 	if err != nil {
@@ -725,18 +746,24 @@ func (s *Snapshot) QualifiedName(rel *Relation) string {
 	return quoteIdent(schema) + "." + quoteIdent(rel.Name)
 }
 
-// RoleName returns a role's name, PUBLIC for 0.
+// RoleName returns a role's name as reports show it, PUBLIC for 0. A name
+// that isn't plain lower case is quoted, as in SQL, so a real role named
+// "PUBLIC" never reads as the PUBLIC pseudo-role.
 func (s *Snapshot) RoleName(oid uint32) string {
 	if oid == 0 {
 		return "PUBLIC"
 	}
 	if r := s.Roles[oid]; r != nil {
-		return r.Name
+		return quoteIdent(r.Name)
 	}
 	return fmt.Sprintf("(role %d)", oid)
 }
 
 // quoteIdent quotes an identifier unless it is a plain lower-case name.
+// Control and other unprintable characters are written as escapes (\n,
+// \x1b), so a name can't start a line of its own in text output or send
+// codes to a terminal; a name holding one also has its backslashes doubled,
+// so the escapes can't be faked.
 func quoteIdent(s string) string {
 	plain := s != ""
 	for i, ch := range s {
@@ -748,8 +775,47 @@ func quoteIdent(s string) string {
 	if plain && !reservedWord[s] {
 		return s
 	}
-	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+	q := strings.ReplaceAll(s, `"`, `""`)
+	if strings.IndexFunc(s, unprintable) >= 0 {
+		q = escapeText(strings.ReplaceAll(q, `\`, `\\`))
+	}
+	return `"` + q + `"`
 }
+
+func unprintable(r rune) bool { return !unicode.IsPrint(r) }
+
+// escapeText writes the unprintable characters of s as Go escapes.
+func escapeText(s string) string {
+	if strings.IndexFunc(s, unprintable) < 0 {
+		return s
+	}
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '\n':
+			b.WriteString(`\n`)
+		case r == '\r':
+			b.WriteString(`\r`)
+		case r == '\t':
+			b.WriteString(`\t`)
+		case unprintable(r) && r < 0x100:
+			fmt.Fprintf(&b, `\x%02x`, r)
+		case unprintable(r):
+			fmt.Fprintf(&b, `\u%04x`, r)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// cleanText is escapeText for free text printed to a terminal or a text
+// file: messages that may carry names, such as the server's own errors.
+func cleanText(s string) string { return escapeText(s) }
+
+// CleanText escapes the unprintable characters of a message for a
+// terminal: the CLI prints the server's errors through it.
+func CleanText(s string) string { return escapeText(s) }
 
 // reservedWord holds the keywords that can't be used as table or column
 // names without quotes (the common ones).

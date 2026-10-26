@@ -69,11 +69,15 @@ type ColumnReport struct {
 }
 
 type LoginReport struct {
-	Name       string   `json:"name"`
-	Attributes []string `json:"attributes"` // superuser, createrole, bypassrls ...
-	MemberOf   []string `json:"member_of"`  // direct memberships, with their options
-	CanSetRole []string `json:"can_set_role,omitempty"`
-	Password   string   `json:"password,omitempty"` // md5, scram-sha-256, none (superuser auditors only)
+	Name string `json:"name"`
+	// CannotConnect: the login may not connect to the audited database (no
+	// CONNECT privilege, or a connection limit of 0); its routes say so and
+	// give it nothing here.
+	CannotConnect bool     `json:"cannot_connect,omitempty"`
+	Attributes    []string `json:"attributes"` // superuser, createrole, bypassrls ...
+	MemberOf      []string `json:"member_of"`  // direct memberships, with their options
+	CanSetRole    []string `json:"can_set_role,omitempty"`
+	Password      string   `json:"password,omitempty"` // md5, scram-sha-256, none (superuser auditors only)
 
 	Read      []ColumnReach    `json:"read"`
 	Write     []TableWrite     `json:"write"`
@@ -81,6 +85,8 @@ type LoginReport struct {
 	Server    []ServerAccess   `json:"server"`
 	Mappings  []MappingAccess  `json:"foreign_servers"`
 	Summary   LoginSummary     `json:"summary"`
+
+	oid uint32 // the role, for findings; not in audit.json
 }
 
 type LoginSummary struct {

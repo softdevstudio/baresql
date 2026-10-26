@@ -16,7 +16,8 @@ func TestSplitName(t *testing.T) {
 		"date_of_birth":    "date of birth",
 		"ZIPCode":          "zip code",
 		"phone1":           "phone 1",
-		"Straße":           "straße",
+		"Straße":           "strasse",
+		"Prénom":           "prenom",
 		"__weird__name___": "weird name",
 	} {
 		if got := strings.Join(splitName(in), " "); got != want {
@@ -66,6 +67,48 @@ func TestNameCategories(t *testing.T) {
 		{"orders", "address_id", ""},
 		{"orders", "zip", "address"},
 		{"orders", "tracking_number", ""},
+		// From the independent review: names it missed, and false alarms.
+		{"orders", "customer_name", "name"},
+		{"payments", "cardholder_name", "name"},
+		{"users", "display_name", "name"},
+		{"users", "fname", "name"},
+		{"users", "lname", "name"},
+		{"orders", "billing_name", "name"},
+		{"addresses", "street_name", "address"},
+		{"kunden", "telefonnummer", "phone"},
+		{"kunden", "handynummer", "phone"},
+		{"kunden", "emailadresse", "email"},
+		{"kunden", "lieferadresse", "address"},
+		{"kunden", "postleitzahl", "address"},
+		{"kunden", "geburtstag", "birth-date"},
+		{"kunden", "straße", "address"},
+		{"clientes", "correo", "email"},
+		{"clientes", "correo_electronico", "email"},
+		{"clientes", "celular", "phone"},
+		{"clientes", "contraseña", "password"},
+		{"clientes", "teléfono", "phone"},
+		{"clients", "prénom", "name"},
+		{"clients", "téléphone", "phone"},
+		{"clients", "courriel", "email"},
+		{"clients", "nom", "name"},
+		{"produits", "nom", ""},
+		{"clienti", "cellulare", "phone"},
+		{"clienti", "nome", "name"},
+		{"klanten", "naam", "name"},
+		{"clientes", "telefone", "phone"},
+		{"clientes", "endereco", "address"},
+		{"klienci", "nazwisko", "name"},
+		{"klienci", "imię", "name"},
+		{"uploads", "zip_file", ""},
+		{"orders", "zip_code", "address"},
+		{"customers", "pan", "card"},
+		{"customers", "pan_card", "tax-id"},
+		{"cameras", "pan_angle", ""},
+		{"vendors", "tin", "tax-id"},
+		{"vendors", "tin_number", "tax-id"},
+		{"materials", "tin_plate", ""},
+		{"services", "health_score", ""},
+		{"trials", "treatment_arm", ""},
 		{"mail", "mail_server", ""},
 	} {
 		got := strings.Join(nameCategories(tc.table, tc.column), ",")
@@ -89,7 +132,7 @@ func TestValueDetectors(t *testing.T) {
 	}
 	no := map[string][]string{
 		"email":       {"anna@", "@example.com", "not an email", "a@b"},
-		"phone":       {"2024-01-02", "192.168.1.1", "1234567", "12.50", "12345", "call me"},
+		"phone":       {"2024-01-02", "192.168.1.1", "1234567", "12.50", "12345", "call me", "123-45-6789", "978-3-16-148410-0", "0-306-40615-2"},
 		"card":        {"4111111111111112", "1234567812345678", "4111", g.notCard()},
 		"iban":        {"DE89370400440532013001", "XX89370400440532013000", "DE8937040044053201300"},
 		"ip":          {"999.1.1.1", "hello", "1234"},
@@ -221,5 +264,42 @@ func TestClassifyJSON(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(p.Evidence, "|"), "JSON key contact.email") {
 		t.Fatalf("evidence %v", p.Evidence)
+	}
+}
+
+// TestJSONKeysStayOut: keys can be data (maps keyed by email address or by
+// name). Evidence shows only column-name words and document structure, so
+// none of a sampled key reaches a report, and documents keyed by different
+// people collapse into one line.
+func TestJSONKeysStayOut(t *testing.T) {
+	st := newStats()
+	st.add(`{"by_user":{"alice.smith@example.com":{"email":"alice.smith@example.com"}}}`, true)
+	st.add(`{"by_user":{"bob.jones@example.org":{"email":"bob.jones@example.org"}}}`, true)
+	st.add(`{"tokens":{"Carol Danvers +1-202-555-0143":"ghp_`+strings.Repeat("a1B2", 9)+`"}, "ssn-101-45-6789": "x"}`, true)
+	p := classify("prefs", &Column{Name: "data", Type: "jsonb", JSON: true}, st)
+	if p == nil {
+		t.Fatal("nothing found")
+	}
+	ev := strings.Join(p.Evidence, "|")
+	for _, leak := range []string{"alice", "bob", "example", "Carol", "202", "ssn-101", "45-6789"} {
+		if strings.Contains(ev, leak) {
+			t.Errorf("evidence shows %q from a sampled key: %v", leak, p.Evidence)
+		}
+	}
+	for _, want := range []string{"JSON key *.*.email holds email address in 2 of 3 sampled values",
+		"JSON key tokens.* holds key, token or secret in 1 of 3 sampled values"} {
+		if !strings.Contains(ev, want) {
+			t.Errorf("evidence lacks %q: %v", want, p.Evidence)
+		}
+	}
+	// Top-level arrays and scalars are classified too.
+	st = newStats()
+	for i := 0; i < 5; i++ {
+		st.add(`["a`+itoa(i)+`@example.com", "b`+itoa(i)+`@example.com"]`, true)
+	}
+	p = classify("events", &Column{Name: "data", Type: "jsonb", JSON: true}, st)
+	if p == nil || strings.Join(p.Categories, ",") != "email" ||
+		!strings.Contains(strings.Join(p.Evidence, "|"), "the top level of the JSON holds email address in 5 of 5") {
+		t.Fatalf("top-level array: %+v", p)
 	}
 }

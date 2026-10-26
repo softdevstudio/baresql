@@ -231,7 +231,8 @@ func dedupStrings(ss []string) []string {
 
 // WriteSummary prints the short text the CLI shows after an audit.
 func WriteSummary(w io.Writer, res *Result) {
-	fmt.Fprintf(w, "BareSQL Audit of %s (PostgreSQL %s) as %s\n", res.Server.Database, res.Server.Version, res.Server.Auditor)
+	fmt.Fprintf(w, "BareSQL Audit of %s (PostgreSQL %s) as %s\n", quoteIdent(res.Server.Database), cleanText(res.Server.Version),
+		quoteIdent(res.Server.Auditor))
 	personal := 0
 	for _, l := range res.Logins {
 		if l.Summary.PersonalColumns > 0 {
@@ -267,10 +268,10 @@ func WriteSummary(w io.Writer, res *Result) {
 	}
 	fmt.Fprintf(w, "Findings: %d high, %d medium, %d low\n", counts["high"], counts["medium"], counts["low"])
 	for _, f := range res.Findings {
-		fmt.Fprintf(w, "  %-6s %-28s %s\n", f.Severity, f.Code, f.Subject)
+		fmt.Fprintf(w, "  %-6s %-28s %s\n", f.Severity, f.Code, cleanText(f.Subject))
 	}
 	for _, n := range res.NotSeen {
-		fmt.Fprintf(w, "Not seen: %s: %s\n", n.What, n.Why)
+		fmt.Fprintf(w, "Not seen: %s: %s\n", cleanText(n.What), cleanText(n.Why))
 	}
 	if len(res.Mismatches) > 0 {
 		fmt.Fprintf(w, "BareSQL disagreed with the server %d times; see the report and please tell us.\n", len(res.Mismatches))

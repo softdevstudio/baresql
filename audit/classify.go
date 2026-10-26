@@ -171,8 +171,62 @@ func ibanInText(v string) bool {
 	return false
 }
 
+// structuralKeys are JSON keys that name a part of a document, never data:
+// they may be shown in evidence as they are.
+var structuralKeys = map[string]bool{
+	"address": true, "addresses": true, "billing": true, "shipping": true, "delivery": true, "contact": true,
+	"contacts": true, "profile": true, "details": true, "detail": true, "info": true, "data": true, "meta": true,
+	"metadata": true, "items": true, "item": true, "results": true, "result": true, "settings": true,
+	"preferences": true, "prefs": true, "attributes": true, "properties": true, "fields": true, "payload": true,
+	"body": true, "record": true, "records": true, "entries": true, "entry": true, "values": true, "value": true,
+	"identity": true, "personal": true, "owner": true, "sender": true, "holder": true, "emergency": true,
+}
+
+// keyWords are the words a JSON key shown in evidence may be made of: the
+// words of the name rules, document structure and the other words the
+// rules know. A key with any other word (alice, a number, an address) may
+// be data, and is shown as *.
+var keyWords = func() map[string]bool {
+	w := map[string]bool{}
+	for _, r := range nameRules {
+		for _, x := range r.words {
+			w[x] = true
+		}
+	}
+	for _, m := range []map[string]bool{structuralKeys, peopleTables, negativeWords} {
+		for x := range m {
+			w[x] = true
+		}
+	}
+	return w
+}()
+
+// shownKey is how a JSON key appears in evidence. Keys can be data (a map
+// keyed by email address or by name), so a key is shown only when every
+// word of it is one the rules know; the rest become *.
+func shownKey(key string) string {
+	if key == "" || len(key) > 40 {
+		return "*"
+	}
+	for _, r := range key {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '-') {
+			return "*"
+		}
+	}
+	for _, w := range splitName(key) {
+		switch {
+		case keyWords[w], len(w) > 3 && strings.HasSuffix(w, "s") && keyWords[strings.TrimSuffix(w, "s")]:
+		case len(w) <= 2 && strings.Trim(w, "0123456789") == "":
+		default:
+			return "*"
+		}
+	}
+	return key
+}
+
 // addJSON walks a JSON document (possibly cut short by the sample limit)
-// and classifies each key and string value by its path.
+// and classifies each key and string value by its path. Paths are kept in
+// the form evidence shows them (see shownKey); "$" is the top level.
 func (st *valueStats) addJSON(doc string) {
 	dec := json.NewDecoder(strings.NewReader(doc))
 	dec.UseNumber()
@@ -181,22 +235,32 @@ func (st *valueStats) addJSON(doc string) {
 		key string
 	}
 	var stack []frame
-	path := func(last string) string {
+	// path is the shown path of the current value; keys returns the real
+	// keys of its parent and of the value itself, for the name rules.
+	path := func() string {
 		var parts []string
 		for _, f := range stack {
 			if f.obj && f.key != "" {
-				parts = append(parts, f.key)
+				parts = append(parts, shownKey(f.key))
 			}
 		}
-		if last != "" {
-			parts = append(parts, last)
+		if len(parts) == 0 {
+			return "$"
 		}
 		return strings.Join(parts, ".")
+	}
+	keys := func() (parent, last string) {
+		for _, f := range stack {
+			if f.obj && f.key != "" {
+				parent, last = last, f.key
+			}
+		}
+		return parent, last
 	}
 	expectKey := false
 	seen := map[string]bool{} // count each path and category once per document
 	mark := func(p, cat string) {
-		if p == "" || seen[p+"\x00"+cat] {
+		if seen[p+"\x00"+cat] {
 			return
 		}
 		seen[p+"\x00"+cat] = true
@@ -232,7 +296,7 @@ func (st *valueStats) addJSON(doc string) {
 				expectKey = false
 				continue
 			}
-			p := path("")
+			p := path()
 			for _, d := range wholeDetectors(t) {
 				if c := detectorCategory(d); c != "" {
 					mark(p, c)
@@ -246,11 +310,13 @@ func (st *valueStats) addJSON(doc string) {
 			}
 			// The enclosing key gives the context a bare "name" needs:
 			// {"patient": {"name": ...}} is a person's name.
-			for _, c := range nameCategories(parentKey(p), lastKey(p)) {
-				mark(p, "name:"+c)
+			if parent, last := keys(); last != "" {
+				for _, c := range nameCategories(parent, last) {
+					mark(p, "name:"+c)
+				}
 			}
 		default: // numbers, booleans, null
-			p := path("")
+			p := path()
 			if n, ok := tok.(json.Number); ok && isCard(n.String()) {
 				mark(p, "card")
 			}
@@ -259,21 +325,6 @@ func (st *valueStats) addJSON(doc string) {
 			expectKey = true
 		}
 	}
-}
-
-func parentKey(p string) string {
-	i := strings.LastIndexByte(p, '.')
-	if i < 0 {
-		return ""
-	}
-	return lastKey(p[:i])
-}
-
-func lastKey(p string) string {
-	if i := strings.LastIndexByte(p, '.'); i >= 0 {
-		return p[i+1:]
-	}
-	return p
 }
 
 // detectorCategory maps a whole-value detector to the category it proves
@@ -375,15 +426,19 @@ func classify(table string, col *Column, st *valueStats) *Personal {
 				names = append(names, c)
 			}
 			sort.Strings(names)
+			where := "JSON key " + path
+			if path == "$" {
+				where = "the top level of the JSON"
+			}
 			for _, c := range names {
 				k := cats[c]
 				if strings.HasPrefix(c, "name:") {
 					cat := strings.TrimPrefix(c, "name:")
-					addEv(cat, "medium", fmt.Sprintf("JSON key %s (in %d of %d sampled values) is named like %s", path, k, n, CategoryLabel(cat)))
+					addEv(cat, "medium", fmt.Sprintf("%s (in %d of %d sampled values) is named like %s", where, k, n, CategoryLabel(cat)))
 					continue
 				}
 				if frac(k) >= 0.3 || c == "secret" {
-					addEv(c, "high", fmt.Sprintf("JSON key %s holds %s in %d of %d sampled values", path, CategoryLabel(c), k, n))
+					addEv(c, "high", fmt.Sprintf("%s holds %s in %d of %d sampled values", where, CategoryLabel(c), k, n))
 				}
 			}
 		}

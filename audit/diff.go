@@ -9,7 +9,7 @@ import (
 
 // Change is one difference between two audits.
 type Change struct {
-	Kind   string `json:"kind"` // read, personal, write, function, server, foreign-server, finding
+	Kind   string `json:"kind"` // read, personal, rows, write, function, server, foreign-server, route, finding
 	Login  string `json:"login,omitempty"`
 	Object string `json:"object"`
 	Detail string `json:"detail,omitempty"`
@@ -42,35 +42,117 @@ type fact struct {
 	kind, login, object string
 	cats                []string
 	routes              []string
+	scope               rowScope
+}
+
+// rowScope is how much of a table the routes of a fact let through.
+type rowScope struct {
+	all         bool            // a route that row security doesn't narrow
+	permissive  map[string]bool // policies that let rows through, on any route
+	restrictive map[string]bool // policies that narrow every route
+}
+
+// scopeOf reads the row security texts of routes that give rows.
+func scopeOf(routes []Route) rowScope {
+	var sc rowScope
+	first := true
+	for _, r := range routes {
+		rows := r.Rows
+		if rows == "" || strings.HasPrefix(rows, "all rows") {
+			sc.all = true
+			continue
+		}
+		rest, ok := strings.CutPrefix(rows, "rows allowed by policy ")
+		if !ok {
+			continue
+		}
+		perm, restr, _ := strings.Cut(rest, " and restricted by ")
+		if sc.permissive == nil {
+			sc.permissive = map[string]bool{}
+		}
+		for _, p := range strings.Split(perm, ", ") {
+			sc.permissive[p] = true
+		}
+		mine := map[string]bool{}
+		if restr != "" {
+			for _, p := range strings.Split(restr, ", ") {
+				mine[p] = true
+			}
+		}
+		if first {
+			sc.restrictive = mine
+			first = false
+			continue
+		}
+		for p := range sc.restrictive {
+			if !mine[p] {
+				delete(sc.restrictive, p)
+			}
+		}
+	}
+	return sc
+}
+
+// widened says how scope s lets more rows through than old, or "".
+func (s rowScope) widened(old rowScope) string {
+	if old.all {
+		return ""
+	}
+	if s.all {
+		return "row security no longer narrows it: all rows"
+	}
+	var more []string
+	for p := range s.permissive {
+		if !old.permissive[p] {
+			more = append(more, "policy "+p+" now lets rows through")
+		}
+	}
+	for p := range old.restrictive {
+		if !s.restrictive[p] {
+			more = append(more, "restrictive policy "+p+" no longer applies")
+		}
+	}
+	sort.Strings(more)
+	return strings.Join(more, "; ")
 }
 
 func facts(r *Result) map[string]fact {
 	out := map[string]fact{}
+	// Routes that give nothing today aren't reach (row security with no
+	// policy, a view that fails, a schema the login can't use, a login that
+	// can't connect): when one starts to give rows, reach grows.
+	giving := func(rs []Route) []Route {
+		var out []Route
+		for _, r := range rs {
+			if r.GivesRows() {
+				out = append(out, r)
+			}
+		}
+		return out
+	}
 	for _, l := range append(append([]LoginReport{}, r.Logins...), r.Public) {
 		for _, c := range l.Read {
-			// Routes that give no rows today aren't reach: when one starts
-			// to give rows, reach grows.
-			var routes []Route
-			for _, r := range c.Routes {
-				if r.GivesRows() {
-					routes = append(routes, r)
-				}
-			}
+			routes := giving(c.Routes)
 			if len(routes) == 0 {
 				continue
 			}
-			f := fact{kind: "read", login: l.Name, object: c.Relation + "." + quoteIdent(c.Column), routes: routeStrings(routes)}
+			f := fact{kind: "read", login: l.Name, object: c.Relation + "." + quoteIdent(c.Column), routes: routeStrings(routes),
+				scope: scopeOf(routes)}
 			if c.Personal != nil {
 				f.cats = c.Personal.Categories
 			}
 			out[f.kind+"\x00"+f.login+"\x00"+f.object] = f
 		}
 		for _, w := range l.Write {
+			routes := giving(w.Routes)
+			if len(routes) == 0 {
+				continue
+			}
 			obj := w.Relation + " " + w.Privilege
 			if len(w.Columns) > 0 {
 				obj += "(" + strings.Join(w.Columns, ",") + ")"
 			}
-			f := fact{kind: "write", login: l.Name, object: obj, routes: routeStrings(w.Routes)}
+			f := fact{kind: "write", login: l.Name, object: obj, routes: routeStrings(routes), scope: scopeOf(routes)}
 			out[f.kind+"\x00"+f.login+"\x00"+f.object] = f
 		}
 		for _, fa := range l.Functions {
@@ -105,6 +187,9 @@ func Compare(old, new *Result) *Comparison {
 		if !ok {
 			c.Grew = append(c.Grew, Change{Kind: f.kind, Login: f.login, Object: f.object, Detail: detail(f)})
 			continue
+		}
+		if wider := f.scope.widened(o.scope); wider != "" {
+			c.Grew = append(c.Grew, Change{Kind: "rows", Login: f.login, Object: f.object, Detail: wider})
 		}
 		if gained := minus(f.cats, o.cats); len(gained) > 0 {
 			c.Grew = append(c.Grew, Change{Kind: "personal", Login: f.login, Object: f.object,
@@ -170,7 +255,7 @@ func (c *Comparison) Write(w io.Writer) {
 	section := func(title, mark string, cs []Change) {
 		fmt.Fprintf(w, "%s: %d\n", title, len(cs))
 		for _, ch := range cs {
-			fmt.Fprintf(w, "  %s %s\n", mark, ch.String())
+			fmt.Fprintf(w, "  %s %s\n", mark, cleanText(ch.String()))
 		}
 	}
 	section("Reach that grew", "+", c.Grew)

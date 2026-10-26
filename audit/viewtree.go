@@ -557,26 +557,38 @@ func targetExpr(q *tnode, resno int) *tnode {
 	return nil
 }
 
-// viewNeeds lists the columns a view's stored query reads under permission
+// viewNeed is one privilege PostgreSQL checks whenever a view is read: SELECT
+// on a column (or anyColumn: on at least one), and, for SELECT ... FOR
+// UPDATE and the like, UPDATE on a column or on at least one.
+type viewNeed struct {
+	Rel    uint32
+	Attnum int
+	Priv   string
+}
+
+// viewNeeds lists what a view's stored query reads under permission
 // checks: its range table entries' selectedCols (RTEPermissionInfo from
-// PostgreSQL 16 on), in the query and every subquery, sublink and CTE.
-// PostgreSQL checks all of them whenever anyone reads the view, even a
-// single column of it, and refuses the whole query when one is missing.
-// Attnum 0 is a whole-row reference, which needs every column; anyColumn
-// is a reference to the relation that reads no column (count(*)), which
-// needs SELECT on at least one.
-func viewNeeds(evAction string) ([]colRef, error) {
+// PostgreSQL 16 on), in the query and every subquery, sublink and CTE that
+// is referenced. PostgreSQL checks all of them whenever anyone reads the
+// view, even a single column of it, and refuses the whole query when one is
+// missing. Attnum 0 is a whole-row reference, which needs every column;
+// anyColumn is a reference to the relation that reads no column (count(*)),
+// which needs SELECT on at least one. A CTE nothing references is never
+// planned, so its tables aren't checked.
+func viewNeeds(evAction string) ([]viewNeed, error) {
 	root, err := parseNodeTree(evAction)
 	if err != nil {
 		return nil, err
 	}
-	var out []colRef
+	var out []viewNeed
 	var walk func(n *tnode, depth int)
 	walk = func(n *tnode, depth int) {
 		if n == nil || depth > maxTreeDepth {
 			return
 		}
 		switch {
+		case n.typ == "COMMONTABLEEXPR" && n.field("cterefcount") != nil && n.int("cterefcount") == 0:
+			return
 		case n.typ == "RTEPERMISSIONINFO": // 16 and later
 			addNeeds(n, &out)
 		case (n.typ == "RANGETBLENTRY" || n.typ == "RTE") && n.field("requiredPerms") != nil && n.int("rtekind") == 0:
@@ -591,43 +603,64 @@ func viewNeeds(evAction string) ([]colRef, error) {
 		}
 	}
 	walk(root, 0)
-	return dedupRefs(out), nil
+	return dedupNeeds(out), nil
 }
 
 // Column sets in node trees hold attnum - FirstLowInvalidHeapAttributeNumber
-// (-7 since PostgreSQL 12); ACL_SELECT is bit 1 of requiredPerms.
+// (-7 since PostgreSQL 12); ACL_SELECT is bit 1 of requiredPerms and
+// ACL_UPDATE bit 2.
 const (
 	firstLowInvalidAttnum = -7
 	aclSelect             = 1 << 1
+	aclUpdate             = 1 << 2
 	anyColumn             = -1
 )
 
-func addNeeds(n *tnode, out *[]colRef) {
-	if n.int("requiredPerms")&aclSelect == 0 {
+func addNeeds(n *tnode, out *[]viewNeed) {
+	perms := n.int("requiredPerms")
+	if perms&(aclSelect|aclUpdate) == 0 {
 		return // the OLD and NEW placeholders of a view's rule, before 16
 	}
 	rel, err := strconv.ParseUint(n.str("relid"), 10, 32)
 	if err != nil || rel == 0 {
 		return
 	}
-	cols := n.field("selectedCols")
-	if cols == nil {
-		return
-	}
-	found := false
-	for _, m := range cols.list {
-		k, err := strconv.Atoi(m.atom)
-		if err != nil {
-			continue // the "b" that starts a bitmapset
+	add := func(field, priv string) {
+		found := false
+		if cols := n.field(field); cols != nil {
+			for _, m := range cols.list {
+				k, err := strconv.Atoi(m.atom)
+				if err != nil {
+					continue // the "b" that starts a bitmapset
+				}
+				found = true
+				if attnum := k + firstLowInvalidAttnum; attnum >= 0 {
+					*out = append(*out, viewNeed{uint32(rel), attnum, priv})
+				}
+			}
 		}
-		found = true
-		if attnum := k + firstLowInvalidAttnum; attnum >= 0 {
-			*out = append(*out, colRef{uint32(rel), attnum})
+		if !found {
+			*out = append(*out, viewNeed{uint32(rel), anyColumn, priv})
 		}
 	}
-	if !found {
-		*out = append(*out, colRef{uint32(rel), anyColumn})
+	if perms&aclSelect != 0 {
+		add("selectedCols", "SELECT")
 	}
+	if perms&aclUpdate != 0 {
+		add("updatedCols", "UPDATE")
+	}
+}
+
+func dedupNeeds(ns []viewNeed) []viewNeed {
+	seen := map[viewNeed]bool{}
+	var out []viewNeed
+	for _, n := range ns {
+		if !seen[n] {
+			seen[n] = true
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 func dedupRefs(refs []colRef) []colRef {

@@ -64,6 +64,9 @@ files:
 It also prints a short summary. Values read while looking for personal
 data are never written anywhere: the report says which category a column
 looks like (an email address, a card number) and why, never what it holds.
+JSON keys can be data too (a map keyed by email address), so evidence names
+a key only when it is a word the column-name rules know, such as `email`
+or `contact`, and shows any other key as `*`: `JSON key *.email`.
 
 ### Connecting
 
@@ -92,8 +95,9 @@ role, and the server's own `has_*_privilege` functions answer for every
 role. Two things need more:
 
 - Looking at values (to tell an `email` column from one named `notes` that
-  holds email addresses) needs read access to the tables. A superuser, or a
-  member of `pg_read_all_data`, can sample everything; another login samples
+  holds email addresses) needs read access to the tables. A superuser can
+  sample everything. A member of `pg_read_all_data` samples every table
+  except those where row security applies to it, and another login samples
   what it may read.
 - Telling MD5 passwords from SCRAM needs a superuser, who can read
   `pg_authid`.
@@ -104,13 +108,22 @@ and the summary, so a partial audit says what it left out.
 ### What the audit does to the database
 
 It opens one connection, starts a read-only transaction (`BEGIN ISOLATION
-LEVEL REPEATABLE READ, READ ONLY`), sets `statement_timeout`, `lock_timeout`
-and `search_path` for that transaction only, and turns row security off for
-its own sampling queries (a non-superuser then sees an error instead of
-silently filtered rows, and the table is left out of sampling). It never
-writes, never calls user-defined functions (views are read from their stored query trees, and sampling
-reads tables and materialized views only) and rolls the transaction back
-at the end.
+LEVEL REPEATABLE READ, READ ONLY`), sets `statement_timeout`, `lock_timeout`,
+`search_path` and `DateStyle` for that transaction only, and turns row
+security off for its own sampling queries (a non-superuser then sees an
+error instead of silently filtered rows, and the table is left out of
+sampling). It never writes and rolls the transaction back at the end.
+
+It never calls a function you wrote. Views are read from their stored
+query trees, never run. Sampling reads tables and materialized views only,
+each one with `ONLY`, so a partition or a child table is read as itself and
+never through its parent, and a foreign table is never read at all, not
+even as a partition (reading one would connect to another server or run a
+program). Values are turned into text by their type's own output function
+(`format('%s', column)`), never by a cast, since the owner of a type can
+attach a function of their own to its cast to text. Types whose output
+function isn't built in are left out, and so are binary columns and
+virtual generated columns.
 
 ### Flags
 
@@ -134,38 +147,67 @@ words:
   a role the login belongs to (here through two levels of membership).
   `column granted to` marks a column-level grant.
 - `owner app`: the login owns the table, or belongs to the role that does.
+  An owner holds what the table's access list gives it, so one that revoked
+  its own privileges has only what it granted itself back.
 - `member of pg_read_all_data` (PostgreSQL 14 and later).
 - `superuser`.
 - `after SET ROLE admin: ...`: membership without inheritance (`NOINHERIT`,
   or `INHERIT FALSE` on PostgreSQL 16 and later) still lets the login switch
-  roles.
+  roles. Superuser and `BYPASSRLS` never pass to members, so SET ROLE to a
+  role that has them is listed even when the login inherits its grants.
 - `through view orders_v (rights of app)`: a view reads the table with its
   owner's rights, so the reader needs no access to the table itself. With
   `security_invoker` (PostgreSQL 15 and later) it says `rights of the
   reader`; PostgreSQL checks such a view as the reader even when another
   view reads it.
 - `; all rows (...)`, `; rows allowed by policy ...` or `; no rows (...)`:
-  what row security lets the login see on that route.
+  what row security lets the login see on that route, or for INSERT, UPDATE
+  and DELETE, change.
+- A partitioned table or a parent table holds what its partitions and
+  child tables hold, since reading the parent returns their rows (with the
+  parent's row security, not theirs).
 - `; reading it fails: the view needs app.accounts.email, which the reader
   may not read`: PostgreSQL checks every column a view's query reads (in the
   select list, joins, WHERE and subqueries), with the rights the view runs
   with, and refuses the whole query when one is missing, even a query that
   selects other columns of the view. The grant is there, and gives nothing
-  until the missing access is added.
+  until the missing access is added. A view with `FOR UPDATE` needs UPDATE
+  as well, and a foreign table needs a user mapping for the role that reads
+  it (`reading it fails: no user mapping for ...`; file_fdw needs none). A
+  CTE that nothing in the view reads is never checked. Schema USAGE isn't
+  checked inside a view either: PostgreSQL checks it only when a role names
+  a table.
+- `; statistics only: no USAGE on schema ...`: the login is granted the
+  table but can't name it, since it has no USAGE on the schema. `pg_stats`
+  still shows it sampled values of those columns (most common values and
+  histogram bounds) once the table has been analyzed.
+- `; cannot connect: ...`: the login has no CONNECT privilege on the
+  database, or a connection limit of 0. Its grants here give it nothing,
+  and the report and the counts leave them out of what it reads.
 - `with grant option`: the login may pass the access on.
-- `may run billing.charge(integer)`: a security-definer function that reads
-  the table with its owner's rights. BareSQL never runs it.
+
+Security-definer functions the login may run are listed apart from the
+columns, with the role they run as: BareSQL never runs them, so it can't
+tell which columns they read.
 
 The audit computes each route from the catalogs and then asks the server
-(`has_column_privilege` and its relatives) whether the login really has the
-access. When the two disagree the server wins, and the finding
-`unexplained-access` lists the places.
+(`has_column_privilege`, `has_schema_privilege`, `has_database_privilege`
+and their relatives) whether the login really has the access. When the two
+disagree the server wins, and the finding `unexplained-access` lists the
+places.
+
+Role names that aren't plain lower case are quoted, as in SQL: a real role
+named `"PUBLIC"` is never mistaken for PUBLIC, the pseudo-role that stands
+for every role. Control characters in any name are printed as escapes
+(`\n`, `\x1b`), so a name can't fake a line of the report or send codes to
+a terminal.
 
 ### Personal data
 
 A column counts as personal data when its name or its sampled values say
 so. Names are split into words (`customerEmail2` reads as customer, email,
-2) and matched in English and the common European languages. Values are
+2) and matched in English and the common European languages, with accents
+folded (`prénom` reads as prenom, `Straße` as strasse). Values are
 checked with real tests where there are any: card numbers pass the Luhn
 check and have a card issuer's prefix, IBANs pass their mod-97 check,
 national ID numbers their check digits, JSON documents are read key by key.
@@ -205,7 +247,7 @@ login, a table, a function).
 | `public-reads-personal` | high | every role, including roles created later, can read personal data in a table |
 | `superuser-login` | medium | a login is a superuser |
 | `set-role-superuser` | high | a login can SET ROLE to a superuser |
-| `read-all-data` | medium | a login is a member of pg_read_all_data or pg_write_all_data |
+| `read-all-data` | medium | a login is a member of pg_read_all_data or pg_write_all_data, or can SET ROLE to one |
 | `createrole-escalation` | high | a login has CREATEROLE before PostgreSQL 16, where it can grant itself any role but superuser |
 | `see-all-queries` | low | a login can read the text of every session's queries |
 | `server-file-access` | high | a login can read or write files, or run programs, on the database server |
@@ -214,12 +256,12 @@ login, a table, a function).
 | `foreign-server-mapping` | low | a login can use a foreign server through a user mapping |
 | `secdef-no-search-path` | high | a security-definer function others can run does not set search_path |
 | `secdef-executable` | medium | a security-definer function runs with the rights of an owner who reads personal data |
-| `rls-no-policies` | low | row security is on for a table without any policy |
+| `rls-no-policies` | low | row security is on for a table without any policy (its rows may still be read through a parent table) |
 | `rls-owner-login` | medium | row security is not forced and the table's owner can log in |
 | `view-bypasses-row-security` | high | a view reads a row-security table with rights that skip its policies |
 | `default-grants-to-public` | medium | default privileges grant future tables or functions to PUBLIC |
 | `md5-passwords` | medium | logins have MD5 password hashes |
-| `connection-not-encrypted` | low | the audit's own connection did not use TLS |
+| `connection-not-encrypted` | low | the audit's own connection did not use TLS (not reported for localhost and unix sockets) |
 | `cleartext-password-login` | medium | the server asked for a cleartext password over an unencrypted connection |
 | `unexplained-access` | medium | the catalogs and the server's own checks disagree; please report it |
 
@@ -231,13 +273,18 @@ baresql audit --baseline last-week.json postgres://...
 ```
 
 `baresql diff` lists what grew (a login reaches something it did not reach
-before, or a column it reads now holds more kinds of personal data), what
-is gone and the other changes, such as new routes and new findings. Routes
-that give no rows today (row security with no policy for the login, a view
-that fails) don't count as reach, so a policy or a grant that makes them
-give rows counts as growth. It exits 1 when any login reaches more than
-before, so a scheduled job can run the audit with `--baseline` and fail
-when access grows. `--format json` gives the comparison as JSON.
+before, a column it reads now holds more kinds of personal data, or row
+security lets it see more rows of a column it read before), what is gone
+and the other changes, such as new routes and new findings. Routes that
+give nothing today (row security with no policy for the login, a view that
+fails, a schema it can't use, a database it can't connect to) don't count
+as reach, so a change that makes them give rows counts as growth. Row
+security counts as letting more through when it no longer applies (turned
+off, or a role that bypasses it), when a new permissive policy applies, or
+when a restrictive one no longer does; changes to a policy's condition
+aren't seen. It exits 1 when any login reaches more than before, so a
+scheduled job can run the audit with `--baseline` and fail when access
+grows. `--format json` gives the comparison as JSON.
 
 ### Limits
 
@@ -247,6 +294,10 @@ when access grows. `--format json` gives the comparison as JSON.
   on a route, and does not evaluate the policies' conditions.
 - Write access is listed per table and not followed through views or
   functions.
+- A parent table whose partitions or children include foreign tables is
+  listed as readable: whether a query on it reaches the foreign ones
+  depends on the query (partition pruning), and a foreign-data wrapper's
+  own needs beyond a user mapping aren't checked.
 - Passwords with characters outside ASCII are sent as they are, without
   SASLprep normalization; a server that stored such a password normalized
   may refuse it.

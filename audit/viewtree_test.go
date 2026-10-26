@@ -191,7 +191,9 @@ func TestViewNeedsOnServer(t *testing.T) {
 		CREATE VIEW S.v_cte AS WITH c AS (SELECT y FROM S.a) SELECT y FROM c;
 		CREATE VIEW S.v_whole AS SELECT a AS r FROM S.a a;
 		CREATE VIEW S.v_nested AS SELECT x FROM S.v_plain;
-		CREATE VIEW S.v_count AS SELECT count(*) AS n FROM S.a;`, "S.", schema+".")
+		CREATE VIEW S.v_count AS SELECT count(*) AS n FROM S.a;
+		CREATE VIEW S.v_unused_cte AS WITH unused AS (SELECT y FROM S.a) SELECT id FROM S.b;
+		CREATE VIEW S.v_for_update AS SELECT id FROM S.a FOR UPDATE;`, "S.", schema+".")
 	setup = strings.ReplaceAll(setup, "SCHEMA S;", "SCHEMA "+schema+";")
 	if err := c.Exec(ctx, setup); err != nil {
 		t.Fatal(err)
@@ -219,12 +221,14 @@ func TestViewNeedsOnServer(t *testing.T) {
 		}
 		var parts []string
 		for _, n := range needs {
-			switch n.Attnum {
-			case anyColumn:
-				parts = append(parts, relName[n.Rel]+".any")
-			default:
-				parts = append(parts, fmt.Sprintf("%s.%d", relName[n.Rel], n.Attnum))
+			part := fmt.Sprintf("%s.%d", relName[n.Rel], n.Attnum)
+			if n.Attnum == anyColumn {
+				part = relName[n.Rel] + ".any"
 			}
+			if n.Priv != "SELECT" {
+				part += ":" + n.Priv
+			}
+			parts = append(parts, part)
 		}
 		sort.Strings(parts)
 		got[r[0].String()] = strings.Join(parts, " ")
@@ -238,6 +242,9 @@ func TestViewNeedsOnServer(t *testing.T) {
 		"v_whole":   "a.0",
 		"v_nested":  "v_plain.2",
 		"v_count":   "a.any",
+		// A CTE nothing references isn't checked; FOR UPDATE needs UPDATE.
+		"v_unused_cte": "b.1",
+		"v_for_update": "a.1 a.any:UPDATE",
 	}
 	for name, w := range want {
 		if got[name] != w {

@@ -31,25 +31,39 @@ func (a *analysis) findings(res *Result) []Finding {
 	}
 
 	for _, l := range res.Logins {
-		role := a.s.RoleByName[l.Name]
+		role := a.s.Roles[l.oid]
 		if role.Super {
 			add("superuser-login", "medium", l.Name, l.Name+" is a superuser: it can read and change everything, and run programs on the server.")
 		}
-		for _, x := range l.CanSetRole {
-			if a.s.RoleByName[x].Super && !role.Super {
-				add("set-role-superuser", "high", l.Name, fmt.Sprintf("%s can SET ROLE %s, a superuser, and so do anything.", l.Name, x))
+		for _, x := range a.setRoleTargets(role.OID) {
+			if a.s.isSuper(x) && !role.Super {
+				add("set-role-superuser", "high", l.Name, fmt.Sprintf("%s can SET ROLE %s, a superuser, and so do anything.", l.Name, a.s.RoleName(x)))
 			}
 		}
 		if !role.Super {
 			inh := a.s.inherited(role.OID)
 			for _, name := range []string{"pg_read_all_data", "pg_write_all_data"} {
-				if id := a.s.predefined(name); id != 0 {
-					if p, ok := inh[id]; ok {
-						via := ""
-						if len(p) > 2 {
-							via = " (via " + strings.Join(a.s.between(p), " > ") + ")"
+				id := a.s.predefined(name)
+				if id == 0 {
+					continue
+				}
+				if p, ok := inh[id]; ok {
+					via := ""
+					if len(p) > 2 {
+						via = " (via " + strings.Join(a.s.between(p), " > ") + ")"
+					}
+					add("read-all-data", "medium", l.Name, fmt.Sprintf("%s is a member of %s%s: it reaches every table.", l.Name, name, via))
+					continue
+				}
+				// Without inheritance, membership still lets it SET ROLE.
+				for _, x := range a.setRoleTargets(role.OID) {
+					if _, ok := a.s.inherited(x)[id]; ok {
+						msg := fmt.Sprintf("%s can SET ROLE %s and then reach every table.", l.Name, a.s.RoleName(x))
+						if x != id {
+							msg = fmt.Sprintf("%s can SET ROLE %s, a member of %s, and then reach every table.", l.Name, a.s.RoleName(x), name)
 						}
-						add("read-all-data", "medium", l.Name, fmt.Sprintf("%s is a member of %s%s: it reaches every table.", l.Name, name, via))
+						add("read-all-data", "medium", l.Name, msg)
+						break
 					}
 				}
 			}
@@ -73,7 +87,7 @@ func (a *analysis) findings(res *Result) []Finding {
 				continue
 			}
 			for _, r := range c.Routes {
-				if r.Grantable {
+				if r.Grantable && r.GivesRows() {
 					grantable = append(grantable, c.Relation+"."+quoteIdent(c.Column))
 					break
 				}
@@ -143,7 +157,21 @@ func (a *analysis) findings(res *Result) []Finding {
 			}
 		}
 		if n == 0 {
-			add("rls-no-policies", "low", name, "Row security is on for "+name+" but it has no policies: only its owner and roles that bypass row security see any rows.")
+			msg := "Row security is on for " + name + " but it has no policies: only its owner and roles that bypass row security see any rows."
+			// Reading a parent reads its partitions' and children's rows
+			// with the parent's row security, not theirs.
+			var parents []string
+			for _, p := range a.s.Inherits[rel.OID] {
+				if pr := a.s.Relations[p]; pr != nil {
+					parents = append(parents, a.s.QualifiedName(pr))
+				}
+			}
+			if len(parents) > 0 {
+				sort.Strings(parents)
+				msg = "Row security is on for " + name + " but it has no policies, so reading it directly gives only its owner and roles that bypass row security any rows. " +
+					"Its rows are still read through " + andList(parents) + ", where its own row security doesn't apply."
+			}
+			add("rls-no-policies", "low", name, msg)
 		}
 		if owner := a.s.Roles[rel.Owner]; owner != nil && owner.CanLogin && !rel.ForceRLS && !owner.Super {
 			add("rls-owner-login", "medium", name, fmt.Sprintf(
@@ -155,7 +183,7 @@ func (a *analysis) findings(res *Result) []Finding {
 	type bypassed struct{ tables, logins map[string]bool }
 	byView := map[string]*bypassed{}
 	for _, l := range res.Logins {
-		role := a.s.RoleByName[l.Name]
+		role := a.s.Roles[l.oid]
 		for _, c := range l.Read {
 			for _, r := range c.Routes {
 				if r.Kind != "view" || !strings.HasPrefix(r.Rows, "all rows") {
@@ -196,7 +224,7 @@ func (a *analysis) findings(res *Result) []Finding {
 	// Passwords stored with MD5 (deprecated in PostgreSQL 18).
 	var md5 []string
 	for _, l := range res.Logins {
-		if a.s.RoleByName[l.Name].PasswordKind == "md5" {
+		if a.s.Roles[l.oid].PasswordKind == "md5" {
 			md5 = append(md5, l.Name)
 		}
 	}
