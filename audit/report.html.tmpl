@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BareSQL Audit: {{.R.Server.Database}}</title>
+<style>
+:root{--ink:#16202b;--muted:#5b6774;--line:#dfe4ea;--bg:#fff;--soft:#f5f7f9;--high:#b3261e;--medium:#b25e09;--low:#4a6a8a;--accent:#0e7c86;--mark:#fff1c2}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:1080px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 10px;padding-top:10px;border-top:2px solid var(--ink)}h3{font-size:16px;margin:24px 0 6px}
+.sub{color:var(--muted);margin:0 0 18px}.mono,code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
+.tile{border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tile b{display:block;font-size:24px}.tile span{color:var(--muted);font-size:13px}
+.tile.sev-high b{color:var(--high)}.tile.sev-medium b{color:var(--medium)}.tile.sev-low b{color:var(--low)}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:10px 14px;border-radius:4px;margin:14px 0}
+.finding{border:1px solid var(--line);border-left:5px solid var(--low);border-radius:6px;padding:12px 14px;margin:10px 0;break-inside:avoid}
+.finding.sev-high{border-left-color:var(--high)}.finding.sev-medium{border-left-color:var(--medium)}
+.finding p{margin:0 0 6px;font-size:15.5px}.meta{color:var(--muted);font-size:13px}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;color:#fff;background:var(--low);margin-right:6px;vertical-align:1px}
+.badge.sev-high{background:var(--high)}.badge.sev-medium{background:var(--medium)}
+.cat{display:inline-block;font-size:12px;padding:0 7px;border-radius:9px;background:var(--mark);margin:1px 3px 1px 0;white-space:nowrap}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:6px 8px}
+th{background:var(--soft);font-weight:600}td.n{text-align:right;white-space:nowrap}
+.wrap{overflow-x:auto}.bad{color:var(--high);font-weight:600}.ok{color:#1d7a3a;font-weight:600}
+ul.routes{margin:0;padding-left:16px}ul.routes li{margin:0}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px}
+@media print{details{display:block}details>*{display:block}summary{display:none}main{padding:0}}
+</style>
+</head>
+<body>
+<main>
+<h1>Access audit of {{.R.Server.Database}}</h1>
+<p class="sub">{{.When}} · PostgreSQL {{.R.Server.Version}} · {{len .R.Logins}} login{{if ne (len .R.Logins) 1}}s{{end}} · BareSQL {{.R.Version}}</p>
+
+<div class="tiles">
+<div class="tile sev-high"><b>{{index .Counts "high"}}</b><span>high</span></div>
+<div class="tile sev-medium"><b>{{index .Counts "medium"}}</b><span>medium</span></div>
+<div class="tile sev-low"><b>{{index .Counts "low"}}</b><span>low</span></div>
+<div class="tile"><b>{{.PersonalLogins}}</b><span>logins that read personal data</span></div>
+<div class="tile"><b>{{.PersonalColumns}}</b><span>columns with personal data</span></div>
+</div>
+
+<div class="note">
+BareSQL logged in as <b>{{.R.Server.Auditor}}</b>{{if .R.Server.Superuser}} (a superuser){{end}} over {{if .R.Server.TLS}}an encrypted{{else}}an unencrypted{{end}} connection and read the system catalogs inside one read-only transaction.
+{{if .R.Settings.Sampled}}It read up to {{.R.Settings.SampleRows}} rows of each table to see what the columns hold; the values were looked at in memory and are not in this report.{{else}}It read no table data: personal data was found by column names only.{{end}}
+For every login, the server's own privilege checks were asked about every table and column, and each answer below comes with the grant, membership, ownership or view that gives it.
+</div>
+
+<h2>Findings</h2>
+{{if not .R.Findings}}<p>Nothing to flag.</p>{{end}}
+{{range .R.Findings}}
+<div class="finding sev-{{.Severity}}">
+<p><span class="badge sev-{{.Severity}}">{{upper .Severity}}</span>{{.Message}}</p>
+<div class="meta"><code>{{.Code}}</code> · {{.Subject}}</div>
+{{if .Details}}<details><summary>Details</summary><ul class="routes">{{range .Details}}<li class="mono">{{.}}</li>{{end}}</ul></details>{{end}}
+</div>
+{{end}}
+
+<h2>Who can read personal data</h2>
+{{if .Who}}
+<div class="wrap"><table>
+<tr><th>Login</th><th>Personal data</th><th class="n">Columns</th><th class="n">Tables</th><th class="n">Changes</th><th>Notes</th></tr>
+{{range .Who}}<tr><td><a href="#login-{{.Anchor}}">{{.Login}}</a></td><td>{{range .Kinds}}<span class="cat">{{.}}</span>{{end}}</td><td class="n">{{.Columns}}</td><td class="n">{{.Tables}}</td><td class="n">{{.Writable}}</td><td>{{.Notes}}</td></tr>{{end}}
+</table></div>
+<p class="meta">Columns and tables count base tables, partitions and materialized views, reached in any way listed below. Changes counts tables with personal data the login can insert into, update, delete from or empty.</p>
+{{else}}<p>No login can read a column that looks like personal data.</p>{{end}}
+
+<h2>Personal data in this database</h2>
+{{if .Data}}
+<div class="wrap"><table>
+<tr><th>Column</th><th>Holds</th><th>How BareSQL knows</th><th>Read by</th></tr>
+{{range .Data}}<tr><td class="mono">{{.Column}}<div class="meta">{{.Kind}} · {{.Type}}</div></td><td>{{range .Categories}}<span class="cat">{{.}}</span>{{end}}<div class="meta">{{.Confidence}} confidence{{if .Derived}}, computed{{end}}</div></td><td class="meta">{{range $i, $e := .Evidence}}{{if $i}}; {{end}}{{$e}}{{end}}</td><td>{{if .Readers}}{{range $i, $r := .Readers}}{{if $i}}, {{end}}{{$r}}{{end}}{{else}}<span class="meta">no audited login</span>{{end}}</td></tr>{{end}}
+</table></div>
+{{else}}<p>No column looks like personal data{{if not .R.Settings.Sampled}} by its name{{end}}.</p>{{end}}
+
+<h2>Logins</h2>
+{{range .Logins}}
+<h3 id="login-{{.Anchor}}">{{.L.Name}}</h3>
+<p class="meta">{{if .L.Attributes}}{{range $i, $a := .L.Attributes}}{{if $i}}, {{end}}{{$a}}{{end}} · {{end}}{{if .L.MemberOf}}member of {{range $i, $m := .L.MemberOf}}{{if $i}}, {{end}}{{$m}}{{end}}{{else}}member of no role{{end}}{{if .L.CanSetRole}} · can SET ROLE {{range $i, $m := .L.CanSetRole}}{{if $i}}, {{end}}{{$m}}{{end}}{{end}}{{if .L.Password}} · {{password .L.Password}}{{end}}</p>
+{{if .Personal}}
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+{{range .Personal}}<tr><td class="mono">{{.Relation}}.{{.Column}}<div class="meta">{{.Kind}}</div></td><td>{{range labels .Personal.Categories}}<span class="cat">{{.}}</span>{{end}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div>
+{{else}}<p>Reads no personal data.</p>{{end}}
+{{if .Other}}<details><summary>{{len .Other}} other column{{if ne (len .Other) 1}}s{{end}} it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+{{range .Other}}<tr><td class="mono">{{.Relation}}.{{.Column}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div></details>{{end}}
+{{if .L.Write}}<details><summary>What it can change ({{len .L.Write}})</summary>
+<div class="wrap"><table><tr><th>Table</th><th>Privilege</th><th>How</th></tr>
+{{range .L.Write}}<tr><td class="mono">{{.Relation}}{{if .Personal}} <span class="cat">personal data</span>{{end}}</td><td>{{.Privilege}}{{if .Columns}} ({{range $i, $c := .Columns}}{{if $i}}, {{end}}{{$c}}{{end}}){{end}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div></details>{{end}}
+{{if .L.Functions}}<details><summary>Functions that run with someone else's rights ({{len .L.Functions}})</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+{{range .L.Functions}}<tr><td class="mono">{{.Function}}</td><td>{{if .ServerAccess}}server files{{else}}{{.Owner}}{{if not .SearchPathSet}} <span class="bad">no search_path</span>{{end}}{{end}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div></details>{{end}}
+{{if .L.Server}}<p><b>On the database server it can:</b> {{range $i, $s := .L.Server}}{{if $i}}; {{end}}{{capability $s.Capability}} ({{range $j, $r := $s.Routes}}{{if $j}}, {{end}}{{route $r}}{{end}}){{end}}.</p>{{end}}
+{{if .L.Mappings}}<p><b>Foreign servers it can use:</b> {{range $i, $m := .L.Mappings}}{{if $i}}, {{end}}{{$m.Server}} ({{$m.FDW}}){{end}}.</p>{{end}}
+{{end}}
+
+<h2>Everyone (PUBLIC)</h2>
+<p>What every role can read, including roles created after this audit.</p>
+{{if .Public.Personal}}
+<div class="wrap"><table>
+<tr><th>Personal data</th><th>Holds</th><th>How</th></tr>
+{{range .Public.Personal}}<tr><td class="mono">{{.Relation}}.{{.Column}}</td><td>{{range labels .Personal.Categories}}<span class="cat">{{.}}</span>{{end}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div>
+{{else}}<p>No personal data is open to every role.</p>{{end}}
+{{if .Public.Other}}<details><summary>{{len .Public.Other}} other column{{if ne (len .Public.Other) 1}}s{{end}} every role can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+{{range .Public.Other}}<tr><td class="mono">{{.Relation}}.{{.Column}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div></details>{{end}}
+
+{{if .R.DefaultPrivileges}}
+<h2>Tables created later</h2>
+<p>Default privileges hand these rights out on objects that don't exist yet.</p>
+<div class="wrap"><table><tr><th>When</th><th>creates</th><th>in</th><th>it grants</th><th>to</th></tr>
+{{range .R.DefaultPrivileges}}<tr><td>{{.Creator}}</td><td>{{.Objects}}</td><td>{{if .Schema}}{{.Schema}}{{else}}any schema{{end}}</td><td>{{.Privilege}}</td><td>{{.Grantee}}</td></tr>{{end}}
+</table></div>
+{{end}}
+
+<h2>Method</h2>
+<p>Schemas audited: {{range $i, $s := .R.Settings.Schemas}}{{if $i}}, {{end}}<code>{{$s}}</code>{{end}}. Connection: <code>{{.R.Server.Target}}</code>, login method {{.R.Server.Auth}}.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+{{if .R.NotSeen}}<p><b>What BareSQL could not see.</b></p><ul>{{range .R.NotSeen}}<li>{{.What}}: {{.Why}}</li>{{end}}</ul>{{end}}
+{{if .R.Mismatches}}<p class="bad">BareSQL's reading of the catalogs disagreed with the server {{len .R.Mismatches}} time{{if ne (len .R.Mismatches) 1}}s{{end}}. The server's answer is used above; please report these:</p><ul>{{range .R.Mismatches}}<li class="mono">{{.}}</li>{{end}}</ul>{{end}}
+<p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>
+<footer>Made with BareSQL {{.R.Version}} · baresql.com · {{.R.Generated}}</footer>
+</main>
+</body>
+</html>

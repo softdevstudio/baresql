@@ -82,6 +82,11 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 		return nil, err
 	}
 	subjects := a.subjects(logins)
+	if auditor := snap.RoleByName[snap.Auditor.Role]; auditor != nil && !auditor.Super {
+		// Sampling reads only what the auditor's own login may read.
+		subjects = appendUnique(subjects, auditor.OID)
+		a.auditor = auditor.OID
+	}
 	truth, err := serverTruth(ctx, c, snap, subjects)
 	if err != nil {
 		return nil, err
@@ -154,6 +159,15 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 		res.Findings = []Finding{}
 	}
 	return res, nil
+}
+
+func appendUnique(xs []uint32, x uint32) []uint32 {
+	for _, y := range xs {
+		if y == x {
+			return xs
+		}
+	}
+	return append(xs, x)
 }
 
 func pickLogins(s *Snapshot, names []string) ([]*Role, error) {

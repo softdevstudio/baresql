@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
@@ -10,7 +11,7 @@ import (
 
 func TestCLIVersion(t *testing.T) {
 	var out, errb bytes.Buffer
-	if code := run([]string{"version"}, &out, &errb); code != 0 {
+	if code := run(context.Background(), []string{"version"}, &out, &errb); code != 0 {
 		t.Fatalf("exit %d, stderr %q", code, errb.String())
 	}
 	if got, want := out.String(), "baresql "+baresql.Version+"\n"; got != want {
@@ -20,7 +21,7 @@ func TestCLIVersion(t *testing.T) {
 
 func TestCLIUnknownCommand(t *testing.T) {
 	var out, errb bytes.Buffer
-	if code := run([]string{"frobnicate"}, &out, &errb); code != 2 {
+	if code := run(context.Background(), []string{"frobnicate"}, &out, &errb); code != 2 {
 		t.Fatalf("exit %d, want 2", code)
 	}
 	if !strings.Contains(errb.String(), `unknown command "frobnicate"`) {
@@ -30,7 +31,7 @@ func TestCLIUnknownCommand(t *testing.T) {
 
 func TestCLINoArguments(t *testing.T) {
 	var out, errb bytes.Buffer
-	if code := run(nil, &out, &errb); code != 2 {
+	if code := run(context.Background(), nil, &out, &errb); code != 2 {
 		t.Fatalf("exit %d, want 2", code)
 	}
 	if !strings.Contains(errb.String(), "Usage:") {

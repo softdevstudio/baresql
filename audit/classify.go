@@ -244,7 +244,9 @@ func (st *valueStats) addJSON(doc string) {
 			if nationalID(t) != "" {
 				mark(p, "national-id")
 			}
-			for _, c := range nameCategories("", lastKey(p)) {
+			// The enclosing key gives the context a bare "name" needs:
+			// {"patient": {"name": ...}} is a person's name.
+			for _, c := range nameCategories(parentKey(p), lastKey(p)) {
 				mark(p, "name:"+c)
 			}
 		default: // numbers, booleans, null
@@ -257,6 +259,14 @@ func (st *valueStats) addJSON(doc string) {
 			expectKey = true
 		}
 	}
+}
+
+func parentKey(p string) string {
+	i := strings.LastIndexByte(p, '.')
+	if i < 0 {
+		return ""
+	}
+	return lastKey(p[:i])
 }
 
 func lastKey(p string) string {
@@ -343,7 +353,9 @@ func classify(table string, col *Column, st *valueStats) *Personal {
 			{"bank-account", "bank-account", "contain an IBAN"},
 			{"secret", "secret", "contain a key or token"},
 		} {
-			if k := st.inText[r.det]; k > 0 && found[r.cat] == "" {
+			// A known key or token format is worth naming even when the
+			// values also looked random; other kinds need no second line.
+			if k := st.inText[r.det]; k > 0 && (found[r.cat] == "" || r.cat == "secret") {
 				conf := "medium"
 				if r.cat == "secret" {
 					conf = "high"

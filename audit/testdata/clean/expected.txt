@@ -1,0 +1,19 @@
+# The exact audit of the clean fixture: nothing to flag.
+
+function clean_reports reports.order_count() granted to clean_reports
+read clean_app app.customers.created_at [-] granted to clean_app
+read clean_app app.customers.email [email] granted to clean_app
+read clean_app app.customers.full_name [name] granted to clean_app
+read clean_app app.customers.id [-] granted to clean_app
+read clean_app app.orders.created_at [-] granted to clean_app
+read clean_app app.orders.customer_id [-] granted to clean_app
+read clean_app app.orders.id [-] granted to clean_app
+read clean_app app.orders.total [-] granted to clean_app
+read clean_reports app.orders.created_at [-] through view reports.daily_sales (rights of clean_owner)
+read clean_reports app.orders.total [-] through view reports.daily_sales (rights of clean_owner)
+read clean_reports reports.daily_sales.day [-] granted to clean_reports
+read clean_reports reports.daily_sales.orders [-] granted to clean_reports
+read clean_reports reports.daily_sales.revenue [-] granted to clean_reports
+write clean_app app.customers INSERT granted to clean_app
+write clean_app app.customers UPDATE granted to clean_app
+write clean_app app.orders INSERT granted to clean_app

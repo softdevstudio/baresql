@@ -24,6 +24,7 @@ var categoryLabel = map[string]string{
 	"health":       "health data",
 	"sensitive":    "special category data",
 	"gender":       "gender",
+	"insurance-id": "insurance number",
 }
 
 // CategoryLabel is the plain name of a category.
@@ -117,6 +118,8 @@ var nameRules = func() []nameRule {
 	add("sensitive", "religion", "ethnicity", "ethnic", "sexual orientation", "orientation", "political",
 		"union member", "trade union", "biometric", "fingerprint", "face encoding", "genetic", "dna")
 	add("gender", "gender", "sex")
+	add("insurance-id", "insurance number", "insurance id", "insurance no", "insurancenumber", "kvnr",
+		"health insurance", "medicare number", "nhs number")
 	return rules
 }()
 

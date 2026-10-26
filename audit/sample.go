@@ -42,11 +42,10 @@ func sampleable(rel *Relation) []*Column {
 	return out
 }
 
-// sampleRelation reads up to rows rows. A failure (no privilege, row
+// sampleRelation reads up to rows rows of the given columns. A failure (no privilege, row
 // security on the auditor, a timeout) is returned as an error and leaves
 // the transaction usable: each read runs in its own savepoint.
-func sampleRelation(ctx context.Context, c *pgwire.Conn, s *Snapshot, rel *Relation, rows int) (map[int]*valueStats, error) {
-	cols := sampleable(rel)
+func sampleRelation(ctx context.Context, c *pgwire.Conn, s *Snapshot, rel *Relation, cols []*Column, rows int) (map[int]*valueStats, error) {
 	out := map[int]*valueStats{}
 	for start := 0; start < len(cols); start += maxCols {
 		part := cols[start:min(start+maxCols, len(cols))]

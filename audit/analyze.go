@@ -24,6 +24,7 @@ type analysis struct {
 	sampled    map[uint32]bool
 	mismatches []string
 	byName     map[string]*Relation
+	auditor    uint32 // the auditor's role when it isn't a superuser
 }
 
 var kindNames = map[byte]string{'r': "table", 'p': "partitioned table", 'v': "view", 'm': "materialized view", 'f': "foreign table"}
@@ -291,7 +292,22 @@ func (a *analysis) sample(rows int) {
 	}
 	sort.Slice(rels, func(i, j int) bool { return rels[i].OID < rels[j].OID })
 	for _, rel := range rels {
-		stats, err := sampleRelation(a.ctx, a.c, a.s, rel, rows)
+		var cols []*Column
+		for _, c := range sampleable(rel) {
+			if a.auditor == 0 || a.canSelect(a.auditor, rel, c.Attnum) {
+				cols = append(cols, c)
+			}
+		}
+		if len(cols) == 0 {
+			a.s.NotSeen = append(a.s.NotSeen, NotSeen{What: "values of " + a.s.QualifiedName(rel),
+				Why: "not sampled: the auditor's login may not read it"})
+			continue
+		}
+		if len(cols) < len(sampleable(rel)) {
+			a.s.NotSeen = append(a.s.NotSeen, NotSeen{What: "some values of " + a.s.QualifiedName(rel),
+				Why: "not sampled: the auditor's login may read only some of its columns"})
+		}
+		stats, err := sampleRelation(a.ctx, a.c, a.s, rel, cols, rows)
 		if err != nil {
 			if a.ctx.Err() != nil {
 				return
