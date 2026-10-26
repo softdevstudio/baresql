@@ -230,7 +230,11 @@ func (a *analysis) findings(res *Result) []Finding {
 	}
 	sort.Strings(md5)
 	if len(md5) > 0 {
-		add("md5-passwords", "medium", "logins", fmt.Sprintf("%d logins have MD5 password hashes, which are weak and deprecated.", len(md5)), md5...)
+		msg := fmt.Sprintf("%d logins have MD5 password hashes, which are weak and deprecated.", len(md5))
+		if len(md5) == 1 {
+			msg = md5[0] + " has an MD5 password hash, which is weak and deprecated."
+		}
+		add("md5-passwords", "medium", "logins", msg, md5...)
 	}
 
 	// The audit's own connection.

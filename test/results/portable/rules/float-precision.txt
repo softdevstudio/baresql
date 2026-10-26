@@ -1,7 +1,8 @@
 float-precision (warning): REAL and FLOAT precision
 
-REAL keeps about 6 significant digits on PostgreSQL, and FLOAT keeps about 6
-on MySQL and MariaDB; elsewhere both keep 15.
+REAL on PostgreSQL and FLOAT on MySQL and MariaDB are 4-byte floats, so
+1.23456789 comes back as 1.2345679 or 1.23457; elsewhere both names mean an
+8-byte float, which keeps about 15 digits.
 
 PostgreSQL's REAL is a 4-byte float, and so is FLOAT on MySQL and MariaDB,
 while the other engines store 8 bytes for the same name. 1.23456789 comes back

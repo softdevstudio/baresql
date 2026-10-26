@@ -2033,7 +2033,7 @@
       "code": "md5-passwords",
       "severity": "medium",
       "subject": "logins",
-      "message": "1 logins have MD5 password hashes, which are weak and deprecated.",
+      "message": "clinic_lab has an MD5 password hash, which is weak and deprecated.",
       "details": [
         "clinic_lab"
       ]

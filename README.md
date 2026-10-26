@@ -298,6 +298,10 @@ grows. `--format json` gives the comparison as JSON.
   functions.
 - Phone numbers stored in arrays (`text[]`) are recognized by the column's
   name only, such as `phone_numbers`, never by their values.
+- A child table or partition that a login reads only through its parent gets
+  no line of its own: the parent's line covers its rows.
+- A column named just `pan` or `tin` counts as a card number or a tax ID,
+  though it may hold something else.
 - A parent table whose partitions or children include foreign tables is
   listed as readable: whether a query on it reaches the foreign ones
   depends on the query (partition pruning), and a foreign-data wrapper's

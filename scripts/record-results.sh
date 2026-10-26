@@ -104,7 +104,8 @@ which engine versions they were recorded.
 - `audit/quarterly/`: the shop audited at the start of one quarter (`q3`)
   and the next (`q4`), with the changes made in between; `diff.txt` is
   `baresql diff q3/audit.json q4/audit.json` and `baseline.txt` what
-  `baresql audit --baseline q3/audit.json` prints.
+  `baresql audit --baseline q3/audit.json` prints. `fix.sql` is the fix,
+  `fixed/` the audit after it and `fixed-diff.txt` its comparison with q4.
 - `audit/scale.txt`: the audit of 1,000 tables and 50 logins, timed.
 - `portable/rules.txt`, `rules.json`, `rules/<code>.txt`: `baresql rules`,
   `--format json` and `baresql rules <code>`.

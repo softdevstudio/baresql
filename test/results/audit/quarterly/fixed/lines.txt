@@ -1,0 +1,177 @@
+finding high public-reads-personal shop.newsletter
+finding high secdef-no-search-path shop.export_customers()
+finding medium read-all-data shop_reporting
+finding medium secdef-executable shop.count_orders()
+finding medium secdef-executable shop.export_customers()
+function PUBLIC shop.count_orders() granted to PUBLIC
+function shop_alice shop.count_orders() granted to PUBLIC
+function shop_analyst shop.count_orders() granted to PUBLIC
+function shop_app shop.count_orders() granted to PUBLIC
+function shop_bob shop.count_orders() granted to PUBLIC
+function shop_etl shop.count_orders() granted to PUBLIC
+function shop_etl shop.export_customers() granted to shop_etl
+function shop_intern shop.count_orders() granted to PUBLIC
+function shop_reporting shop.count_orders() granted to PUBLIC
+read PUBLIC shop.newsletter.email [email] granted to PUBLIC
+read PUBLIC shop.newsletter.id [-] granted to PUBLIC
+read PUBLIC shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_alice shop.customers.card_number [card] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.email [email] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.first_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.id [-] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.last_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.phone [phone] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.newsletter.email [email] granted to PUBLIC
+read shop_alice shop.newsletter.id [-] granted to PUBLIC
+read shop_alice shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_alice shop.orders.id [-] through view support.order_status (rights of shop_owner)
+read shop_alice shop.orders.shipped_at [-] through view support.order_status (rights of shop_owner)
+read shop_alice shop.orders.tracking_number [-] through view support.order_status (rights of shop_owner)
+read shop_alice support.customer_lookup.card_number [card] granted to shop_support_team
+read shop_alice support.customer_lookup.customer_name [name~] granted to shop_support_team
+read shop_alice support.customer_lookup.email [email] granted to shop_support_team
+read shop_alice support.customer_lookup.id [-] granted to shop_support_team
+read shop_alice support.customer_lookup.phone [phone] granted to shop_support_team
+read shop_alice support.order_status.id [-] granted to shop_support_team
+read shop_alice support.order_status.shipped_at [-] granted to shop_support_team
+read shop_alice support.order_status.tracking_number [-] granted to shop_support_team
+read shop_analyst shop.customers.city [-] column granted to shop_analyst
+read shop_analyst shop.customers.created_at [-] column granted to shop_analyst
+read shop_analyst shop.customers.id [-] column granted to shop_analyst
+read shop_analyst shop.newsletter.email [email] granted to PUBLIC
+read shop_analyst shop.newsletter.id [-] granted to PUBLIC
+read shop_analyst shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_analyst shop.orders.customer_id [-] granted to shop_analyst
+read shop_analyst shop.orders.id [-] granted to shop_analyst
+read shop_analyst shop.orders.shipped_at [-] granted to shop_analyst
+read shop_analyst shop.orders.total [-] granted to shop_analyst
+read shop_analyst shop.orders.tracking_number [-] granted to shop_analyst
+read shop_app shop.customers.card_number [card] granted to shop_app
+read shop_app shop.customers.city [-] granted to shop_app
+read shop_app shop.customers.created_at [-] granted to shop_app
+read shop_app shop.customers.email [email] granted to shop_app
+read shop_app shop.customers.first_name [name] granted to shop_app
+read shop_app shop.customers.id [-] granted to shop_app
+read shop_app shop.customers.last_name [name] granted to shop_app
+read shop_app shop.customers.marketing_opt_in [-] granted to shop_app
+read shop_app shop.customers.notes [email] granted to shop_app
+read shop_app shop.customers.phone [phone] granted to shop_app
+read shop_app shop.newsletter.email [email] granted to PUBLIC
+read shop_app shop.newsletter.id [-] granted to PUBLIC
+read shop_app shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_app shop.orders.customer_id [-] granted to shop_app
+read shop_app shop.orders.id [-] granted to shop_app
+read shop_app shop.orders.shipped_at [-] granted to shop_app
+read shop_app shop.orders.total [-] granted to shop_app
+read shop_app shop.orders.tracking_number [-] granted to shop_app
+read shop_app shop.products.id [-] granted to shop_app
+read shop_app shop.products.name [-] granted to shop_app
+read shop_app shop.products.price [-] granted to shop_app
+read shop_app shop.products.sku [-] granted to shop_app
+read shop_app shop.users.email_verified [-] granted to shop_app
+read shop_app shop.users.id [-] granted to shop_app
+read shop_app shop.users.last_login_ip [ip-address] granted to shop_app
+read shop_app shop.users.password_hash [password] granted to shop_app
+read shop_app shop.users.username [-] granted to shop_app
+read shop_bob shop.customers.card_number [card] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.email [email] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.first_name [name] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.id [-] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.last_name [name] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.phone [phone] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.newsletter.email [email] granted to PUBLIC
+read shop_bob shop.newsletter.id [-] granted to PUBLIC
+read shop_bob shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_bob shop.orders.id [-] after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)
+read shop_bob shop.orders.shipped_at [-] after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)
+read shop_bob shop.orders.tracking_number [-] after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)
+read shop_bob support.customer_lookup.card_number [card] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.customer_name [name~] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.email [email] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.id [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.phone [phone] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.order_status.id [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.order_status.shipped_at [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.order_status.tracking_number [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_etl shop.newsletter.email [email] granted to PUBLIC
+read shop_etl shop.newsletter.id [-] granted to PUBLIC
+read shop_etl shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_intern shop.customers.card_number [card] through view support.customer_lookup (rights of shop_owner)
+read shop_intern shop.customers.email [email] through view support.customer_lookup (rights of shop_owner)
+read shop_intern shop.customers.first_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_intern shop.customers.id [-] through view support.customer_lookup (rights of shop_owner)
+read shop_intern shop.customers.last_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_intern shop.customers.phone [phone] through view support.customer_lookup (rights of shop_owner)
+read shop_intern shop.newsletter.email [email] granted to PUBLIC
+read shop_intern shop.newsletter.id [-] granted to PUBLIC
+read shop_intern shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_intern shop.orders.id [-] through view support.order_status (rights of shop_owner)
+read shop_intern shop.orders.shipped_at [-] through view support.order_status (rights of shop_owner)
+read shop_intern shop.orders.tracking_number [-] through view support.order_status (rights of shop_owner)
+read shop_intern support.customer_lookup.card_number [card] granted to shop_support_team
+read shop_intern support.customer_lookup.customer_name [name~] granted to shop_support_team
+read shop_intern support.customer_lookup.email [email] granted to shop_support_team
+read shop_intern support.customer_lookup.id [-] granted to shop_support_team
+read shop_intern support.customer_lookup.phone [phone] granted to shop_support_team
+read shop_intern support.order_status.id [-] granted to shop_support_team
+read shop_intern support.order_status.shipped_at [-] granted to shop_support_team
+read shop_intern support.order_status.tracking_number [-] granted to shop_support_team
+read shop_reporting shop.api_credentials.credential [secret] member of pg_read_all_data
+read shop_reporting shop.api_credentials.id [-] member of pg_read_all_data
+read shop_reporting shop.api_credentials.service [-] member of pg_read_all_data
+read shop_reporting shop.customers.card_number [card] member of pg_read_all_data
+read shop_reporting shop.customers.card_number [card] through view support.customer_lookup (rights of shop_owner)
+read shop_reporting shop.customers.city [-] member of pg_read_all_data
+read shop_reporting shop.customers.created_at [-] member of pg_read_all_data
+read shop_reporting shop.customers.email [email] member of pg_read_all_data
+read shop_reporting shop.customers.email [email] through view support.customer_lookup (rights of shop_owner)
+read shop_reporting shop.customers.first_name [name] member of pg_read_all_data
+read shop_reporting shop.customers.first_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_reporting shop.customers.id [-] member of pg_read_all_data
+read shop_reporting shop.customers.id [-] through view support.customer_lookup (rights of shop_owner)
+read shop_reporting shop.customers.last_name [name] member of pg_read_all_data
+read shop_reporting shop.customers.last_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_reporting shop.customers.marketing_opt_in [-] member of pg_read_all_data
+read shop_reporting shop.customers.notes [email] member of pg_read_all_data
+read shop_reporting shop.customers.phone [phone] member of pg_read_all_data
+read shop_reporting shop.customers.phone [phone] through view support.customer_lookup (rights of shop_owner)
+read shop_reporting shop.newsletter.email [email] granted to PUBLIC
+read shop_reporting shop.newsletter.email [email] member of pg_read_all_data
+read shop_reporting shop.newsletter.id [-] granted to PUBLIC
+read shop_reporting shop.newsletter.id [-] member of pg_read_all_data
+read shop_reporting shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_reporting shop.newsletter.subscribed_at [-] member of pg_read_all_data
+read shop_reporting shop.orders.customer_id [-] member of pg_read_all_data
+read shop_reporting shop.orders.id [-] member of pg_read_all_data
+read shop_reporting shop.orders.id [-] through view support.order_status (rights of shop_owner)
+read shop_reporting shop.orders.shipped_at [-] member of pg_read_all_data
+read shop_reporting shop.orders.shipped_at [-] through view support.order_status (rights of shop_owner)
+read shop_reporting shop.orders.total [-] member of pg_read_all_data
+read shop_reporting shop.orders.tracking_number [-] member of pg_read_all_data
+read shop_reporting shop.orders.tracking_number [-] through view support.order_status (rights of shop_owner)
+read shop_reporting shop.products.id [-] member of pg_read_all_data
+read shop_reporting shop.products.name [-] member of pg_read_all_data
+read shop_reporting shop.products.price [-] member of pg_read_all_data
+read shop_reporting shop.products.sku [-] member of pg_read_all_data
+read shop_reporting shop.refunds.amount [-] member of pg_read_all_data
+read shop_reporting shop.refunds.iban [bank-account] member of pg_read_all_data
+read shop_reporting shop.refunds.id [-] member of pg_read_all_data
+read shop_reporting shop.refunds.order_id [-] member of pg_read_all_data
+read shop_reporting shop.users.email_verified [-] member of pg_read_all_data
+read shop_reporting shop.users.id [-] member of pg_read_all_data
+read shop_reporting shop.users.last_login_ip [ip-address] member of pg_read_all_data
+read shop_reporting shop.users.password_hash [password] member of pg_read_all_data
+read shop_reporting shop.users.username [-] member of pg_read_all_data
+read shop_reporting support.customer_lookup.card_number [card] member of pg_read_all_data
+read shop_reporting support.customer_lookup.customer_name [name~] member of pg_read_all_data
+read shop_reporting support.customer_lookup.email [email] member of pg_read_all_data
+read shop_reporting support.customer_lookup.id [-] member of pg_read_all_data
+read shop_reporting support.customer_lookup.phone [phone] member of pg_read_all_data
+read shop_reporting support.order_status.id [-] member of pg_read_all_data
+read shop_reporting support.order_status.shipped_at [-] member of pg_read_all_data
+read shop_reporting support.order_status.tracking_number [-] member of pg_read_all_data
+write shop_app shop.customers INSERT granted to shop_app
+write shop_app shop.customers UPDATE granted to shop_app
+write shop_app shop.orders INSERT granted to shop_app
+write shop_app shop.orders UPDATE granted to shop_app
+write shop_app shop.users UPDATE(password_hash,last_login_ip) column granted to shop_app

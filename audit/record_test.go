@@ -225,4 +225,19 @@ REVOKE SELECT ON shop.products FROM shop_analyst;`
 	cmp.Write(&b)
 	writeFile(t, filepath.Join(dir, "baseline.txt"), b.String())
 	t.Logf("quarterly: %d grew, %d gone, %d other", len(cmp.Grew), len(cmp.Shrank), len(cmp.Other))
+
+	// The fix: the refunds table loses its PUBLIC grant, and the default
+	// privileges stop handing new tables to PUBLIC.
+	fix := `REVOKE SELECT ON shop.refunds FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES FOR ROLE shop_owner IN SCHEMA shop REVOKE SELECT ON TABLES FROM PUBLIC;`
+	execAll(t, f, fix)
+	writeFile(t, filepath.Join(dir, "fix.sql"), fix+"\n")
+	fixed := runAt(t, f, f.logins, time.Date(2026, 10, 2, 9, 0, 0, 0, time.UTC))
+	record(t, filepath.Join(dir, "fixed"), fixed)
+	recordDiff(t, filepath.Join(dir, "fixed-diff.txt"), q4, fixed)
+	for _, fd := range fixed.Findings {
+		if (fd.Code == "public-reads-personal" && fd.Subject == "shop.refunds") || fd.Code == "default-grants-to-public" {
+			t.Errorf("quarterly after the fix: %s %s", fd.Code, fd.Subject)
+		}
+	}
 }
