@@ -88,24 +88,54 @@ passwords() {
 }
 
 # run starts the three servers for the length of one command.
-run() {
-  local pids=()
-  "$0" pg >>$D/pg16.log 2>&1 & pids+=($!)
-  "$0" mysql >/dev/null 2>&1 & pids+=($!)
-  "$0" mariadb >/dev/null 2>&1 & pids+=($!)
-  stop() {
-    su postgres -s /bin/bash -c "$PGBIN/pg_ctl -D $D/pg16/data stop -m fast" >/dev/null 2>&1 || true
-    mysqladmin --socket=$D/mysql80/run/mysqld.sock -uroot -proot shutdown 2>/dev/null || true
-    LD_LIBRARY_PATH=$MARIADB/usr/lib/x86_64-linux-gnu $MARIADB/usr/bin/mariadb --no-defaults \
-      --socket=$D/mariadb/run/mariadb.sock -uroot -proot -e SHUTDOWN 2>/dev/null || true
-    kill "${pids[@]}" 2>/dev/null || true
-    wait "${pids[@]}" 2>/dev/null || true
-  }
-  trap stop EXIT
+# up reports whether all three servers accept logins.
+up() {
+  $PGBIN/pg_isready -q -h 127.0.0.1 -p 5432 &&
+    mysql -h127.0.0.1 -P3306 -uroot -proot -e 'select 1' >/dev/null 2>&1 &&
+    mysql -h127.0.0.1 -P3307 -uroot -proot -e 'select 1' >/dev/null 2>&1
+}
+
+# stop_servers shuts the three servers down and waits until they are gone.
+stop_servers() {
+  su postgres -s /bin/bash -c "$PGBIN/pg_ctl -D $D/pg16/data stop -m fast" >/dev/null 2>&1 || true
+  mysqladmin --socket=$D/mysql80/run/mysqld.sock -uroot -proot shutdown 2>/dev/null || true
+  LD_LIBRARY_PATH=$MARIADB/usr/lib/x86_64-linux-gnu $MARIADB/usr/bin/mariadb --no-defaults \
+    --socket=$D/mariadb/run/mariadb.sock -uroot -proot -e SHUTDOWN 2>/dev/null || true
   for _ in $(seq 1 60); do
-    if $PGBIN/pg_isready -q -h 127.0.0.1 -p 5432 &&
-      mysql -h127.0.0.1 -P3306 -uroot -proot -e 'select 1' >/dev/null 2>&1 &&
-      mysql -h127.0.0.1 -P3307 -uroot -proot -e 'select 1' >/dev/null 2>&1; then
+    [ -e $D/mysql80/run/mysqld.pid ] || [ -e $D/mariadb/run/mariadb.pid ] || [ -e $D/pg16/data/postmaster.pid ] || return 0
+    sleep 0.5
+  done
+}
+
+# run CMD: runs CMD with the three servers up and BARESQL_TEST_* set. Runs
+# may overlap (two sessions or agents at once): the first starts the
+# servers, the last one to finish stops them. A lock keeps starting and
+# stopping apart; $D/runs holds one file per run in progress.
+run() {
+  mkdir -p $D/runs
+  exec 9>$D/run.lock
+  flock 9
+  echo $$ > $D/runs/$$
+  if ! up; then
+    "$0" pg >>$D/pg16.log 2>&1 &
+    "$0" mysql >/dev/null 2>&1 &
+    "$0" mariadb >/dev/null 2>&1 &
+  fi
+  flock -u 9
+  finish() {
+    flock 9
+    rm -f $D/runs/$$
+    local f others=0
+    for f in $D/runs/*; do
+      [ -e "$f" ] || continue
+      if kill -0 "${f##*/}" 2>/dev/null; then others=1; else rm -f "$f"; fi
+    done
+    [ "$others" = 0 ] && stop_servers
+    flock -u 9
+  }
+  trap finish EXIT
+  for _ in $(seq 1 60); do
+    if up; then
       eval "$(env_vars)"
       "$@"
       return
