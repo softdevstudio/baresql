@@ -143,8 +143,9 @@ the site, is next.
   numbers inside arrays are found by column name only; the bare words
   `pan` and `tin` count as card and tax ID.
 - Portable: lint reads tokens, not a full parse, and knows column types
-  only from CREATE TABLE in the files it reads; JSON functions, stored
-  procedures and triggers are not covered; collation-dependent sort order
+  only from CREATE TABLE in the files it reads; JSON is covered only as
+  far as JSON_EXTRACT, `->>` and JSONB exist, and stored procedures and
+  triggers not at all; collation-dependent sort order
   (PostgreSQL's depends on the cluster locale) is not a rule; MariaDB's
   trailing-space equality ('a' = 'a ' is true there) is not a rule. The
   differences the review found without a rule (README, Limits: ALTER

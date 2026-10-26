@@ -20,7 +20,7 @@ Each problem it reports has a severity that comes from real answers. It's an err
 
 Most projects use only two of the four engines. With `--engines sqlite,postgres`, lint keeps a problem only when the exact construct it found answers differently between those two. It knows that from the answers recorded for that construct, so a difference that only matters on MySQL drops out.
 
-## Every Message Comes From a Run
+## Every Answer Comes From a Run
 
 Behind lint sits a catalog. Each difference has a minimal example and, where one exists, a rewrite that answers the same everywhere. A difference that covers many forms, such as the functions some engines lack, has a row for each form, {{v:rows}} rows in all. Every example, rewrite and row was run on SQLite {{v:sqlite}}, PostgreSQL {{v:postgres}}, MySQL {{v:mysql}} and MariaDB {{v:mariadb}}, and the {{v:answers}} answers are kept in the code repository. When lint says that MD5() works on PostgreSQL, MySQL before 9.6 and MariaDB, and that SQLite refuses it, the answers behind it are recorded ones. The 9.6 comes from MySQL's release notes, which say that version moved MD5() into an optional component, and CI finds it missing on 9.7. Where no rewrite answers the same on all four, the catalog says so plainly.
 
@@ -36,4 +36,4 @@ Each engine works in a throwaway space: a transaction rolled back at the end on 
 
 ## What Lint Leaves Out
 
-Lint reads tokens and the shapes of expressions. It doesn't parse SQL fully, and it knows column types only from the CREATE TABLE statements it reads. JSON functions, stored procedures and triggers are left out, because their syntax differs too much between engines to compare. Answers are recorded with each engine's default settings, and server modes such as MySQL's `sql_mode` and collations change some of them. Some differences have no rule yet; the [BareSQL Portable page](https://baresql.com/portable/) lists them, and compare shows them when a script runs into one.
+Lint reads tokens and the shapes of expressions. It doesn't parse SQL fully, and it knows column types only from the CREATE TABLE statements it reads. JSON counts only where it decides whether a statement runs at all, as with JSON_EXTRACT, `->>` and the JSONB type. The rest of JSON, stored procedures and triggers are left out, because their syntax differs too much between engines to compare. Answers are recorded with each engine's default settings, and server modes such as MySQL's `sql_mode` and collations change some of them. Some differences have no rule yet; the [BareSQL Portable page](https://baresql.com/portable/) lists them, and compare shows them when a script runs into one.

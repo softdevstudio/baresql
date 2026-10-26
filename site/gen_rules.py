@@ -84,15 +84,16 @@ def link_codes(text):
 
 
 def md_escape(text):
-    """Text from the catalog into Markdown: keep * _ ` and < literal, and keep
-    Hugo's typographer from turning -- into a dash and the quotes of SQL
-    strings and names into curly ones. Apostrophes inside words are written
+    """Text from the catalog into Markdown: keep * _ ` < > [ ] literal, and
+    keep Hugo's typographer from turning -- into a dash, >> into a guillemet,
+    ... into an ellipsis and the quotes of SQL strings and names into curly
+    ones. Apostrophes inside words are written
     curly here, as the typographer would print them, so no entity is left for
     the theme's cards to show."""
     text = text.replace("\\", "\\\\")
-    for ch in "*_`<[]":
+    for ch in "*_`<>[]":
         text = text.replace(ch, "\\" + ch)
-    text = text.replace("--", "\\-\\-")
+    text = text.replace("--", "\\-\\-").replace("...", "\\.\\.\\.")
     text = text.replace('"', '\\"')
     text = re.sub(r"(?<=[A-Za-z])'(?=[A-Za-z])", "\u2019", text)
     text = text.replace("'", "\\'")
@@ -287,8 +288,28 @@ h1 { font-size: 36px; }
 """
     page = img.card(e["title"], "", body, css)
     page = page.replace("<h1>", '<div class="kicker">SQL difference: %s</div><h1>' % img.esc(code), 1)
-    alt = "%s, run on four engines: %s." % (sql.replace("\n", " "), "; ".join("%s %s" % (lab, text) for lab, text, _, _ in rows))
+    alt = "%s, run on four engines: %s." % (alt_span(sql.replace("\n", " ")),
+                                             "; ".join("%s %s" % (lab, alt_answer(text)) for lab, text, _, _ in rows))
     return page, alt
+
+
+def alt_span(text):
+    """A code span inside alt text: Hugo writes its text into the alt as it
+    stands, without the backticks, so quotes, -- and backslashes survive."""
+    n = 1
+    while "`" * n in text:
+        n += 1
+    if text.startswith("`") or text.endswith("`"):
+        text = " " + text + " "
+    return "`" * n + text + "`" * n
+
+
+def alt_answer(text):
+    if text.startswith("error: "):
+        return "error: " + alt_span(text[len("error: "):])
+    if text == "no rows":
+        return text
+    return alt_span(text)
 
 
 def post(code, alt):
@@ -302,13 +323,6 @@ def post(code, alt):
     # The summary is lint's message, quoted further down, so the opening is
     # the hand-written intro and the catalog's explanation.
     out += [lead_typo(intro), "", prose(e["detail"]), ""]
-    # Alt text is used as written (no escapes), but -- still becomes a dash
-    # and backticks start code spans, so both are put in words.
-    alt = alt.replace("[", "(").replace("]", ")")
-    # Backticks are the point of the backticks rule; elsewhere they only
-    # quote names in an error message.
-    alt = re.sub(r"`([^`]*)`", r"\1 in backticks" if code == "backticks" else r"\1", alt)
-    alt = re.sub(r" ?-- ?", " double dash ", alt)
     out += ["![%s](%s)" % (alt, imgurl), ""]
 
     out += ["## What Each Engine Answered", ""]

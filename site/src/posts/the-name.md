@@ -20,7 +20,7 @@ That core can be found by experiment. Each of the {{v:rules}} differences BareSQ
 
 ## A Bare Program
 
-The name also fits how BareSQL is built. The download is one file. It's written in Go using only the standard library, so no third-party code ships inside it. PostgreSQL, MySQL and MariaDB are reached through BareSQL's own code for their network protocols, and SQLite through the `sqlite3` program. The audit reads the system catalogs inside a read-only transaction and never calls a function you wrote. A tool that logs in to production databases should be easy to read through, and a small one with nothing hidden in it is.
+The name also fits how BareSQL is built. The download is one file, and the code in it uses nothing beyond Go's standard library. PostgreSQL, MySQL and MariaDB are reached through BareSQL's own code for their network protocols, and SQLite through the `sqlite3` program. The audit reads the system catalogs inside a read-only transaction and never calls a function you wrote. A tool that logs in to production databases should be easy to read through, and a small one with nothing hidden in it is.
 
 ## Why the Two Tools Share It
 

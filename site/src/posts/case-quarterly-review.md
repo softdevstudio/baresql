@@ -6,7 +6,7 @@ tags: ["case studies", "BareSQL Audit"]
 featured_image: "https://baresql.com/images/case-quarterly-review.png"
 ---
 
-This case study runs on the sample shop database that BareSQL's tests build, so the shop is made up, and the outputs are what BareSQL printed. The shop reviews database access once a quarter. The first review with BareSQL Audit covers every login and ends with a file kept for next time, `audit.json`.
+The shop in this case study is made up: it's the sample shop database that BareSQL's tests build, and the outputs are what BareSQL printed. It reviews database access once a quarter. The first review with BareSQL Audit covers every login and ends with a file kept for next time, `audit.json`.
 
 Three months later the review runs again against that file. The reviewer then reads what changed, with no need to compare two long reports by eye.
 
@@ -64,7 +64,7 @@ The refunds table loses its PUBLIC grant, and the default privileges stop handin
 {{file:audit/quarterly/fix.sql}}
 ```
 
-The second statement removes the cause, the default privilege that the July finding was about. The next morning the audit runs again, with the October file as its baseline. It finds {{v:quarterly_fixed_gone}} pieces of reach gone and none grown, and the July finding is gone along with the October one:
+The second statement removes the cause, the default privilege that the July finding was about. The next morning the audit runs again, with the October file as its baseline. It finds {{v:quarterly_fixed_gone}} pieces of reach gone and none grown, and the July finding is gone along with the October one. Without its {{v:quarterly_fixed_gone}} lines of reach, the comparison reads:
 
 ```
 {{grep:audit/quarterly/fixed-diff.txt:^(Compared|Reach|Other)|~ finding}}

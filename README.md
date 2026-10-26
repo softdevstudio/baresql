@@ -581,8 +581,10 @@ Rule codes never change.
   of AVG over integers, ROUND of floating point halves (SQLite rounds 2.5
   away from zero, the others to even), and GROUP BY and DISTINCT under MySQL's case
   folding. compare shows them when they come up.
-- JSON functions and operators, stored procedures and triggers are left
-  out: their syntax differs too much between engines to compare.
+- JSON is covered only where it decides whether a statement runs at all
+  (JSON_EXTRACT, `->>`, the JSONB type). The rest of the JSON functions and
+  operators, stored procedures and triggers are left out: their syntax
+  differs too much between engines to compare.
 - Answers are recorded with the engines' default settings. Server modes
   (`sql_mode` on MySQL and MariaDB, `standard_conforming_strings` on
   PostgreSQL) and collations change some of them.

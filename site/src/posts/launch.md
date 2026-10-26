@@ -18,7 +18,7 @@ The audit covers grants through roles at any depth, roles a login can switch to,
 
 SQL meant for more than one engine has its own trouble. A test suite runs on SQLite while production runs on PostgreSQL. Then a search that finds Bob in the tests finds nobody in production. `baresql lint` reads SQL files and points at {{v:rules}} kinds of construct that fail or answer differently, each with what to write instead. `baresql compare` runs a script on real engines and shows every statement whose answers differ. `baresql rules` explains each difference with the answer each engine gave.
 
-Both tools ship as one file. BareSQL talks to PostgreSQL, MySQL and MariaDB over their network protocols with code of its own, and for SQLite it calls the `sqlite3` program. It's written in Go, with no third-party code at all.
+Both tools ship as one file. BareSQL talks to PostgreSQL, MySQL and MariaDB over their network protocols with code of its own, and for SQLite it calls the `sqlite3` program. It's written in Go and uses nothing beyond Go's standard library.
 
 ## Tested on the Real Engines
 

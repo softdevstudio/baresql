@@ -22,7 +22,7 @@ The counts grow with the versions because PostgreSQL grew. `pg_read_all_data` ar
 
 ## The Server Has the Last Word
 
-BareSQL works each route out from the system catalogs. Then, for every login, table and column, it asks the server's own privilege functions whether the access is really there. If BareSQL and the server ever disagree, the audit reports the mismatch, and the tests fail on any mismatch at all. The corner cases go through the same check, so their expected facts can't drift away from what the server allows.
+BareSQL works each route out from the system catalogs. Then, for every login, table and column, it asks the server's own privilege functions whether the access is really there. If BareSQL and the server ever disagree, the audit reports the mismatch, and the tests fail on any mismatch at all. The corner cases go through the same check, so the access in their expected facts can't drift away from what the server grants.
 
 ## Near Misses
 
@@ -44,4 +44,4 @@ A separate test builds {{v:scale_tables}} tables of {{v:scale_columns}} columns 
 
 Before 0.1.0, an independent review tried to break the audit on a live server. It found cases where the report was wrong: a type's own cast that sampling could have run, a foreign table that could be read through its parent, email addresses that could appear as JSON keys in the evidence, a role named "PUBLIC" that could be mistaken for PUBLIC. Each one was fixed and now has a test of its own, most of them as numbered cases in the fifth test database, so none can come back unnoticed. The [README](https://github.com/softdevstudio/baresql#limits) lists what the audit still leaves out, under Limits.
 
-The recorded audits, the counts above and the timing are kept in the code repository, and the [sample reports](https://baresql.com/sample-reports/) are four of them, as BareSQL wrote them.
+The counts above and the timing are kept in the code repository with the recorded audits, and the [sample reports page](https://baresql.com/sample-reports/) shows every one of those audits as BareSQL wrote it.

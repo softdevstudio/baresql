@@ -56,10 +56,10 @@ Each difference has its own post with the recorded answers, every form BareSQL c
 
 Every example, rewrite and form in the catalog was run on SQLite {{v:sqlite}}, PostgreSQL {{v:postgres}}, MySQL {{v:mysql}} and MariaDB {{v:mariadb}}, and the {{v:answers}} answers are kept in the code repository. On every change, CI runs the whole catalog again on PostgreSQL 13 to 18, MySQL 8.0, 8.4 and 9.7, MariaDB 10.11, 11.4, 11.8 and 12.3, and the sqlite3 of its Linux and macOS machines, and fails when an answer changes. Where a version really answers differently, the catalog keeps that answer too, and lint's messages say so ("MD5() works on PostgreSQL, MySQL (before 9.6) and MariaDB; SQLite refuses it"). Some builds of sqlite3 leave out its math functions or fold case beyond A to Z; the catalog says which answers assume the usual build.
 
-Lint's messages for functions, operators, types and the other forms come from those runs, and so does each problem's severity. The [testing post](https://baresql.com/how-baresql-portable-was-tested-on-four-real-database-engines/) has the details.
+Lint's messages for functions, operators and types come from those runs, and so does each problem's severity. The [testing post](https://baresql.com/how-baresql-portable-was-tested-on-four-real-database-engines/) has the details.
 
 ## Limits
 
-Lint reads tokens and recognizes the shapes of expressions. It doesn't parse SQL fully, so it can miss a construct written in an unusual way. JSON functions, stored procedures and triggers are left out, since their syntax differs too much between engines to compare. Answers are recorded with each engine's default settings: server modes such as MySQL's sql_mode, and collations, change some of them.
+Lint reads tokens and recognizes the shapes of expressions. It doesn't parse SQL fully, so it can miss a construct written in an unusual way. JSON counts only where it decides whether a statement runs at all, as with JSON_EXTRACT, `->>` and the JSONB type. The rest of JSON, stored procedures and triggers are left out, since their syntax differs too much between engines to compare. Answers are recorded with each engine's default settings: server modes such as MySQL's sql_mode, and collations, change some of them.
 
 Some differences have no rule yet: ALTER TABLE syntax, names that are reserved words on some engines (user, key, rank), aggregate FILTER, FROM DUAL, the digits of AVG over integers and ROUND of floating point halves among them. compare shows them when a script runs into one.

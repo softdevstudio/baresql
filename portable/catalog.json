@@ -14,7 +14,7 @@
     "title": "Dividing decimals",
     "severity": "warning",
     "summary": "80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333333333333333 on PostgreSQL and a floating point number on SQLite.",
-    "detail": "MySQL and MariaDB give the result of a decimal division four more decimal places than the dividend has (the div_precision_increment setting) and cut it there. PostgreSQL keeps at least 16 significant digits, and SQLite divides as floating point numbers. Shares of an amount, prices per unit and AVG of a DECIMAL column then differ in the last digits, and sums of them by a cent here and there.",
+    "detail": "MySQL and MariaDB give the result of a decimal division four more decimal places than the dividend has (the div_precision_increment setting) and cut it there. PostgreSQL keeps at least 16 significant digits, and SQLite divides as floating point numbers. Shares of an amount and averages of a DECIMAL column then differ in their last digits.",
     "advice": "Round on purpose to the places you need: ROUND(80.50 / 3, 2) is 26.83 on all four engines.",
     "example": "SELECT 80.50 / 3",
     "rewrite": "SELECT ROUND(80.50 / 3, 2)"
@@ -51,7 +51,7 @@
     "title": "Text comparisons and letter case",
     "severity": "info",
     "summary": "MySQL and MariaDB compare text without regard to letter case or accents by default; SQLite and PostgreSQL compare it exactly.",
-    "detail": "The default collations of MySQL and MariaDB ignore case and accents, so 'abc' = 'ABC' and 'e' = 'é' are true there and false on SQLite and PostgreSQL. The same goes for joins, GROUP BY, DISTINCT and unique keys: two e-mail addresses that differ only in case are one value on MySQL and two elsewhere. Whether an answer changes depends on the data, so lint reports this as information.",
+    "detail": "The default collations of MySQL and MariaDB ignore case and accents, so 'abc' = 'ABC' and 'e' = 'é' are true there and false on SQLite and PostgreSQL. The same goes for joins, GROUP BY, DISTINCT and unique keys: two values that differ only in case count as one on MySQL and as two elsewhere. Whether an answer changes depends on the data, so lint reports this as information.",
     "advice": "Compare LOWER(a) = LOWER(b) where case should not matter, and store values in one case. No form makes MySQL compare exactly without naming a collation, and collation names differ on every engine.",
     "example": "SELECT 'abc' = 'ABC'",
     "rewrite": "SELECT LOWER('abc') = LOWER('ABC')"
@@ -115,7 +115,7 @@
     "title": "Where NULL sorts",
     "severity": "info",
     "summary": "SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last.",
-    "detail": "The standard leaves the place of NULL in ORDER BY to the engine. PostgreSQL treats NULL as larger than every value, the others as smaller, and descending order turns both around. Pages of results, top-ten lists and window functions such as ROW_NUMBER() OVER (ORDER BY x) all change when the column holds NULL.",
+    "detail": "The standard leaves the place of NULL in ORDER BY to the engine. PostgreSQL treats NULL as larger than every value, the others as smaller, and descending order turns both around. Paged results change when the column holds NULL, and so do window functions such as ROW_NUMBER() OVER (ORDER BY x).",
     "advice": "Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.",
     "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (NULL), (2)",
     "example": "SELECT x FROM t ORDER BY x",
@@ -341,7 +341,7 @@
         "name": "REAL",
         "probe": "CREATE TABLE t (r REAL);\nINSERT INTO t VALUES (1.23456789);\nSELECT r FROM t",
         "advice": "",
-        "message": "REAL keeps about 6 significant digits on PostgreSQL, against 15 on SQLite, MySQL and MariaDB."
+        "message": "REAL keeps about 7 significant digits on PostgreSQL, against 15 on SQLite, MySQL and MariaDB."
       },
       {
         "name": "FLOAT",
@@ -366,7 +366,7 @@
     "title": "LENGTH counts bytes on MySQL",
     "severity": "info",
     "summary": "LENGTH counts characters on SQLite and PostgreSQL and bytes on MySQL and MariaDB, so LENGTH('é') is 1 or 2.",
-    "detail": "In UTF-8 a letter outside A to Z takes two to four bytes. MySQL and MariaDB count characters with CHAR_LENGTH, which SQLite lacks. Length checks, cut-offs and padding drift apart on names and addresses with accents.",
+    "detail": "In UTF-8 a letter outside A to Z takes two to four bytes. MySQL and MariaDB count characters with CHAR_LENGTH, which SQLite lacks. Length checks and cut-offs drift apart on names and addresses with accents.",
     "advice": "No function counts characters on all four engines: use CHAR_LENGTH on PostgreSQL, MySQL and MariaDB and LENGTH on SQLite.",
     "example": "SELECT LENGTH('é')"
   },
@@ -1569,7 +1569,7 @@
       {
         "name": "JSON_EXTRACT",
         "probe": "SELECT JSON_EXTRACT('{\"a\": 1}', '$.a')",
-        "advice": "No form works on all four engines; the -> and ->> operators on PostgreSQL."
+        "advice": "No form works on all four engines; PostgreSQL has the -> and ->> operators instead."
       },
       {
         "name": "STDDEV",

@@ -62,7 +62,7 @@ def check_pages():
 
 
 def check_text(f, s):
-    if re.search("[–—]", s):
+    if re.search("[\u2013\u2014]", s):
         bad(f, "an en or em dash")
     for link in re.findall(r"\]\((?!https?://|mailto:)([^)]+)\)", s):
         bad(f, "relative link %s" % link)
@@ -84,10 +84,20 @@ def check_build():
                 if re.search(r"&amp;[a-z#0-9]+;", m.group(1)):
                     bad(where, "a card shows an entity: %s" % m.group(1)[:90])
             for m in re.finditer(r"<(code|pre)[^>]*>(.*?)</\1>", s, re.S):
-                if re.search(r"&[lr][sd]quo;|&ndash;|&mdash;|&hellip;|[‘’“”–—…]", m.group(2)):
+                if re.search(r"&[lr][sd]quo;|&ndash;|&mdash;|&hellip;|[\u2018\u2019\u201c\u201d\u2013\u2014\u2026]", m.group(2)):
                     bad(where, "Hugo changed code: %s" % m.group(2)[:90])
-            if re.search(r"&ndash;|&mdash;|[–—]", s):
+            if re.search(r"&ndash;|&mdash;|[\u2013\u2014]", s):
                 bad(where, "an en or em dash")
+            # In a post or page, a guillemet is Hugo's typographer at work on
+            # >>, and in a rule post an ellipsis is its work on the ... of SQL.
+            # (Cards end in the theme's own ellipsis, pagers use guillemets.)
+            article = re.search(r"<article>(.*?)</article>", s, re.S)
+            if article:
+                marks = r"&[lr]aquo;|[\u00ab\u00bb]"
+                if "/tags/sql-differences/" in article.group(1):
+                    marks += r"|&hellip;|\u2026"
+                for m in re.finditer(marks, article.group(1)):
+                    bad(where, "Hugo's typographer made %s of: %s" % (m.group(0), article.group(1)[max(0, m.start() - 50):m.start()]))
             for m in re.finditer(r'(?:href|src)="([^"]+)"', s):
                 u = html.unescape(m.group(1))
                 if u.startswith("https://baresql.com/"):

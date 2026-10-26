@@ -91,7 +91,7 @@ Each difference also has its own post here, listed on the [BareSQL Portable page
 
 ## Use It in CI
 
-The exit code says what happened. It's 1 when lint reports a problem, when compare finds answers that differ, or when an audit finds access that grew past its baseline. It's 2 when the command could not run, and 0 otherwise. A CI step can fail on portability problems like this:
+The exit code says what happened. Lint exits 1 when it reports a problem, and compare when answers differ. `baresql diff` and an audit with `--baseline` exit 1 when access grew. Every command exits 2 when it could not run, and 0 otherwise. A CI step can fail on portability problems like this:
 
 ```
 - name: Check the SQL

@@ -16,7 +16,7 @@ RULES = {
 "A customer list built with `CONCAT(first_name, ' ', last_name)` looks complete on PostgreSQL and SQLite. Moved to MySQL or MariaDB, the same query returns NULL for some customers."),
 
 "text-compare-case": ("MySQL Compares Text Without Regard to Letter Case and PostgreSQL Compares It Exactly", "text",
-"Sign-ups as `ann@example.com` and `Ann@example.com` are two users on PostgreSQL and SQLite. On MySQL and MariaDB they are the same text, because the default collation ignores case, and a unique key on the email column refuses the second sign-up."),
+"Sign-ups as `ann@example.com` and `Ann@example.com` are two users on PostgreSQL and SQLite. On MySQL and MariaDB a unique key on the email column refuses the second sign-up."),
 
 "like-case": ("LIKE Ignores Letter Case on SQLite and MySQL and Respects It on PostgreSQL", "text",
 "A search box that runs `WHERE name LIKE 'ann%'` finds Ann on SQLite, MySQL and MariaDB. On PostgreSQL it misses her, because LIKE there compares letters exactly."),
@@ -25,7 +25,7 @@ RULES = {
 "Product codes are text, and a query that forgets the quotes, `WHERE code = 0`, still runs on MySQL and MariaDB. There it returns codes that have nothing to do with 0."),
 
 "double-quotes": ("Double Quotes Name a Column on PostgreSQL and Make a String on MySQL", "syntax",
-"A query copied from PostgreSQL, with a column name in double quotes, runs on MySQL without an error. It returns the name itself on every row, because MySQL reads double quotes as a string."),
+"A query copied from PostgreSQL that puts a column name in double quotes runs on MySQL without an error, and never reads the column."),
 
 "null-order": ("NULL Sorts First on SQLite and MySQL and Last on PostgreSQL", "NULL and sorting",
 "Sort customers by the date of their last order and the ones who never ordered come first on SQLite, MySQL and MariaDB and last on PostgreSQL. The first page of the same report shows different people."),
@@ -55,10 +55,10 @@ RULES = {
 "Measurements kept in a REAL column on PostgreSQL, or in a FLOAT column on MySQL or MariaDB, come back with fewer digits than went in. The same type names keep them all on the other engines."),
 
 "char-padding": ("CHAR Columns Come Back Padded With Spaces on PostgreSQL", "text",
-"A status kept in a `CHAR(10)` column comes back as `'paid      '` on PostgreSQL, filled up to ten characters. The application gets the spaces too, and its own check for paid orders fails."),
+"An order status kept in a `CHAR(10)` column compares as expected in SQL on every engine. In the application code, though, a check for paid orders fails on PostgreSQL alone."),
 
 "length-bytes": ("LENGTH Counts Bytes on MySQL and MariaDB and Characters on PostgreSQL and SQLite", "text",
-"A check that a name is at most 20 long, written with `LENGTH(name)`, lets 20 letters through on SQLite and PostgreSQL. MySQL and MariaDB count bytes instead, so a name with accents reaches the limit sooner."),
+"A check that a name is at most 20 characters long, written with `LENGTH(name)`, lets 20 letters through on SQLite and PostgreSQL. MySQL and MariaDB count bytes instead, so a name with accents reaches the limit sooner."),
 
 "lower-non-ascii": ("SQLite LOWER and UPPER Change Only the Letters A to Z", "text",
 "Searching names with `LOWER(name) = LOWER('Émile')` works on PostgreSQL, MySQL and MariaDB. On SQLite, LOWER changes only A to Z, so É stays É and a stored émile never matches."),
@@ -79,7 +79,7 @@ RULES = {
 "A growth formula written as `rate ^ years` works on PostgreSQL. On MySQL and MariaDB it still runs and gives numbers that have nothing to do with growth: `2 ^ 3` is 1 there."),
 
 "dash-comment": ("Double Dash Comments Need a Space After Them on MySQL and MariaDB", "syntax",
-"A line like `SELECT price --discount`, left over from debugging, is a comment on SQLite and PostgreSQL. MySQL and MariaDB read the two dashes as minus signs and add the discount to the price."),
+"In a line like `SELECT price --discount`, left over from debugging, SQLite and PostgreSQL read `--discount` as a comment. MySQL and MariaDB add the discount to the price instead."),
 
 "column-name-case": ("PostgreSQL Returns Column Names in Lower Case Unless You Quote Them", "syntax",
 "`SELECT SUM(amount) AS Total` gives a column named Total on SQLite, MySQL and MariaDB. PostgreSQL calls it total."),
@@ -91,10 +91,10 @@ RULES = {
 "A test suite on SQLite passes with a quantity of `'abc'`, or `'Germany'` in a `VARCHAR(2)` country column. PostgreSQL, MySQL and MariaDB refuse both values, so the bug shows up in production instead."),
 
 "boolean-as-number": ("Comparing a Boolean With 1 Works on MySQL and SQLite and Fails on PostgreSQL", "queries",
-"`WHERE active = 1` is the usual way to test a flag on MySQL. PostgreSQL keeps booleans and numbers apart and stops the query, as it does for `WHERE 1` and for inserting 1 into a BOOLEAN column."),
+"`WHERE active = 1` is the usual way to test a flag on MySQL, and SQLite and MariaDB read it the same way. Moved to PostgreSQL, the query stops with an error."),
 
 "auto-increment": ("No Auto Increment Column Syntax Works on Every SQL Engine", "schemas",
-"SQLite, PostgreSQL and MySQL each number new rows their own way, and MariaDB follows MySQL. SERIAL looks like the portable choice, since PostgreSQL, MySQL and MariaDB accept it, and on SQLite the column just stays NULL."),
+"A schema meant for several engines needs ids that number themselves, and no single way of asking for that works on all four. SERIAL comes closest, and on SQLite it fails without a word."),
 
 "backticks": ("Backticks Around Names Work on MySQL and SQLite and Fail on PostgreSQL", "syntax",
 "MySQL examples often quote every name in backticks, as in `` SELECT `name` FROM `people` ``. Copied into a PostgreSQL project, the query fails."),
@@ -121,10 +121,10 @@ RULES = {
 "Finding the customers behind the ten latest orders with `WHERE id IN (SELECT customer_id FROM orders ORDER BY created_at DESC LIMIT 10)` works on SQLite and PostgreSQL. MySQL and MariaDB refuse it."),
 
 "update-same-table": ("MySQL Refuses an UPDATE Whose Subquery Reads the Same Table", "inserts and updates",
-"Marking rows with `UPDATE t SET flag = 1 WHERE id IN (SELECT id FROM t WHERE ...)` works on SQLite, PostgreSQL and MariaDB. MySQL refuses an UPDATE or DELETE whose subquery reads the table being changed, unless the subquery is wrapped in one more SELECT."),
+"Marking rows with `UPDATE t SET flag = 1 WHERE id IN (SELECT id FROM t WHERE ...)` works on SQLite, PostgreSQL and MariaDB. MySQL refuses an UPDATE or DELETE whose subquery reads the table being changed."),
 
 "update-join": ("UPDATE With a Join Needs Different Syntax on MySQL and PostgreSQL", "inserts and updates",
-"Copying prices from a staging table into products takes one statement, written one way on SQLite and PostgreSQL and another on MySQL and MariaDB. `UPDATE ... FROM` works on the first two and `UPDATE ... JOIN` on the other two, and neither runs on all four."),
+"Copying prices from a staging table with a join takes `UPDATE ... FROM` on SQLite and PostgreSQL and `UPDATE ... JOIN` on MySQL and MariaDB, and neither runs on all four."),
 
 "full-outer-join": ("FULL OUTER JOIN Works on PostgreSQL and SQLite and Fails on MySQL and MariaDB", "queries",
 "Matching two lists, such as invoices and payments, to see what is missing on either side calls for a FULL OUTER JOIN. PostgreSQL and SQLite run it, and MySQL and MariaDB refuse it."),
@@ -151,7 +151,7 @@ RULES = {
 "Schemas written for PostgreSQL often declare names and notes as plain `VARCHAR`, with no length. MySQL and MariaDB refuse that CREATE TABLE, since they want a length on every VARCHAR column."),
 
 "type-not-everywhere": ("Column Types Like DATETIME and BYTEA Exist on Some SQL Engines Only", "schemas",
-"A schema with DATETIME, JSONB and MONEY columns runs on SQLite without complaint. Each of those types fails on at least one of the other engines."),
+"A schema with DATETIME and JSONB columns runs on SQLite without complaint. Both types fail on at least one of the other engines."),
 
 "table-options": ("MySQL Table Options Like ENGINE and CHARSET Fail on PostgreSQL and SQLite", "schemas",
 "A MySQL schema ends its CREATE TABLE statements with options such as `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`. SQLite and PostgreSQL refuse the statement at the first option."),
@@ -175,5 +175,5 @@ RULES = {
 "IFNULL, NOW, LEFT and STRING_AGG are everyday functions, and each one is missing on at least one of SQLite, PostgreSQL, MySQL and MariaDB. BareSQL Portable knows {forms} functions like these."),
 
 "operator-not-everywhere": ("SQL Operators That Exist on Some Engines Only and What to Write Instead", "functions and operators",
-"Operators such as `::`, `ILIKE`, `DIV` and `XOR` come from one engine's dialect, and the other engines refuse them. BareSQL Portable knows {forms} operators like these."),
+"Operators such as `::`, `ILIKE`, `DIV` and `XOR` belong to one or two engines, and the others refuse them. BareSQL Portable knows {forms} operators like these."),
 }
