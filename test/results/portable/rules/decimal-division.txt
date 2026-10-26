@@ -6,9 +6,8 @@ and a floating point number on SQLite.
 MySQL and MariaDB give the result of a decimal division four more decimal
 places than the dividend has (the div_precision_increment setting) and cut it
 there. PostgreSQL keeps at least 16 significant digits, and SQLite divides as
-floating point numbers. Shares of an amount, prices per unit and AVG of a
-DECIMAL column then differ in the last digits, and sums of them by a cent here
-and there.
+floating point numbers. Shares of an amount and averages of a DECIMAL column
+then differ in their last digits.
 
 Example:
     SELECT 80.50 / 3

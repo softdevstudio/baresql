@@ -1,1 +1,1 @@
-1000 tables of 10 columns, 50 logins, values sampled: the audit took 2.3 seconds and found 50000 readable login-columns (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1), 2 CPUs, linux/amd64)
+1000 tables of 10 columns, 50 logins, values sampled: the audit took 2.6 seconds and found 50000 readable login-columns (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1), 2 CPUs, linux/amd64)

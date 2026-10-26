@@ -1,4 +1,4 @@
 recorded: 2026-10-26
-commit: 93c6ffc, with uncommitted changes
-binary: baresql 0.1.0-dev, go1.24.7, linux/amd64
+commit: 1fceef4
+binary: baresql 0.1.0, go1.24.7, linux/amd64
 engines: SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14

@@ -1,4 +1,4 @@
-example.sql:1:19: warning: REAL keeps about 6 significant digits on PostgreSQL, against 15 on SQLite, MySQL and MariaDB. [float-precision]
+example.sql:1:19: warning: REAL keeps about 7 significant digits on PostgreSQL, against 15 on SQLite, MySQL and MariaDB. [float-precision]
     REAL
     Use DOUBLE PRECISION, an 8-byte float on all four engines.
 example.sql:1:27: warning: FLOAT keeps about 6 significant digits on MySQL and MariaDB, against 15 on SQLite and PostgreSQL. [float-precision]

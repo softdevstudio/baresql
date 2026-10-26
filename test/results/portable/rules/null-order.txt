@@ -5,8 +5,8 @@ it last.
 
 The standard leaves the place of NULL in ORDER BY to the engine. PostgreSQL
 treats NULL as larger than every value, the others as smaller, and descending
-order turns both around. Pages of results, top-ten lists and window functions
-such as ROW_NUMBER() OVER (ORDER BY x) all change when the column holds NULL.
+order turns both around. Paged results change when the column holds NULL, and
+so do window functions such as ROW_NUMBER() OVER (ORDER BY x).
 
 Given:
     CREATE TABLE t (x INTEGER);

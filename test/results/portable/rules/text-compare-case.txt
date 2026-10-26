@@ -5,8 +5,8 @@ default; SQLite and PostgreSQL compare it exactly.
 
 The default collations of MySQL and MariaDB ignore case and accents, so 'abc'
 = 'ABC' and 'e' = 'é' are true there and false on SQLite and PostgreSQL. The
-same goes for joins, GROUP BY, DISTINCT and unique keys: two e-mail addresses
-that differ only in case are one value on MySQL and two elsewhere. Whether an
+same goes for joins, GROUP BY, DISTINCT and unique keys: two values that
+differ only in case count as one on MySQL and as two elsewhere. Whether an
 answer changes depends on the data, so lint reports this as information.
 
 Example:
