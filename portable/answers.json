@@ -1,0 +1,4405 @@
+{
+  "engines": {
+    "mariadb": "10.11.14",
+    "mysql": "8.0.46",
+    "postgres": "16.15",
+    "sqlite": "3.45.1"
+  },
+  "entries": {
+    "alias-in-having": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "postgres": {
+          "error": "column \"n\" does not exist"
+        },
+        "sqlite": {
+          "rows": [
+            "1, 2"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1, 2"
+          ]
+        }
+      }
+    },
+    "alias-in-where": {
+      "example": {
+        "mariadb": {
+          "error": "Unknown column 'y' in 'WHERE'"
+        },
+        "mysql": {
+          "error": "Unknown column 'y' in 'where clause'"
+        },
+        "postgres": {
+          "error": "column \"y\" does not exist"
+        },
+        "sqlite": {
+          "rows": [
+            "4"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "4"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "4"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "4"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "4"
+          ]
+        }
+      }
+    },
+    "auto-increment": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "NULL"
+          ]
+        }
+      }
+    },
+    "backslash-escapes": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'C:\\temp'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'C:\\temp'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'C:\\\\temp'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'C:\\\\temp'"
+          ]
+        }
+      }
+    },
+    "backticks": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "postgres": {
+          "error": "syntax error at or near \"FROM\""
+        },
+        "sqlite": {
+          "rows": [
+            "'Ann'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'Ann'"
+          ]
+        }
+      }
+    },
+    "boolean-as-number": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "error": "operator does not exist: boolean = integer"
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "caret-operator": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "8"
+          ]
+        },
+        "sqlite": {
+          "error": "unrecognized token: \"^\""
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "8"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "8"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "8"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "8.0"
+          ]
+        }
+      }
+    },
+    "cast-to-date": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "2024-05-06"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2024-05-06"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2024-05-06"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2024"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "2024-05-06"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2024-05-06"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2024-05-06"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'2024-05-06'"
+          ]
+        }
+      }
+    },
+    "cast-to-number": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "6"
+          ]
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INTEGER)' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "6"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "5"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "6"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "6"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "6"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "6.0"
+          ]
+        }
+      }
+    },
+    "cast-to-text": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'123'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'123'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'1'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'123'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'123'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'123'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'123'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'123'"
+          ]
+        }
+      }
+    },
+    "char-padding": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'a    '"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'a'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'a'"
+          ]
+        }
+      }
+    },
+    "column-name-case": {
+      "example": {
+        "mariadb": {
+          "columns": [
+            "Total"
+          ],
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "columns": [
+            "Total"
+          ],
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "columns": [
+            "total"
+          ],
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "columns": [
+            "Total"
+          ],
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "columns": [
+            "total"
+          ],
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "columns": [
+            "total"
+          ],
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "columns": [
+            "total"
+          ],
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "columns": [
+            "total"
+          ],
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "concat-null": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'Ann '"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'Ann '"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'Ann '"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'Ann '"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'Ann '"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'Ann '"
+          ]
+        }
+      }
+    },
+    "count-distinct-columns": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2"
+          ]
+        },
+        "postgres": {
+          "error": "function count(integer, integer) does not exist"
+        },
+        "sqlite": {
+          "error": "wrong number of arguments to function COUNT()"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2"
+          ]
+        }
+      }
+    },
+    "create-or-replace": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "error": "near \"OR\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "dash-comment": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "date-arithmetic": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "20240132"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "20240132"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2024-02-01"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2025"
+          ]
+        }
+      }
+    },
+    "decimal-as-float": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "distinct-on": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ON (a) a, b FROM t ORDER BY a, b' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'ON (a) a, b FROM t ORDER BY a, b' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "1, 3",
+            "2, 4"
+          ]
+        },
+        "sqlite": {
+          "error": "near \"ON\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1, 3",
+            "2, 4"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1, 3",
+            "2, 4"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1, 3",
+            "2, 4"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1, 3",
+            "2, 4"
+          ]
+        }
+      }
+    },
+    "division-by-zero": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "error": "division by zero"
+        },
+        "sqlite": {
+          "rows": [
+            "NULL"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "NULL"
+          ]
+        }
+      }
+    },
+    "double-quotes": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'name'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'name'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'Ann'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'Ann'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'Ann'"
+          ]
+        }
+      }
+    },
+    "fetch-first": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1",
+            "2"
+          ]
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FETCH FIRST 2 ROWS ONLY' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "2"
+          ]
+        },
+        "sqlite": {
+          "error": "near \"FETCH\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1",
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1",
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1",
+            "2"
+          ]
+        }
+      }
+    },
+    "float-precision": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1.23456789, 1.23457"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1.23456789, 1.23457"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1.2345679, 1.23456789"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1.23456789, 1.23456789"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1.23456789, 1.23456789"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1.23456789, 1.23456789"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1.23456789, 1.23456789"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1.23456789, 1.23456789"
+          ]
+        }
+      }
+    },
+    "full-outer-join": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'OUTER JOIN b ON a.x = b.x' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'OUTER JOIN b ON a.x = b.x' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "1, NULL",
+            "2, 2",
+            "NULL, 3"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1, NULL",
+            "2, 2",
+            "NULL, 3"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "2, 2",
+            "1, NULL",
+            "NULL, 3"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1, NULL",
+            "2, 2",
+            "NULL, 3"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1, NULL",
+            "2, 2",
+            "NULL, 3"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1, NULL",
+            "2, 2",
+            "NULL, 3"
+          ]
+        }
+      }
+    },
+    "function-not-everywhere": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'x'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'x'"
+          ]
+        },
+        "postgres": {
+          "error": "function ifnull(unknown, unknown) does not exist"
+        },
+        "sqlite": {
+          "rows": [
+            "'x'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'x'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'x'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'x'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'x'"
+          ]
+        }
+      },
+      "items": {
+        "ARRAY_AGG": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.ARRAY_AGG does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.ARRAY_AGG does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'{1,3}'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: ARRAY_AGG"
+          }
+        },
+        "ASCII": {
+          "mariadb": {
+            "rows": [
+              "65"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "65"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "65"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: ASCII"
+          }
+        },
+        "BIT_AND": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "1"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: BIT_AND"
+          }
+        },
+        "BOOL_AND": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.BOOL_AND does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.BOOL_AND does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: BOOL_AND"
+          }
+        },
+        "CHARACTER_LENGTH": {
+          "mariadb": {
+            "rows": [
+              "3"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "3"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "3"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: CHARACTER_LENGTH"
+          }
+        },
+        "CHAR_LENGTH": {
+          "mariadb": {
+            "rows": [
+              "3"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "3"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "3"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: CHAR_LENGTH"
+          }
+        },
+        "CHR": {
+          "mariadb": {
+            "rows": [
+              "'A'"
+            ]
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.CHR does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'A'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: CHR"
+          }
+        },
+        "CONVERT": {
+          "mariadb": {
+            "rows": [
+              "12"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "12"
+            ]
+          },
+          "postgres": {
+            "error": "column \"signed\" does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: CONVERT"
+          }
+        },
+        "CURDATE": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function curdate() does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: CURDATE"
+          }
+        },
+        "CURTIME": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function curtime() does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: CURTIME"
+          }
+        },
+        "DATEDIFF": {
+          "mariadb": {
+            "rows": [
+              "29"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "29"
+            ]
+          },
+          "postgres": {
+            "error": "function datediff(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: DATEDIFF"
+          }
+        },
+        "DATE_ADD": {
+          "mariadb": {
+            "rows": [
+              "'2024-02-01'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'2024-02-01'"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"1\""
+          },
+          "sqlite": {
+            "error": "near \"1\": syntax error"
+          }
+        },
+        "DATE_FORMAT": {
+          "mariadb": {
+            "rows": [
+              "'2024'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'2024'"
+            ]
+          },
+          "postgres": {
+            "error": "function date_format(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: DATE_FORMAT"
+          }
+        },
+        "DATE_PART": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.DATE_PART does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.DATE_PART does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "2024"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: DATE_PART"
+          }
+        },
+        "DATE_SUB": {
+          "mariadb": {
+            "rows": [
+              "'2024-01-31'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'2024-01-31'"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"1\""
+          },
+          "sqlite": {
+            "error": "near \"1\": syntax error"
+          }
+        },
+        "DATE_TRUNC": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.DATE_TRUNC does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.DATE_TRUNC does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: DATE_TRUNC"
+          }
+        },
+        "DAY": {
+          "mariadb": {
+            "rows": [
+              "6"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "6"
+            ]
+          },
+          "postgres": {
+            "error": "function day(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: DAY"
+          }
+        },
+        "DAYOFWEEK": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "error": "function dayofweek(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: DAYOFWEEK"
+          }
+        },
+        "EVERY": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.EVERY does not exist. Check the 'Function Name Parsing and Resolution' section in the Reference Manual"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(x) FROM t' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: EVERY"
+          }
+        },
+        "EXTRACT": {
+          "mariadb": {
+            "rows": [
+              "2024"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2024"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "2024"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"FROM\": syntax error"
+          }
+        },
+        "FROM_UNIXTIME": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function from_unixtime(integer) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: FROM_UNIXTIME"
+          }
+        },
+        "GEN_RANDOM_UUID": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.GEN_RANDOM_UUID does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.GEN_RANDOM_UUID does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: GEN_RANDOM_UUID"
+          }
+        },
+        "GROUP_CONCAT": {
+          "mariadb": {
+            "rows": [
+              "'a'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'a'"
+            ]
+          },
+          "postgres": {
+            "error": "function group_concat(character varying) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "'a'"
+            ]
+          }
+        },
+        "HEX": {
+          "mariadb": {
+            "rows": [
+              "'61'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'61'"
+            ]
+          },
+          "postgres": {
+            "error": "function hex(unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "'61'"
+            ]
+          }
+        },
+        "IF": {
+          "mariadb": {
+            "rows": [
+              "'yes'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'yes'"
+            ]
+          },
+          "postgres": {
+            "error": "function if(boolean, unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: IF"
+          }
+        },
+        "IFNULL": {
+          "mariadb": {
+            "rows": [
+              "'x'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'x'"
+            ]
+          },
+          "postgres": {
+            "error": "function ifnull(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "'x'"
+            ]
+          }
+        },
+        "IIF": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.IIF does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.IIF does not exist"
+          },
+          "postgres": {
+            "error": "function iif(boolean, unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "'yes'"
+            ]
+          }
+        },
+        "INITCAP": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.INITCAP does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.INITCAP does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'Hello World'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: INITCAP"
+          }
+        },
+        "INSTR": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "error": "function instr(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "2"
+            ]
+          }
+        },
+        "ISNULL": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function isnull(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "near \"ISNULL\": syntax error"
+          }
+        },
+        "JSON_EXTRACT": {
+          "mariadb": {
+            "rows": [
+              "'1'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'1'"
+            ]
+          },
+          "postgres": {
+            "error": "function json_extract(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "JULIANDAY": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.JULIANDAY does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.JULIANDAY does not exist"
+          },
+          "postgres": {
+            "error": "function julianday(unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "2.4604365e+06"
+            ]
+          }
+        },
+        "LAST_INSERT_ID": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function last_insert_id() does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: LAST_INSERT_ID"
+          }
+        },
+        "LAST_INSERT_ROWID": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.LAST_INSERT_ROWID does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.LAST_INSERT_ROWID does not exist"
+          },
+          "postgres": {
+            "error": "function last_insert_rowid() does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "LEFT": {
+          "mariadb": {
+            "rows": [
+              "'ab'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'ab'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'ab'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: LEFT"
+          }
+        },
+        "LOCATE": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "error": "function locate(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: LOCATE"
+          }
+        },
+        "LPAD": {
+          "mariadb": {
+            "rows": [
+              "'007'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'007'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'007'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: LPAD"
+          }
+        },
+        "MD5": {
+          "mariadb": {
+            "rows": [
+              "'0cc175b9c0f1b6a831c399e269772661'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'0cc175b9c0f1b6a831c399e269772661'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'0cc175b9c0f1b6a831c399e269772661'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: MD5"
+          }
+        },
+        "MONTH": {
+          "mariadb": {
+            "rows": [
+              "5"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "5"
+            ]
+          },
+          "postgres": {
+            "error": "function month(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: MONTH"
+          }
+        },
+        "NOW": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: NOW"
+          }
+        },
+        "NVL": {
+          "mariadb": {
+            "rows": [
+              "'x'"
+            ]
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.NVL does not exist"
+          },
+          "postgres": {
+            "error": "function nvl(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: NVL"
+          }
+        },
+        "POSITION": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "2"
+            ]
+          },
+          "sqlite": {
+            "error": "no such table: abc"
+          }
+        },
+        "RAND": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function rand() does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: RAND"
+          }
+        },
+        "RANDOM": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.RANDOM does not exist"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '() IS NOT NULL' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "REGEXP_LIKE": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.REGEXP_LIKE does not exist"
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: REGEXP_LIKE"
+          }
+        },
+        "REGEXP_REPLACE": {
+          "mariadb": {
+            "rows": [
+              "'axc'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'axc'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'axc'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: REGEXP_REPLACE"
+          }
+        },
+        "REPEAT": {
+          "mariadb": {
+            "rows": [
+              "'abab'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'abab'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'abab'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: REPEAT"
+          }
+        },
+        "REVERSE": {
+          "mariadb": {
+            "rows": [
+              "'cba'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'cba'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'cba'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: REVERSE"
+          }
+        },
+        "RIGHT": {
+          "mariadb": {
+            "rows": [
+              "'cd'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'cd'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'cd'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: RIGHT"
+          }
+        },
+        "RPAD": {
+          "mariadb": {
+            "rows": [
+              "'700'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'700'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'700'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: RPAD"
+          }
+        },
+        "SHA1": {
+          "mariadb": {
+            "rows": [
+              "'86f7e437faa5a7fce15d1ddcb9eaeaea377667b8'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'86f7e437faa5a7fce15d1ddcb9eaeaea377667b8'"
+            ]
+          },
+          "postgres": {
+            "error": "function sha1(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: SHA1"
+          }
+        },
+        "SHA2": {
+          "mariadb": {
+            "rows": [
+              "'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'"
+            ]
+          },
+          "postgres": {
+            "error": "function sha2(unknown, integer) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: SHA2"
+          }
+        },
+        "SPACE": {
+          "mariadb": {
+            "rows": [
+              "'  '"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'  '"
+            ]
+          },
+          "postgres": {
+            "error": "function space(integer) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: SPACE"
+          }
+        },
+        "SPLIT_PART": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.SPLIT_PART does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.SPLIT_PART does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'b'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: SPLIT_PART"
+          }
+        },
+        "STDDEV": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: STDDEV"
+          }
+        },
+        "STRFTIME": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.STRFTIME does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.STRFTIME does not exist"
+          },
+          "postgres": {
+            "error": "function strftime(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "'2024'"
+            ]
+          }
+        },
+        "STRING_AGG": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.STRING_AGG does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.STRING_AGG does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'a'"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "'a'"
+            ]
+          }
+        },
+        "STRPOS": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.STRPOS does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.STRPOS does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "2"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: STRPOS"
+          }
+        },
+        "STR_TO_DATE": {
+          "mariadb": {
+            "rows": [
+              "2024-05-06"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2024-05-06"
+            ]
+          },
+          "postgres": {
+            "error": "function str_to_date(unknown, unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: STR_TO_DATE"
+          }
+        },
+        "SUBSTRING_INDEX": {
+          "mariadb": {
+            "rows": [
+              "'a.b'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'a.b'"
+            ]
+          },
+          "postgres": {
+            "error": "function substring_index(unknown, unknown, integer) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: SUBSTRING_INDEX"
+          }
+        },
+        "SYSDATE": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function sysdate() does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: SYSDATE"
+          }
+        },
+        "TIMESTAMPDIFF": {
+          "mariadb": {
+            "rows": [
+              "29"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "29"
+            ]
+          },
+          "postgres": {
+            "error": "column \"day\" does not exist"
+          },
+          "sqlite": {
+            "error": "no such column: DAY"
+          }
+        },
+        "TOTAL": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.TOTAL does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TOTAL does not exist"
+          },
+          "postgres": {
+            "error": "function total(integer) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "4.0"
+            ]
+          }
+        },
+        "TO_CHAR": {
+          "mariadb": {
+            "rows": [
+              "'2024'"
+            ]
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TO_CHAR does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'2024'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: TO_CHAR"
+          }
+        },
+        "TO_DATE": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.TO_DATE does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TO_DATE does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "2024-05-06"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: TO_DATE"
+          }
+        },
+        "TO_TIMESTAMP": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.TO_TIMESTAMP does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TO_TIMESTAMP does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: TO_TIMESTAMP"
+          }
+        },
+        "TRANSLATE": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.TRANSLATE does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TRANSLATE does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "'xyc'"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: TRANSLATE"
+          }
+        },
+        "TRUNC": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.TRUNC does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TRUNC does not exist"
+          },
+          "postgres": {
+            "rows": [
+              "5"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "5.0"
+            ]
+          }
+        },
+        "TRUNCATE": {
+          "mariadb": {
+            "rows": [
+              "5.7"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "5.7"
+            ]
+          },
+          "postgres": {
+            "error": "function truncate(numeric, integer) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: TRUNCATE"
+          }
+        },
+        "TYPEOF": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.TYPEOF does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.TYPEOF does not exist"
+          },
+          "postgres": {
+            "error": "function typeof(integer) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "'integer'"
+            ]
+          }
+        },
+        "UNHEX": {
+          "mariadb": {
+            "rows": [
+              "X'61'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "X'61'"
+            ]
+          },
+          "postgres": {
+            "error": "function unhex(unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "X'61'"
+            ]
+          }
+        },
+        "UNICODE": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '('A')' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '('A')' at line 1"
+          },
+          "postgres": {
+            "error": "function unicode(unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "65"
+            ]
+          }
+        },
+        "UNIXEPOCH": {
+          "mariadb": {
+            "error": "FUNCTION baresql_compare.UNIXEPOCH does not exist"
+          },
+          "mysql": {
+            "error": "FUNCTION baresql_compare.UNIXEPOCH does not exist"
+          },
+          "postgres": {
+            "error": "function unixepoch(unknown) does not exist"
+          },
+          "sqlite": {
+            "rows": [
+              "1714953600"
+            ]
+          }
+        },
+        "UNIX_TIMESTAMP": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function unix_timestamp(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: UNIX_TIMESTAMP"
+          }
+        },
+        "UUID": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "function uuid() does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: UUID"
+          }
+        },
+        "VARIANCE": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "no such function: VARIANCE"
+          }
+        },
+        "YEAR": {
+          "mariadb": {
+            "rows": [
+              "2024"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2024"
+            ]
+          },
+          "postgres": {
+            "error": "function year(unknown) does not exist"
+          },
+          "sqlite": {
+            "error": "no such function: YEAR"
+          }
+        }
+      }
+    },
+    "greatest-least": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "error": "no such function: GREATEST"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "NULL"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "NULL"
+          ]
+        }
+      }
+    },
+    "hash-comment": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "error": "column \"one\" does not exist"
+        },
+        "sqlite": {
+          "error": "unrecognized token: \"#\""
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "index-if-not-exists": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS t_x ON t (x)' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "index-on-text": {
+      "example": {
+        "mariadb": {
+          "error": "BLOB/TEXT column 'x' used in key specification without a key length"
+        },
+        "mysql": {
+          "error": "BLOB/TEXT column 'x' used in key specification without a key length"
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "insert-ignore": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "error": "syntax error at or near \"IGNORE\""
+        },
+        "sqlite": {
+          "error": "near \"IGNORE\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "integer-division": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "3.5000"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "3.5000"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "3"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "3"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "3.50000"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "3.50000"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "3.5000000000000000"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "3.5"
+          ]
+        }
+      }
+    },
+    "length-bytes": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "like-case": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "false"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "like-escape": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "limit-comma": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        },
+        "postgres": {
+          "error": "LIMIT #,# syntax is not supported"
+        },
+        "sqlite": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2",
+            "3"
+          ]
+        }
+      }
+    },
+    "limit-in-subquery": {
+      "example": {
+        "mariadb": {
+          "error": "This version of MariaDB doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'"
+        },
+        "mysql": {
+          "error": "This version of MySQL doesn't yet support 'LIMIT \u0026 IN/ALL/ANY/SOME subquery'"
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "log-base": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "4.605170185988092"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "4.605170185988092"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2.0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2.0"
+          ]
+        }
+      }
+    },
+    "lower-non-ascii": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'école'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'école'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'école'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'École'"
+          ]
+        }
+      }
+    },
+    "null-order": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "NULL",
+            "1",
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "NULL",
+            "1",
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "NULL",
+            "1",
+            "2"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        }
+      }
+    },
+    "nulls-first-last": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'NULLS LAST' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NULLS LAST' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1",
+            "2",
+            "NULL"
+          ]
+        }
+      }
+    },
+    "operator-not-everywhere": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ''ABC'' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''ABC'' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "error": "near \"'ABC'\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "items": {
+        "!": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "operator does not exist: ! integer"
+          },
+          "sqlite": {
+            "error": "unrecognized token: \"!\""
+          }
+        },
+        "\u0026\u0026": {
+          "mariadb": {
+            "rows": [
+              "0"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "0"
+            ]
+          },
+          "postgres": {
+            "error": "operator does not exist: integer \u0026\u0026 integer"
+          },
+          "sqlite": {
+            "error": "near \"\u0026\": syntax error"
+          }
+        },
+        "-\u003e\u003e": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '\u003e\u003e '$.a'' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '-\u003e\u003e '$.a'' at line 1"
+          },
+          "postgres": {
+            "error": "operator is not unique: unknown -\u003e\u003e unknown"
+          },
+          "sqlite": {
+            "rows": [
+              "'x'"
+            ]
+          }
+        },
+        "::": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '::INTEGER' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '::INTEGER' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "5"
+            ]
+          },
+          "sqlite": {
+            "error": "unrecognized token: \":\""
+          }
+        },
+        "\u003c=\u003e": {
+          "mariadb": {
+            "rows": [
+              "0"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "0"
+            ]
+          },
+          "postgres": {
+            "error": "operator does not exist: integer \u003c=\u003e unknown"
+          },
+          "sqlite": {
+            "error": "near \"\u003e\": syntax error"
+          }
+        },
+        "==": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '= 1' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '== 1' at line 1"
+          },
+          "postgres": {
+            "error": "operator does not exist: integer == integer"
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "DIV": {
+          "mariadb": {
+            "rows": [
+              "3"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "3"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"2\""
+          },
+          "sqlite": {
+            "error": "near \"2\": syntax error"
+          }
+        },
+        "GLOB": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ''a*'' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''a*'' at line 1"
+          },
+          "postgres": {
+            "error": "syntax error at or near \"'a*'\""
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "ILIKE": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ''ABC'' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''ABC'' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"'ABC'\": syntax error"
+          }
+        },
+        "IS DISTINCT FROM": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'DISTINCT FROM NULL' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DISTINCT FROM NULL' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "MOD": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"3\""
+          },
+          "sqlite": {
+            "error": "near \"3\": syntax error"
+          }
+        },
+        "REGEXP": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"'b'\""
+          },
+          "sqlite": {
+            "rows": [
+              "1"
+            ]
+          }
+        },
+        "RLIKE": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"'b'\""
+          },
+          "sqlite": {
+            "error": "near \"'b'\": syntax error"
+          }
+        },
+        "SIMILAR TO": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'TO 'a%'' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TO 'a%'' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"TO\": syntax error"
+          }
+        },
+        "XOR": {
+          "mariadb": {
+            "rows": [
+              "1"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"0\""
+          },
+          "sqlite": {
+            "error": "near \"0\": syntax error"
+          }
+        },
+        "~": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '~ 'b'' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '~ 'b'' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "true"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"~\": syntax error"
+          }
+        }
+      }
+    },
+    "pipes-concat": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'ab'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'ab'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'ab'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'ab'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'ab'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'ab'"
+          ]
+        }
+      }
+    },
+    "returning": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'RETURNING id' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "substring-start": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "''"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "''"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'a'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'a'"
+          ]
+        }
+      }
+    },
+    "table-name-case": {
+      "example": {
+        "mariadb": {
+          "error": "Table 'baresql_compare.users' doesn't exist"
+        },
+        "mysql": {
+          "error": "Table 'baresql_compare.users' doesn't exist"
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "table-options": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "error": "syntax error at or near \"ENGINE\""
+        },
+        "sqlite": {
+          "error": "near \"=\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "text-compare-case": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "false"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "true"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1"
+          ]
+        }
+      }
+    },
+    "text-default": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "mysql": {
+          "error": "BLOB, TEXT, GEOMETRY or JSON column 'x' can't have a default value"
+        },
+        "postgres": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'a'"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "'a'"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "'a'"
+          ]
+        }
+      }
+    },
+    "text-number-compare": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1"
+          ]
+        },
+        "postgres": {
+          "error": "operator does not exist: character varying = integer"
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "truncate": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "error": "near \"TRUNCATE\": syntax error"
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    },
+    "type-not-enforced": {
+      "example": {
+        "mariadb": {
+          "error": "Incorrect integer value: 'abc' for column `baresql_compare`.`t`.`n` at row 1"
+        },
+        "mysql": {
+          "error": "Incorrect integer value: 'abc' for column 'n' at row 1"
+        },
+        "postgres": {
+          "error": "invalid input syntax for type integer: \"abc\""
+        },
+        "sqlite": {
+          "rows": [
+            "'abc'"
+          ]
+        }
+      }
+    },
+    "type-not-everywhere": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "error": "type \"datetime\" does not exist"
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "items": {
+        "ARRAY": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '[])' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '[])' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "BLOB": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"blob\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "BYTEA": {
+          "mariadb": {
+            "error": "Unknown data type: 'BYTEA'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'BYTEA)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "CLOB": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ')' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CLOB)' at line 1"
+          },
+          "postgres": {
+            "error": "type \"clob\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "DATETIME": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"datetime\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "DATETIME2": {
+          "mariadb": {
+            "error": "Unknown data type: 'DATETIME2'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DATETIME2)' at line 1"
+          },
+          "postgres": {
+            "error": "type \"datetime2\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "DOUBLE": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"double\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "ENUM": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"enum\" does not exist"
+          },
+          "sqlite": {
+            "error": "near \"'a'\": syntax error"
+          }
+        },
+        "INET": {
+          "mariadb": {
+            "error": "Unknown data type: 'INET'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INET)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "INTERVAL": {
+          "mariadb": {
+            "error": "Unknown data type: 'INTERVAL'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INTERVAL)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "JSONB": {
+          "mariadb": {
+            "error": "Unknown data type: 'JSONB'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'JSONB)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "LONGBLOB": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"longblob\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "LONGTEXT": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"longtext\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "MEDIUMINT": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"mediumint\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "MEDIUMTEXT": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"mediumtext\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "MONEY": {
+          "mariadb": {
+            "error": "Unknown data type: 'MONEY'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'MONEY)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "NUMBER": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '(10))' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NUMBER(10))' at line 1"
+          },
+          "postgres": {
+            "error": "type \"number\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "NVARCHAR": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"nvarchar\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "SET": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"set\" does not exist"
+          },
+          "sqlite": {
+            "error": "near \"SET\": syntax error"
+          }
+        },
+        "TIMESTAMP WITH TIME ZONE": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'WITH TIME ZONE)' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WITH TIME ZONE)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "TIMESTAMPTZ": {
+          "mariadb": {
+            "error": "Unknown data type: 'TIMESTAMPTZ'"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TIMESTAMPTZ)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "TINYINT": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"tinyint\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "TINYTEXT": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"tinytext\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "UNSIGNED": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "syntax error at or near \"UNSIGNED\""
+          },
+          "sqlite": {}
+        },
+        "UUID": {
+          "mariadb": {},
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'UUID)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "VARCHAR2": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '(10))' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'VARCHAR2(10))' at line 1"
+          },
+          "postgres": {
+            "error": "type \"varchar2\" does not exist"
+          },
+          "sqlite": {}
+        },
+        "YEAR": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"year\" does not exist"
+          },
+          "sqlite": {}
+        }
+      }
+    },
+    "ungrouped-column": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1, 1"
+          ]
+        },
+        "mysql": {
+          "error": "Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'baresql_compare.t.b' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by"
+        },
+        "postgres": {
+          "error": "column \"t.b\" must appear in the GROUP BY clause or be used in an aggregate function"
+        },
+        "sqlite": {
+          "rows": [
+            "1, 1"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1, 2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1, 2"
+          ]
+        }
+      }
+    },
+    "update-join": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'FROM u WHERE u.id = t.id' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM u WHERE u.id = t.id' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "7",
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "7",
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "7",
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "7",
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "7",
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "7",
+            "0"
+          ]
+        }
+      }
+    },
+    "update-same-table": {
+      "example": {
+        "mariadb": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        },
+        "mysql": {
+          "error": "You can't specify target table 't' for update in FROM clause"
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "1",
+            "5"
+          ]
+        }
+      }
+    },
+    "upsert": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'CONFLICT (id) DO UPDATE SET n = excluded.n' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CONFLICT (id) DO UPDATE SET n = excluded.n' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "2"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "2"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "2"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "2"
+          ]
+        }
+      }
+    },
+    "varchar-length": {
+      "example": {
+        "mariadb": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ')' at line 1"
+        },
+        "mysql": {
+          "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ')' at line 1"
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      },
+      "rewrite": {
+        "mariadb": {
+          "rows": [
+            "0"
+          ]
+        },
+        "mysql": {
+          "rows": [
+            "0"
+          ]
+        },
+        "postgres": {
+          "rows": [
+            "0"
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            "0"
+          ]
+        }
+      }
+    }
+  }
+}

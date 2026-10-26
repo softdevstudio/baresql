@@ -7,8 +7,11 @@
 #   scripts/dev-engines.sh mysql     run MySQL 8.0 in the foreground
 #   scripts/dev-engines.sh mariadb   run MariaDB 10.11 in the foreground
 #   scripts/dev-engines.sh env       print the BARESQL_TEST_* variables
+#   scripts/dev-engines.sh run CMD   start all three, run CMD with the
+#                                    variables set, stop them again
 #
-# Start each server as a background job, then: eval "$(scripts/dev-engines.sh env)"
+# Either start each server as a background job and
+# eval "$(scripts/dev-engines.sh env)", or wrap a command in "run".
 set -euo pipefail
 D=${BARESQL_DEV_DIR:-/var/tmp/baresql-dev}
 PGBIN=/usr/lib/postgresql/16/bin
@@ -84,8 +87,49 @@ passwords() {
   su postgres -s /bin/bash -c "psql -h $D/pgsock -U postgres -qc \"ALTER USER postgres PASSWORD 'postgres'\""
 }
 
+# run starts the three servers for the length of one command.
+run() {
+  local pids=()
+  "$0" pg >>$D/pg16.log 2>&1 & pids+=($!)
+  "$0" mysql >/dev/null 2>&1 & pids+=($!)
+  "$0" mariadb >/dev/null 2>&1 & pids+=($!)
+  stop() {
+    su postgres -s /bin/bash -c "$PGBIN/pg_ctl -D $D/pg16/data stop -m fast" >/dev/null 2>&1 || true
+    mysqladmin --socket=$D/mysql80/run/mysqld.sock -uroot -proot shutdown 2>/dev/null || true
+    LD_LIBRARY_PATH=$MARIADB/usr/lib/x86_64-linux-gnu $MARIADB/usr/bin/mariadb --no-defaults \
+      --socket=$D/mariadb/run/mariadb.sock -uroot -proot -e SHUTDOWN 2>/dev/null || true
+    kill "${pids[@]}" 2>/dev/null || true
+    wait "${pids[@]}" 2>/dev/null || true
+  }
+  trap stop EXIT
+  for _ in $(seq 1 60); do
+    if $PGBIN/pg_isready -q -h 127.0.0.1 -p 5432 &&
+      mysql -h127.0.0.1 -P3306 -uroot -proot -e 'select 1' >/dev/null 2>&1 &&
+      mysql -h127.0.0.1 -P3307 -uroot -proot -e 'select 1' >/dev/null 2>&1; then
+      eval "$(env_vars)"
+      "$@"
+      return
+    fi
+    sleep 1
+  done
+  echo "dev-engines: the servers did not start" >&2
+  return 1
+}
+
+env_vars() {
+  cat <<ENV
+export BARESQL_TEST_PG='postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable'
+export BARESQL_TEST_PG_CA='$D/pg16/server.crt'
+export BARESQL_TEST_PG_SOCKET='$D/pgsock'
+export BARESQL_TEST_MYSQL='mysql://root:root@127.0.0.1:3306/'
+export BARESQL_TEST_MYSQL_SOCKET='$D/mysql80/run/mysqld.sock'
+export BARESQL_TEST_MARIADB='mariadb://root:root@127.0.0.1:3307/'
+ENV
+}
+
 case ${1:-} in
 setup) setup ;;
+run) shift; run "$@" ;;
 passwords) passwords ;;
 pg) exec su postgres -s /bin/bash -c "exec $PGBIN/postgres -D $D/pg16/data" ;;
 mysql)
@@ -97,15 +141,6 @@ mariadb)
     --basedir=$MARIADB/usr --datadir=$D/mariadb/data --port=3307 --bind-address=127.0.0.1 \
     --socket=$D/mariadb/run/mariadb.sock --pid-file=$D/mariadb/run/mariadb.pid \
     --log-error=$D/mariadb/error.log --lc-messages-dir=$MARIADB/usr/share/mysql ;;
-env)
-  cat <<ENV
-export BARESQL_TEST_PG='postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=disable'
-export BARESQL_TEST_PG_CA='$D/pg16/server.crt'
-export BARESQL_TEST_PG_SOCKET='$D/pgsock'
-export BARESQL_TEST_MYSQL='mysql://root:root@127.0.0.1:3306/'
-export BARESQL_TEST_MYSQL_SOCKET='$D/mysql80/run/mysqld.sock'
-export BARESQL_TEST_MARIADB='mariadb://root:root@127.0.0.1:3307/'
-ENV
-  ;;
-*) sed -n '2,12p' "$0"; exit 2 ;;
+env) env_vars ;;
+*) sed -n '2,15p' "$0"; exit 2 ;;
 esac

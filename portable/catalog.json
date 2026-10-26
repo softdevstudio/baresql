@@ -1,0 +1,1222 @@
+[
+  {
+    "code": "integer-division",
+    "title": "Integer division",
+    "severity": "warning",
+    "summary": "Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL; MySQL and MariaDB keep it.",
+    "detail": "SQLite and PostgreSQL give an integer result when both sides of / are integers, so 7 / 2 is 3. MySQL and MariaDB always divide as decimals and answer 3.5000. Averages written as SUM(x) / COUNT(*) are where this usually bites: the sum of an integer column is an integer on SQLite and PostgreSQL, so the average loses its fraction there.",
+    "advice": "Multiply one side by 1.0 to get the fraction on every engine: 7 * 1.0 / 2. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.",
+    "example": "SELECT 7 / 2",
+    "rewrite": "SELECT 7 * 1.0 / 2"
+  },
+  {
+    "code": "pipes-concat",
+    "title": "|| joins text on some engines only",
+    "severity": "warning",
+    "summary": "|| joins text on SQLite and PostgreSQL. On MySQL and MariaDB it means OR, so 'a' || 'b' is 0.",
+    "detail": "The SQL standard joins strings with ||, and SQLite and PostgreSQL follow it. MySQL and MariaDB read || as a logical OR unless the server runs in the PIPES_AS_CONCAT mode, so both strings are turned into numbers and the answer is 0. The warnings they give for it seldom reach the application.",
+    "advice": "Use CONCAT(a, b), which all four engines have (SQLite from version 3.44). CONCAT treats NULL differently on different engines; see concat-null.",
+    "example": "SELECT 'a' || 'b'",
+    "rewrite": "SELECT CONCAT('a', 'b')",
+    "since": {
+      "sqlite": "3.44.0"
+    }
+  },
+  {
+    "code": "concat-null",
+    "title": "CONCAT with a NULL argument",
+    "severity": "warning",
+    "summary": "CONCAT skips NULL arguments on SQLite and PostgreSQL. On MySQL and MariaDB one NULL makes the whole result NULL.",
+    "detail": "A person without a last name comes out as 'Ann ' on SQLite and PostgreSQL and as NULL on MySQL and MariaDB, so a list of names quietly loses entries there. CONCAT_WS skips NULL arguments on all four engines.",
+    "advice": "Wrap every argument that can be NULL in COALESCE(x, '').",
+    "setup": "CREATE TABLE people (first_name VARCHAR(20), last_name VARCHAR(20));\nINSERT INTO people VALUES ('Ann', NULL)",
+    "example": "SELECT CONCAT(first_name, ' ', last_name) FROM people",
+    "rewrite": "SELECT CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) FROM people",
+    "since": {
+      "sqlite": "3.44.0"
+    }
+  },
+  {
+    "code": "text-compare-case",
+    "title": "Text comparisons and letter case",
+    "severity": "info",
+    "summary": "MySQL and MariaDB compare text without regard to letter case or accents by default; SQLite and PostgreSQL compare it exactly.",
+    "detail": "The default collations of MySQL and MariaDB ignore case and accents, so 'abc' = 'ABC' and 'e' = 'é' are true there and false on SQLite and PostgreSQL. The same goes for joins, GROUP BY, DISTINCT and unique keys: two e-mail addresses that differ only in case are one value on MySQL and two elsewhere. Whether an answer changes depends on the data, so lint reports this as information.",
+    "advice": "Compare LOWER(a) = LOWER(b) where case should not matter, and store values in one case. No form makes MySQL compare exactly without naming a collation, and collation names differ on every engine.",
+    "example": "SELECT 'abc' = 'ABC'",
+    "rewrite": "SELECT LOWER('abc') = LOWER('ABC')"
+  },
+  {
+    "code": "like-case",
+    "title": "LIKE and letter case",
+    "severity": "info",
+    "summary": "LIKE ignores letter case on SQLite, MySQL and MariaDB and respects it on PostgreSQL.",
+    "detail": "SQLite's LIKE ignores case for the letters A to Z only. MySQL and MariaDB follow the collation, which ignores case by default. PostgreSQL's LIKE is exact; its ILIKE ignores case, and exists on PostgreSQL only.",
+    "advice": "Write LOWER(x) LIKE LOWER(pattern), or a pattern that is already in lower case, to ignore case on all four.",
+    "example": "SELECT 'abc' LIKE 'ABC'",
+    "rewrite": "SELECT LOWER('abc') LIKE LOWER('ABC')"
+  },
+  {
+    "code": "text-number-compare",
+    "title": "Comparing text with a number",
+    "severity": "warning",
+    "summary": "Comparing a text column with a number matches text like 'abc' to 0 on MySQL and MariaDB, matches nothing on SQLite and fails on PostgreSQL.",
+    "detail": "MySQL and MariaDB turn the text into a number, and text that does not start with digits becomes 0, so WHERE code = 0 finds every code like 'abc'. SQLite compares the number as text and finds nothing. PostgreSQL refuses to compare character varying with integer. '1' = 1 trips over the same thing in another way: false on SQLite, true on the other three.",
+    "advice": "Compare like with like: quote the number when the column holds text (code = '0'), or convert one side with CAST.",
+    "setup": "CREATE TABLE items (code VARCHAR(10));\nINSERT INTO items VALUES ('abc')",
+    "example": "SELECT COUNT(*) FROM items WHERE code = 0",
+    "rewrite": "SELECT COUNT(*) FROM items WHERE code = '0'"
+  },
+  {
+    "code": "double-quotes",
+    "title": "Double quotes",
+    "severity": "warning",
+    "summary": "Double quotes name a column on SQLite and PostgreSQL. On MySQL and MariaDB they make a string, so SELECT \"name\" returns the word name.",
+    "detail": "Standard SQL quotes names with double quotes, and SQLite and PostgreSQL follow it. MySQL and MariaDB read \"...\" like '...' unless the ANSI_QUOTES mode is on: the query still runs and returns the same text on every row. SQLite also turns a double-quoted word into a string when no column has that name.",
+    "advice": "Use single quotes for text. For names, use plain lower-case names that are not keywords: that is the one form all four engines read the same way.",
+    "setup": "CREATE TABLE people (name VARCHAR(20));\nINSERT INTO people VALUES ('Ann')",
+    "example": "SELECT \"name\" FROM people",
+    "rewrite": "SELECT name FROM people"
+  },
+  {
+    "code": "null-order",
+    "title": "Where NULL sorts",
+    "severity": "info",
+    "summary": "SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last.",
+    "detail": "The standard leaves the place of NULL in ORDER BY to the engine. PostgreSQL treats NULL as larger than every value, the others as smaller, and descending order turns both around. Pages of results, top-ten lists and window functions such as ROW_NUMBER() OVER (ORDER BY x) all change when the column holds NULL.",
+    "advice": "Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (NULL), (2)",
+    "example": "SELECT x FROM t ORDER BY x",
+    "rewrite": "SELECT x FROM t ORDER BY x IS NULL, x"
+  },
+  {
+    "code": "ungrouped-column",
+    "title": "Columns missing from GROUP BY",
+    "severity": "warning",
+    "summary": "A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query.",
+    "detail": "SELECT a, b FROM t GROUP BY a asks for one b per group without saying which. SQLite and MariaDB pick one (MariaDB's default mode leaves out ONLY_FULL_GROUP_BY). PostgreSQL and MySQL stop with an error, unless the grouped column is the table's primary key, which fixes every other column of that table.",
+    "advice": "Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).",
+    "setup": "CREATE TABLE t (a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 1), (1, 2)",
+    "example": "SELECT a, b FROM t GROUP BY a",
+    "rewrite": "SELECT a, MAX(b) FROM t GROUP BY a"
+  },
+  {
+    "code": "cast-to-text",
+    "title": "CAST to text",
+    "severity": "warning",
+    "summary": "CAST(123 AS CHAR) is '1' on PostgreSQL, where CHAR means CHAR(1), and '123' elsewhere; no text type works in CAST on all four engines.",
+    "detail": "PostgreSQL reads CHAR without a length as CHAR(1) and cuts the value to fit. With a length, CHAR(10), it pads the value with spaces. MySQL accepts CHAR in CAST but neither VARCHAR nor TEXT, and MariaDB accepts VARCHAR but not TEXT.",
+    "advice": "CONCAT(x) with one argument turns a value into text on all four engines (SQLite from version 3.44).",
+    "example": "SELECT CAST(123 AS CHAR)",
+    "rewrite": "SELECT CONCAT(123)",
+    "since": {
+      "sqlite": "3.44.0"
+    }
+  },
+  {
+    "code": "cast-to-number",
+    "title": "CAST to an integer or a decimal",
+    "severity": "error",
+    "summary": "CAST(5.7 AS INTEGER) is 5 on SQLite, 6 on PostgreSQL and MariaDB, and an error on MySQL, which wants SIGNED.",
+    "detail": "SQLite drops the fraction and PostgreSQL and MariaDB round it. MySQL takes only SIGNED and UNSIGNED as integer types in CAST, and PostgreSQL refuses both. Decimals differ as well: SQLite ignores the scale of CAST(x AS DECIMAL(10, 1)) and keeps every digit, and MySQL and MariaDB read DECIMAL without a precision as DECIMAL(10, 0), a whole number.",
+    "advice": "Round on purpose with ROUND(x) or ROUND(x, digits), which every engine has.",
+    "example": "SELECT CAST(5.7 AS INTEGER)",
+    "rewrite": "SELECT ROUND(5.7)"
+  },
+  {
+    "code": "cast-to-date",
+    "title": "CAST to a date",
+    "severity": "warning",
+    "summary": "SQLite has no date type: CAST('2024-05-06' AS DATE) is the number 2024 there and a date on the other engines.",
+    "detail": "SQLite keeps dates as text or numbers and reads a CAST to DATE, DATETIME or TIMESTAMP as a conversion to a number, which keeps only the leading digits. MySQL and MariaDB also refuse CAST(x AS TIMESTAMP), and PostgreSQL refuses DATETIME.",
+    "advice": "DATE(x) gives a date on PostgreSQL, MySQL and MariaDB and ISO text (2024-05-06) on SQLite, which sorts and compares the same way.",
+    "example": "SELECT CAST('2024-05-06' AS DATE)",
+    "rewrite": "SELECT DATE('2024-05-06')"
+  },
+  {
+    "code": "date-arithmetic",
+    "title": "Adding numbers to dates",
+    "severity": "warning",
+    "summary": "A date plus 1 is the next day on PostgreSQL, the number 20240132 on MySQL and MariaDB, and 2025 on SQLite.",
+    "detail": "MySQL and MariaDB turn the date into the number 20240131 and add 1. SQLite turns the text into the number 2024. PostgreSQL adds a day. Subtracting two dates goes the same way: PostgreSQL counts days and MySQL and MariaDB subtract the numbers. INTERVAL arithmetic works on PostgreSQL, MySQL and MariaDB, with different result types, and SQLite has no INTERVAL.",
+    "advice": "No date arithmetic reads the same on all four engines. Use date(d, '+1 day') on SQLite and d + INTERVAL '1' DAY on the other three, or do the arithmetic in the application.",
+    "example": "SELECT CAST('2024-01-31' AS DATE) + 1"
+  },
+  {
+    "code": "division-by-zero",
+    "title": "Division by zero",
+    "severity": "info",
+    "summary": "1 / 0 is NULL on SQLite, MySQL and MariaDB and an error on PostgreSQL.",
+    "detail": "PostgreSQL stops the whole statement. SQLite, MySQL and MariaDB answer NULL, MySQL and MariaDB with a warning, and in INSERT and UPDATE with an error when the strict mode includes ERROR_FOR_DIVISION_BY_ZERO (the default). The remainder operator % behaves the same way.",
+    "advice": "Divide by NULLIF(d, 0): every engine then answers NULL when d is 0.",
+    "example": "SELECT 1 / 0",
+    "rewrite": "SELECT 1 / NULLIF(0, 0)"
+  },
+  {
+    "code": "decimal-as-float",
+    "title": "DECIMAL on SQLite",
+    "severity": "info",
+    "summary": "SQLite stores DECIMAL and NUMERIC values as floating point numbers, so sums of prices pick up rounding errors the other engines do not have.",
+    "detail": "PostgreSQL, MySQL and MariaDB keep DECIMAL values exact, so the sum of 0.1 and 0.2 equals 0.3 there. SQLite has no exact decimal type: it stores 0.1 as the nearest binary fraction, the sum is 0.30000000000000004, and the comparison is false.",
+    "advice": "Compare rounded values, ROUND(x, 2) = 0.3, or keep amounts as integers in the smallest unit, such as cents.",
+    "setup": "CREATE TABLE prices (price DECIMAL(10, 2));\nINSERT INTO prices VALUES (0.1), (0.2)",
+    "example": "SELECT SUM(price) = 0.3 FROM prices",
+    "rewrite": "SELECT ROUND(SUM(price), 2) = 0.3 FROM prices"
+  },
+  {
+    "code": "float-precision",
+    "title": "REAL and FLOAT precision",
+    "severity": "warning",
+    "summary": "REAL keeps about 6 significant digits on PostgreSQL, and FLOAT keeps about 6 on MySQL and MariaDB; elsewhere both keep 15.",
+    "detail": "PostgreSQL's REAL is a 4-byte float, and so is FLOAT on MySQL and MariaDB, while the other engines store 8 bytes for the same name. 1.23456789 comes back as 1.2345679 or 1.23457.",
+    "advice": "Use DOUBLE PRECISION, an 8-byte float on all four engines.",
+    "example": "CREATE TABLE t (r REAL, f FLOAT);\nINSERT INTO t VALUES (1.23456789, 1.23456789);\nSELECT r, f FROM t",
+    "rewrite": "CREATE TABLE t (r DOUBLE PRECISION, f DOUBLE PRECISION);\nINSERT INTO t VALUES (1.23456789, 1.23456789);\nSELECT r, f FROM t"
+  },
+  {
+    "code": "char-padding",
+    "title": "CHAR(n) and trailing spaces",
+    "severity": "info",
+    "summary": "PostgreSQL pads CHAR(n) values with spaces up to n characters; SQLite, MySQL and MariaDB give them back as stored.",
+    "detail": "A CHAR(5) column holding 'a' returns 'a    ' on PostgreSQL. Comparisons there ignore the padding, so WHERE c = 'a' still matches, but the spaces reach the application and CONCAT. MySQL and MariaDB strip trailing spaces when they read CHAR values, and SQLite does not apply the length at all.",
+    "advice": "Use VARCHAR(n) unless every value has exactly n characters.",
+    "example": "CREATE TABLE t (c CHAR(5));\nINSERT INTO t VALUES ('a');\nSELECT c FROM t",
+    "rewrite": "CREATE TABLE t (c VARCHAR(5));\nINSERT INTO t VALUES ('a');\nSELECT c FROM t"
+  },
+  {
+    "code": "length-bytes",
+    "title": "LENGTH counts bytes on MySQL",
+    "severity": "info",
+    "summary": "LENGTH counts characters on SQLite and PostgreSQL and bytes on MySQL and MariaDB, so LENGTH('é') is 1 or 2.",
+    "detail": "In UTF-8 a letter outside A to Z takes two to four bytes. MySQL and MariaDB count characters with CHAR_LENGTH, which SQLite lacks. Length checks, cut-offs and padding drift apart on names and addresses with accents.",
+    "advice": "No function counts characters on all four engines: use CHAR_LENGTH on PostgreSQL, MySQL and MariaDB and LENGTH on SQLite.",
+    "example": "SELECT LENGTH('é')"
+  },
+  {
+    "code": "lower-non-ascii",
+    "title": "LOWER and UPPER outside A to Z",
+    "severity": "info",
+    "summary": "SQLite's LOWER and UPPER change only the letters A to Z, so LOWER('ÉCOLE') is 'École' there and 'école' elsewhere.",
+    "detail": "SQLite without the ICU extension folds case for ASCII letters only, and so do its LIKE and COLLATE NOCASE. Comparisons that use LOWER() to ignore case work on the other engines and fail on SQLite for names like Émile or Ødegaard.",
+    "advice": "Fold case in the application before storing or comparing, or keep a lower-case copy of the column.",
+    "example": "SELECT LOWER('ÉCOLE')"
+  },
+  {
+    "code": "substring-start",
+    "title": "SUBSTR from position 0 or below",
+    "severity": "warning",
+    "summary": "SUBSTR('abc', 0, 2) is 'a' on SQLite and PostgreSQL and an empty string on MySQL and MariaDB.",
+    "detail": "Positions start at 1. SQLite and PostgreSQL count position 0 as part of the requested length, while MySQL and MariaDB return nothing for a start of 0. Negative starts differ as well: SQLite, MySQL and MariaDB count them from the end, and PostgreSQL counts them before the first character.",
+    "advice": "Start at 1 or later. For the last n characters, SUBSTR(x, LENGTH(x) - n + 1) works on all four for ASCII text (LENGTH counts bytes on MySQL and MariaDB).",
+    "example": "SELECT SUBSTR('abc', 0, 2)",
+    "rewrite": "SELECT SUBSTR('abc', 1, 1)"
+  },
+  {
+    "code": "backslash-escapes",
+    "title": "Backslashes in strings",
+    "severity": "warning",
+    "summary": "MySQL and MariaDB read a backslash in a string as an escape character; SQLite and PostgreSQL keep it as a backslash.",
+    "detail": "'C:\\\\temp' is C:\\\\temp, two backslashes, on SQLite and PostgreSQL and C:\\temp on MySQL and MariaDB. '\\t' is a tab and '\\'' a quote there, while PostgreSQL needs its E'...' strings for escapes, which no other engine reads. MySQL's NO_BACKSLASH_ESCAPES mode makes it read backslashes like the others.",
+    "advice": "Keep backslashes out of SQL string literals: pass such values as query parameters, which every driver sends without escaping.",
+    "example": "SELECT 'C:\\\\temp'"
+  },
+  {
+    "code": "like-escape",
+    "title": "Escaping % and _ in LIKE",
+    "severity": "warning",
+    "summary": "Without an ESCAPE clause, a backslash escapes % and _ in LIKE on PostgreSQL, MySQL and MariaDB; on SQLite it is an ordinary character.",
+    "detail": "'a_b' LIKE 'a\\_b' is true on PostgreSQL, MySQL and MariaDB, where \\_ matches an underscore, and false on SQLite, where the pattern asks for a backslash followed by any one character.",
+    "advice": "Name the escape character: LIKE 'a!_b' ESCAPE '!' means the same on all four.",
+    "example": "SELECT 'a_b' LIKE 'a\\_b'",
+    "rewrite": "SELECT 'a_b' LIKE 'a!_b' ESCAPE '!'"
+  },
+  {
+    "code": "log-base",
+    "title": "LOG with one argument",
+    "severity": "warning",
+    "summary": "LOG(x) is the base-10 logarithm on SQLite and PostgreSQL and the natural logarithm on MySQL and MariaDB.",
+    "detail": "LOG(100) is 2 on SQLite and PostgreSQL and 4.605 on MySQL and MariaDB. With two arguments, LOG(b, x) is the logarithm of x to base b on all four.",
+    "advice": "Say which one you mean: LN(x) for the natural logarithm, LOG10(x) for base 10.",
+    "example": "SELECT LOG(100)",
+    "rewrite": "SELECT LOG10(100)"
+  },
+  {
+    "code": "caret-operator",
+    "title": "The ^ operator",
+    "severity": "warning",
+    "summary": "2 ^ 3 is 8 on PostgreSQL, where ^ is a power, 1 on MySQL and MariaDB, where it is a bitwise exclusive or, and an error on SQLite.",
+    "detail": "PostgreSQL raises the left side to the power of the right one. MySQL and MariaDB combine the bits of both numbers. SQLite has no ^ operator.",
+    "advice": "Use POWER(a, b), which all four engines have.",
+    "example": "SELECT 2 ^ 3",
+    "rewrite": "SELECT POWER(2, 3)"
+  },
+  {
+    "code": "dash-comment",
+    "title": "-- comments need a space on MySQL",
+    "severity": "warning",
+    "summary": "On MySQL and MariaDB, -- starts a comment only when a space follows it, so SELECT 1 --1 is 2 there and 1 elsewhere.",
+    "detail": "SQLite and PostgreSQL treat every -- as the start of a comment. MySQL and MariaDB need a space, a tab or a line break after the dashes; otherwise they are two minus signs.",
+    "advice": "Put a space after --.",
+    "example": "SELECT 1 --1",
+    "rewrite": "SELECT 1 -- 1"
+  },
+  {
+    "code": "column-name-case",
+    "title": "Upper-case column names",
+    "severity": "warning",
+    "summary": "PostgreSQL lowers the case of unquoted names, so SELECT 1 AS Total returns a column named total there and Total elsewhere.",
+    "detail": "SQLite, MySQL and MariaDB return names as written. PostgreSQL folds unquoted names to lower case, in aliases and in CREATE TABLE alike, so code that reads columns by name (row[\"Total\"]) finds nothing on PostgreSQL.",
+    "advice": "Use lower-case names for columns and aliases.",
+    "example": "SELECT 1 AS Total",
+    "rewrite": "SELECT 1 AS total",
+    "columns": true
+  },
+  {
+    "code": "table-name-case",
+    "title": "Table names in a different case",
+    "severity": "error",
+    "summary": "On Linux, MySQL and MariaDB treat table names as case-sensitive, so a table created as Users is not found as users.",
+    "detail": "MySQL and MariaDB keep each table in files named after it, and file names on Linux are case-sensitive (lower_case_table_names = 0, the default there). On Windows and macOS the default makes names case-insensitive. SQLite and PostgreSQL ignore case in unquoted names.",
+    "advice": "Use lower-case table names and spell each one the same way everywhere.",
+    "example": "CREATE TABLE Users (id INTEGER);\nSELECT COUNT(*) FROM users",
+    "rewrite": "CREATE TABLE users (id INTEGER);\nSELECT COUNT(*) FROM users"
+  },
+  {
+    "code": "type-not-enforced",
+    "title": "SQLite keeps values that do not fit the column",
+    "severity": "warning",
+    "summary": "SQLite stores 'abc' in an INTEGER column and 'abcdef' in a VARCHAR(3) column; PostgreSQL, MySQL and MariaDB refuse both.",
+    "detail": "Column types on SQLite are preferences: a value that does not fit is stored as it is, and lengths are never checked. Tests that run on SQLite then pass with data the production engine rejects. SQLite's STRICT tables (version 3.37 and later) check types but not lengths, and the other engines do not accept the STRICT keyword.",
+    "advice": "Run the tests on the production engine as well, or check values in the application before they reach the database.",
+    "example": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('abc');\nSELECT n FROM t"
+  },
+  {
+    "code": "boolean-as-number",
+    "title": "Booleans and numbers",
+    "severity": "error",
+    "summary": "PostgreSQL keeps booleans and numbers apart: active = 1, WHERE 1 and inserting 1 into a BOOLEAN column all fail there.",
+    "detail": "On SQLite, MySQL and MariaDB a boolean is the number 0 or 1, and TRUE is another way to write 1. PostgreSQL has a real boolean type with no automatic conversion from integers, so code written for MySQL that compares flags with 1 stops there.",
+    "advice": "Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All four engines accept them.",
+    "setup": "CREATE TABLE users (active BOOLEAN);\nINSERT INTO users VALUES (TRUE)",
+    "example": "SELECT COUNT(*) FROM users WHERE active = 1",
+    "rewrite": "SELECT COUNT(*) FROM users WHERE active = TRUE"
+  },
+  {
+    "code": "auto-increment",
+    "title": "Numbering new rows",
+    "severity": "error",
+    "summary": "Every engine numbers new rows with its own syntax, and SERIAL, which works on PostgreSQL, MySQL and MariaDB, leaves the column NULL on SQLite.",
+    "detail": "AUTO_INCREMENT belongs to MySQL and MariaDB, AUTOINCREMENT to SQLite, and GENERATED BY DEFAULT AS IDENTITY to PostgreSQL. SERIAL is PostgreSQL's as well, and MySQL and MariaDB accept it as BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE. SQLite accepts any type name, so SERIAL is only a name there and the column stays NULL: SQLite numbers rows for a column declared INTEGER PRIMARY KEY and nothing else.",
+    "advice": "No column definition numbers rows on all four engines. Keep one schema file per engine for these tables, or let the application assign the ids.",
+    "example": "CREATE TABLE t (id SERIAL PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t"
+  },
+  {
+    "code": "backticks",
+    "title": "Backticks around names",
+    "severity": "error",
+    "summary": "Backticks quote names on SQLite, MySQL and MariaDB; PostgreSQL refuses them.",
+    "detail": "`name` is MySQL's way of quoting a name, and SQLite and MariaDB accept it too. PostgreSQL reads the backtick as a syntax error.",
+    "advice": "Use plain lower-case names that are not keywords; they need no quotes on any engine.",
+    "setup": "CREATE TABLE people (name VARCHAR(20));\nINSERT INTO people VALUES ('Ann')",
+    "example": "SELECT `name` FROM people",
+    "rewrite": "SELECT name FROM people"
+  },
+  {
+    "code": "hash-comment",
+    "title": "# comments",
+    "severity": "error",
+    "summary": "# starts a comment on MySQL and MariaDB only; SQLite refuses it, and PostgreSQL reads it as the XOR operator.",
+    "detail": "Scripts written for the mysql client often use # comments. SQLite stops with a syntax error. On PostgreSQL # is a bitwise exclusive or, so the rest of the line becomes part of the expression.",
+    "advice": "Use -- comments, with a space after the dashes, or /* ... */.",
+    "example": "SELECT 1 # one",
+    "rewrite": "SELECT 1 -- one"
+  },
+  {
+    "code": "nulls-first-last",
+    "title": "NULLS FIRST and NULLS LAST",
+    "severity": "error",
+    "summary": "NULLS FIRST and NULLS LAST work on SQLite and PostgreSQL; MySQL and MariaDB refuse them.",
+    "detail": "SQLite added them in version 3.30. MySQL and MariaDB have no syntax for choosing where NULL sorts.",
+    "advice": "Sort on x IS NULL first: ORDER BY x IS NULL, x for NULLS LAST and ORDER BY x IS NOT NULL, x for NULLS FIRST.",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (NULL), (2)",
+    "example": "SELECT x FROM t ORDER BY x NULLS LAST",
+    "rewrite": "SELECT x FROM t ORDER BY x IS NULL, x"
+  },
+  {
+    "code": "limit-comma",
+    "title": "LIMIT offset, count",
+    "severity": "error",
+    "summary": "LIMIT 1, 2 works on SQLite, MySQL and MariaDB; PostgreSQL refuses it.",
+    "detail": "In LIMIT a, b the first number is the offset and the second the count, the reverse of the order in which LIMIT ... OFFSET reads.",
+    "advice": "Write LIMIT 2 OFFSET 1, which all four accept.",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2), (3)",
+    "example": "SELECT x FROM t ORDER BY x LIMIT 1, 2",
+    "rewrite": "SELECT x FROM t ORDER BY x LIMIT 2 OFFSET 1"
+  },
+  {
+    "code": "fetch-first",
+    "title": "FETCH FIRST n ROWS ONLY",
+    "severity": "error",
+    "summary": "The standard FETCH FIRST works on PostgreSQL and MariaDB; SQLite and MySQL refuse it.",
+    "detail": "MariaDB added FETCH FIRST in version 10.6. SQLite and MySQL know only LIMIT, and they refuse OFFSET n ROWS for the same reason.",
+    "advice": "Use LIMIT n, with OFFSET m when you need an offset.",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2), (3)",
+    "example": "SELECT x FROM t ORDER BY x FETCH FIRST 2 ROWS ONLY",
+    "rewrite": "SELECT x FROM t ORDER BY x LIMIT 2"
+  },
+  {
+    "code": "alias-in-where",
+    "title": "Select-list names in WHERE",
+    "severity": "error",
+    "summary": "SQLite lets WHERE use a name given in the select list; PostgreSQL, MySQL and MariaDB refuse it.",
+    "detail": "WHERE is worked out before the select list, so in standard SQL the y of SELECT x * 2 AS y does not exist yet. SQLite looks it up anyway.",
+    "advice": "Repeat the expression in WHERE (WHERE x * 2 > 2), or select from a subquery that defines the name.",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2)",
+    "example": "SELECT x * 2 AS y FROM t WHERE y > 2",
+    "rewrite": "SELECT x * 2 AS y FROM t WHERE x * 2 > 2"
+  },
+  {
+    "code": "alias-in-having",
+    "title": "Select-list names in HAVING",
+    "severity": "error",
+    "summary": "SQLite, MySQL and MariaDB let HAVING use a name given in the select list; PostgreSQL refuses it.",
+    "detail": "PostgreSQL looks up names in HAVING among the table's columns only, so HAVING n > 1 fails when n is the name of COUNT(*).",
+    "advice": "Repeat the aggregate: HAVING COUNT(*) > 1.",
+    "setup": "CREATE TABLE t (a INTEGER);\nINSERT INTO t VALUES (1), (1), (2)",
+    "example": "SELECT a, COUNT(*) AS n FROM t GROUP BY a HAVING n > 1",
+    "rewrite": "SELECT a, COUNT(*) AS n FROM t GROUP BY a HAVING COUNT(*) > 1"
+  },
+  {
+    "code": "limit-in-subquery",
+    "title": "LIMIT inside IN (...)",
+    "severity": "error",
+    "summary": "MySQL and MariaDB refuse LIMIT in a subquery under IN, ANY, ALL or SOME; SQLite and PostgreSQL accept it.",
+    "detail": "Both report that this version doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'. LIMIT is fine in a subquery used as a table and in one that returns a single value.",
+    "advice": "Wrap the limited query in a subquery used as a table: IN (SELECT x FROM (SELECT x FROM t ORDER BY x LIMIT 1) AS s).",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2)",
+    "example": "SELECT x FROM t WHERE x IN (SELECT x FROM t ORDER BY x LIMIT 1)",
+    "rewrite": "SELECT x FROM t WHERE x IN (SELECT x FROM (SELECT x FROM t ORDER BY x LIMIT 1) AS s)"
+  },
+  {
+    "code": "update-same-table",
+    "title": "UPDATE or DELETE that reads its own table",
+    "severity": "error",
+    "summary": "MySQL refuses an UPDATE or DELETE whose subquery reads the table being changed; SQLite, PostgreSQL and MariaDB accept it.",
+    "detail": "MySQL says you can't specify target table 't' for update in FROM clause. MariaDB lifted the limit in version 10.3.2. A subquery used as a table works on MySQL too, because MySQL then computes its rows before it changes anything.",
+    "advice": "Wrap the subquery in one more SELECT used as a table: WHERE id IN (SELECT id FROM (SELECT id FROM t WHERE x = 0) AS s).",
+    "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 5)",
+    "example": "UPDATE t SET x = 1 WHERE id IN (SELECT id FROM t WHERE x = 0);\nSELECT x FROM t ORDER BY id",
+    "rewrite": "UPDATE t SET x = 1 WHERE id IN (SELECT id FROM (SELECT id FROM t WHERE x = 0) AS s);\nSELECT x FROM t ORDER BY id"
+  },
+  {
+    "code": "update-join",
+    "title": "UPDATE and DELETE with a join",
+    "severity": "error",
+    "summary": "UPDATE ... FROM works on SQLite and PostgreSQL and UPDATE ... JOIN on MySQL and MariaDB; neither works on all four.",
+    "detail": "The engines use different syntax for changing rows based on another table. DELETE differs the same way: DELETE ... USING on PostgreSQL, DELETE t FROM t JOIN ... on MySQL and MariaDB.",
+    "advice": "Use subqueries, which all four accept: UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id), and DELETE FROM t WHERE id IN (SELECT id FROM u).",
+    "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nCREATE TABLE u (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 0);\nINSERT INTO u VALUES (1, 7)",
+    "example": "UPDATE t SET x = u.x FROM u WHERE u.id = t.id;\nSELECT x FROM t ORDER BY id",
+    "rewrite": "UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id);\nSELECT x FROM t ORDER BY id"
+  },
+  {
+    "code": "full-outer-join",
+    "title": "FULL OUTER JOIN",
+    "severity": "error",
+    "summary": "FULL OUTER JOIN works on SQLite and PostgreSQL; MySQL and MariaDB refuse it.",
+    "detail": "MySQL and MariaDB have LEFT and RIGHT joins only. SQLite added RIGHT and FULL joins in version 3.39.",
+    "advice": "Combine a LEFT JOIN with the rows of the other table that found no match: ... FROM a LEFT JOIN b ON a.x = b.x UNION ALL SELECT ... FROM b LEFT JOIN a ON a.x = b.x WHERE a.x IS NULL.",
+    "setup": "CREATE TABLE a (x INTEGER);\nCREATE TABLE b (x INTEGER);\nINSERT INTO a VALUES (1), (2);\nINSERT INTO b VALUES (2), (3)",
+    "example": "SELECT a.x, b.x FROM a FULL OUTER JOIN b ON a.x = b.x",
+    "rewrite": "SELECT a.x, b.x FROM a LEFT JOIN b ON a.x = b.x UNION ALL SELECT a.x, b.x FROM b LEFT JOIN a ON a.x = b.x WHERE a.x IS NULL",
+    "since": {
+      "sqlite": "3.39.0"
+    }
+  },
+  {
+    "code": "distinct-on",
+    "title": "DISTINCT ON",
+    "severity": "error",
+    "summary": "DISTINCT ON (a) keeps one row per value of a on PostgreSQL only.",
+    "detail": "SQLite, MySQL and MariaDB report a syntax error. Window functions say the same thing on all four (SQLite 3.25, MySQL 8.0 and MariaDB 10.2 and later).",
+    "advice": "Number the rows of each group and keep the first: SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS n FROM t) AS s WHERE n = 1.",
+    "setup": "CREATE TABLE t (a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 5), (1, 3), (2, 4)",
+    "example": "SELECT DISTINCT ON (a) a, b FROM t ORDER BY a, b",
+    "rewrite": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS n FROM t) AS s WHERE n = 1 ORDER BY a"
+  },
+  {
+    "code": "count-distinct-columns",
+    "title": "COUNT(DISTINCT a, b)",
+    "severity": "error",
+    "summary": "COUNT(DISTINCT a, b) counts pairs on MySQL and MariaDB; SQLite and PostgreSQL take one expression only.",
+    "detail": "SQLite reports the wrong number of arguments and PostgreSQL a missing function.",
+    "advice": "Count the rows of a DISTINCT subquery: SELECT COUNT(*) FROM (SELECT DISTINCT a, b FROM t) AS s.",
+    "setup": "CREATE TABLE t (a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 1), (1, 1), (1, 2)",
+    "example": "SELECT COUNT(DISTINCT a, b) FROM t",
+    "rewrite": "SELECT COUNT(*) FROM (SELECT DISTINCT a, b FROM t) AS s"
+  },
+  {
+    "code": "greatest-least",
+    "title": "GREATEST and LEAST",
+    "severity": "error",
+    "summary": "GREATEST and LEAST are missing on SQLite, skip NULL on PostgreSQL and return NULL on MySQL and MariaDB.",
+    "detail": "GREATEST(1, NULL) is 1 on PostgreSQL and NULL on MySQL and MariaDB. SQLite has the same idea under the names MAX(a, b) and MIN(a, b) with two or more arguments; they return NULL when any argument is NULL, and the other engines read MAX and MIN as aggregates.",
+    "advice": "Use CASE WHEN a >= b THEN a ELSE b END, which is NULL when either side is NULL on all four. Wrap the arguments in COALESCE to skip NULL instead.",
+    "setup": "CREATE TABLE t (a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, NULL)",
+    "example": "SELECT GREATEST(a, b) FROM t",
+    "rewrite": "SELECT CASE WHEN a >= b THEN a ELSE b END FROM t"
+  },
+  {
+    "code": "insert-ignore",
+    "title": "Inserting only new rows",
+    "severity": "error",
+    "summary": "INSERT IGNORE belongs to MySQL and MariaDB, INSERT OR IGNORE to SQLite, and ON CONFLICT DO NOTHING to PostgreSQL and SQLite.",
+    "detail": "Each form skips rows that would break a unique key, and each fails on the engines that use another one. INSERT IGNORE also hides other errors on MySQL and MariaDB, such as values that do not fit the column.",
+    "advice": "Insert from a SELECT that checks first: INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). When two sessions insert the same row at once, the unique key still stops the second one, with an error instead of a skip.",
+    "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY);\nINSERT INTO t VALUES (1)",
+    "example": "INSERT IGNORE INTO t VALUES (1);\nSELECT COUNT(*) FROM t",
+    "rewrite": "INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);\nSELECT COUNT(*) FROM t"
+  },
+  {
+    "code": "upsert",
+    "title": "Insert or update (upsert)",
+    "severity": "error",
+    "summary": "ON CONFLICT ... DO UPDATE works on SQLite and PostgreSQL and ON DUPLICATE KEY UPDATE on MySQL and MariaDB; no single statement works on all four.",
+    "detail": "REPLACE INTO works on SQLite, MySQL and MariaDB, but it deletes the old row and inserts a new one, which fires delete triggers and resets the columns the statement leaves out. Of these four engines, MERGE exists on PostgreSQL 15 and later only.",
+    "advice": "Update first, then insert what is missing: UPDATE t SET n = 2 WHERE id = 1, then INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). Run both in one transaction.",
+    "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
+    "example": "INSERT INTO t VALUES (1, 2) ON CONFLICT (id) DO UPDATE SET n = excluded.n;\nSELECT n FROM t",
+    "rewrite": "UPDATE t SET n = 2 WHERE id = 1;\nINSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);\nSELECT n FROM t"
+  },
+  {
+    "code": "returning",
+    "title": "RETURNING",
+    "severity": "error",
+    "summary": "INSERT ... RETURNING works on SQLite, PostgreSQL and MariaDB; MySQL refuses it.",
+    "detail": "SQLite added RETURNING in version 3.35, and MariaDB in 10.5 for INSERT and DELETE (MariaDB refuses it on UPDATE). Each engine also has its own function for the last generated id: LAST_INSERT_ID() on MySQL and MariaDB, last_insert_rowid() on SQLite and lastval() on PostgreSQL.",
+    "advice": "Read the new id through the driver, which has a call for it on every engine, or select the row again by a unique key after the insert.",
+    "setup": "CREATE TABLE t (id INTEGER, x INTEGER)",
+    "example": "INSERT INTO t VALUES (1, 5) RETURNING id",
+    "rewrite": "INSERT INTO t VALUES (1, 5);\nSELECT id FROM t WHERE x = 5"
+  },
+  {
+    "code": "varchar-length",
+    "title": "VARCHAR without a length",
+    "severity": "error",
+    "summary": "VARCHAR without a length works on SQLite and PostgreSQL; MySQL and MariaDB require one.",
+    "detail": "PostgreSQL reads VARCHAR without a length as text of any length, and SQLite ignores lengths anyway.",
+    "advice": "Give a length, VARCHAR(255), or use TEXT for long values.",
+    "example": "CREATE TABLE t (x VARCHAR);\nSELECT COUNT(*) FROM t",
+    "rewrite": "CREATE TABLE t (x VARCHAR(255));\nSELECT COUNT(*) FROM t"
+  },
+  {
+    "code": "type-not-everywhere",
+    "title": "Column types that exist on some engines only",
+    "severity": "error",
+    "summary": "Many column types belong to one or two engines: DATETIME and TINYINT are missing on PostgreSQL, BYTEA and TIMESTAMPTZ on MySQL and MariaDB.",
+    "detail": "SQLite accepts nearly any type name, so a schema that works there can still fail elsewhere. Each type in the table was used in a CREATE TABLE on all four engines.",
+    "advice": "Use types that all four accept: INTEGER, BIGINT, SMALLINT, DECIMAL(p, s), DOUBLE PRECISION, VARCHAR(n), TEXT, DATE, TIME, TIMESTAMP and BOOLEAN. There is no binary type they share: BLOB on SQLite, MySQL and MariaDB, BYTEA on PostgreSQL.",
+    "example": "CREATE TABLE t (d DATETIME);\nSELECT COUNT(*) FROM t",
+    "rewrite": "CREATE TABLE t (d TIMESTAMP);\nSELECT COUNT(*) FROM t",
+    "items": [
+      {
+        "name": "DATETIME",
+        "probe": "CREATE TABLE t (x DATETIME)",
+        "advice": "Use TIMESTAMP."
+      },
+      {
+        "name": "TINYINT",
+        "probe": "CREATE TABLE t (x TINYINT)",
+        "advice": "Use SMALLINT."
+      },
+      {
+        "name": "MEDIUMINT",
+        "probe": "CREATE TABLE t (x MEDIUMINT)",
+        "advice": "Use INTEGER."
+      },
+      {
+        "name": "DOUBLE",
+        "probe": "CREATE TABLE t (x DOUBLE)",
+        "advice": "Use DOUBLE PRECISION."
+      },
+      {
+        "name": "UNSIGNED",
+        "probe": "CREATE TABLE t (x INTEGER UNSIGNED)",
+        "advice": "Use INTEGER, or BIGINT for large values, with CHECK (x >= 0)."
+      },
+      {
+        "name": "TINYTEXT",
+        "probe": "CREATE TABLE t (x TINYTEXT)",
+        "advice": "Use VARCHAR(255)."
+      },
+      {
+        "name": "MEDIUMTEXT",
+        "probe": "CREATE TABLE t (x MEDIUMTEXT)",
+        "advice": "Use TEXT. On MySQL and MariaDB TEXT holds up to 64 KB."
+      },
+      {
+        "name": "LONGTEXT",
+        "probe": "CREATE TABLE t (x LONGTEXT)",
+        "advice": "Use TEXT. On MySQL and MariaDB TEXT holds up to 64 KB."
+      },
+      {
+        "name": "BLOB",
+        "probe": "CREATE TABLE t (x BLOB)",
+        "advice": "No binary type works on all four: BYTEA on PostgreSQL."
+      },
+      {
+        "name": "LONGBLOB",
+        "probe": "CREATE TABLE t (x LONGBLOB)",
+        "advice": "No binary type works on all four: BYTEA on PostgreSQL, BLOB on SQLite."
+      },
+      {
+        "name": "ENUM",
+        "probe": "CREATE TABLE t (x ENUM('a', 'b'))",
+        "advice": "Use VARCHAR(n) with CHECK (x IN ('a', 'b'))."
+      },
+      {
+        "name": "SET",
+        "probe": "CREATE TABLE t (x SET('a', 'b'))",
+        "advice": "Use a separate table with one row per value."
+      },
+      {
+        "name": "YEAR",
+        "probe": "CREATE TABLE t (x YEAR)",
+        "advice": "Use SMALLINT."
+      },
+      {
+        "name": "BYTEA",
+        "probe": "CREATE TABLE t (x BYTEA)",
+        "advice": "No binary type works on all four: BLOB on SQLite, MySQL and MariaDB."
+      },
+      {
+        "name": "TIMESTAMPTZ",
+        "probe": "CREATE TABLE t (x TIMESTAMPTZ)",
+        "advice": "Use TIMESTAMP and keep times in UTC."
+      },
+      {
+        "name": "TIMESTAMP WITH TIME ZONE",
+        "probe": "CREATE TABLE t (x TIMESTAMP WITH TIME ZONE)",
+        "advice": "Use TIMESTAMP and keep times in UTC."
+      },
+      {
+        "name": "JSONB",
+        "probe": "CREATE TABLE t (x JSONB)",
+        "advice": "Use JSON on PostgreSQL, MySQL and MariaDB, and TEXT on SQLite."
+      },
+      {
+        "name": "UUID",
+        "probe": "CREATE TABLE t (x UUID)",
+        "advice": "Use CHAR(36) or VARCHAR(36)."
+      },
+      {
+        "name": "INET",
+        "probe": "CREATE TABLE t (x INET)",
+        "advice": "Use VARCHAR(45)."
+      },
+      {
+        "name": "MONEY",
+        "probe": "CREATE TABLE t (x MONEY)",
+        "advice": "Use DECIMAL(19, 4)."
+      },
+      {
+        "name": "INTERVAL",
+        "probe": "CREATE TABLE t (x INTERVAL)",
+        "advice": "Store the length as a number of seconds or days."
+      },
+      {
+        "name": "ARRAY",
+        "probe": "CREATE TABLE t (x INTEGER[])",
+        "advice": "Use a separate table with one row per element."
+      },
+      {
+        "name": "NUMBER",
+        "probe": "CREATE TABLE t (x NUMBER(10))",
+        "advice": "Use DECIMAL(p, s) or INTEGER."
+      },
+      {
+        "name": "VARCHAR2",
+        "probe": "CREATE TABLE t (x VARCHAR2(10))",
+        "advice": "Use VARCHAR(n)."
+      },
+      {
+        "name": "NVARCHAR",
+        "probe": "CREATE TABLE t (x NVARCHAR(10))",
+        "advice": "Use VARCHAR(n); all four store Unicode in VARCHAR."
+      },
+      {
+        "name": "CLOB",
+        "probe": "CREATE TABLE t (x CLOB)",
+        "advice": "Use TEXT."
+      },
+      {
+        "name": "DATETIME2",
+        "probe": "CREATE TABLE t (x DATETIME2)",
+        "advice": "Use TIMESTAMP."
+      }
+    ]
+  },
+  {
+    "code": "table-options",
+    "title": "MySQL table options",
+    "severity": "error",
+    "summary": "ENGINE=, DEFAULT CHARSET=, indexes inside CREATE TABLE, column comments and ON UPDATE belong to MySQL and MariaDB; SQLite and PostgreSQL refuse them.",
+    "detail": "Dumps made with mysqldump carry these options on every table. SQLite's own options, WITHOUT ROWID and STRICT, fail on the other three engines in the same way.",
+    "advice": "Leave the options out of schemas meant for every engine, and create indexes with separate CREATE INDEX statements.",
+    "example": "CREATE TABLE t (x INTEGER) ENGINE=InnoDB;\nSELECT COUNT(*) FROM t",
+    "rewrite": "CREATE TABLE t (x INTEGER);\nSELECT COUNT(*) FROM t"
+  },
+  {
+    "code": "text-default",
+    "title": "DEFAULT on TEXT columns",
+    "severity": "error",
+    "summary": "MySQL refuses a plain DEFAULT value on TEXT, BLOB and JSON columns; SQLite, PostgreSQL and MariaDB accept it.",
+    "detail": "MySQL 8.0.13 and later accept a default written as an expression in parentheses, DEFAULT ('a'), which the other three engines accept as well.",
+    "advice": "Put the default in parentheses, DEFAULT ('a'), or use VARCHAR(n).",
+    "example": "CREATE TABLE t (id INTEGER, x TEXT DEFAULT 'a');\nINSERT INTO t (id) VALUES (1);\nSELECT x FROM t",
+    "rewrite": "CREATE TABLE t (id INTEGER, x TEXT DEFAULT ('a'));\nINSERT INTO t (id) VALUES (1);\nSELECT x FROM t"
+  },
+  {
+    "code": "index-on-text",
+    "title": "Keys on TEXT columns",
+    "severity": "error",
+    "summary": "MySQL refuses an index, unique key or primary key on a TEXT or BLOB column without a prefix length, and MariaDB refuses the primary key.",
+    "detail": "SQLite and PostgreSQL index TEXT columns as they are. MySQL wants a prefix length, INDEX (x(100)), which the others reject. MariaDB 10.4 and later accept plain indexes and unique keys on TEXT columns.",
+    "advice": "Use VARCHAR(n) for columns you index.",
+    "example": "CREATE TABLE t (x TEXT PRIMARY KEY);\nSELECT COUNT(*) FROM t",
+    "rewrite": "CREATE TABLE t (x VARCHAR(255) PRIMARY KEY);\nSELECT COUNT(*) FROM t"
+  },
+  {
+    "code": "index-if-not-exists",
+    "title": "CREATE INDEX IF NOT EXISTS",
+    "severity": "error",
+    "summary": "MySQL refuses IF NOT EXISTS in CREATE INDEX; SQLite, PostgreSQL and MariaDB accept it.",
+    "detail": "MySQL accepts IF NOT EXISTS for tables and databases, and not for indexes.",
+    "advice": "Create each index once, in a migration that runs once, without IF NOT EXISTS.",
+    "example": "CREATE TABLE t (x INTEGER);\nCREATE INDEX IF NOT EXISTS t_x ON t (x);\nSELECT COUNT(*) FROM t",
+    "rewrite": "CREATE TABLE t (x INTEGER);\nCREATE INDEX t_x ON t (x);\nSELECT COUNT(*) FROM t"
+  },
+  {
+    "code": "truncate",
+    "title": "TRUNCATE",
+    "severity": "error",
+    "summary": "SQLite has no TRUNCATE; PostgreSQL, MySQL and MariaDB have it.",
+    "detail": "SQLite empties a table quickly with a DELETE FROM t that has no WHERE clause. On MySQL and MariaDB, TRUNCATE also resets the AUTO_INCREMENT counter, which DELETE leaves alone.",
+    "advice": "Use DELETE FROM t.",
+    "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1)",
+    "example": "TRUNCATE TABLE t;\nSELECT COUNT(*) FROM t",
+    "rewrite": "DELETE FROM t;\nSELECT COUNT(*) FROM t"
+  },
+  {
+    "code": "create-or-replace",
+    "title": "CREATE OR REPLACE VIEW",
+    "severity": "error",
+    "summary": "SQLite has no CREATE OR REPLACE; PostgreSQL, MySQL and MariaDB accept it for views.",
+    "detail": "SQLite can only drop a view and create it again.",
+    "advice": "Drop and create: DROP VIEW IF EXISTS v, then CREATE VIEW v AS ...",
+    "setup": "CREATE TABLE t (x INTEGER)",
+    "example": "CREATE OR REPLACE VIEW v AS SELECT x FROM t;\nSELECT COUNT(*) FROM v",
+    "rewrite": "DROP VIEW IF EXISTS v;\nCREATE VIEW v AS SELECT x FROM t;\nSELECT COUNT(*) FROM v"
+  },
+  {
+    "code": "function-not-everywhere",
+    "title": "Functions that exist on some engines only",
+    "severity": "error",
+    "summary": "Many everyday functions are missing on at least one engine: IFNULL on PostgreSQL, LEFT and NOW on SQLite, STRING_AGG on MySQL and MariaDB.",
+    "detail": "Each function in the table was called on all four engines, and the table shows where the call ran and what to write instead.",
+    "advice": "Prefer the functions all four engines have: COALESCE, NULLIF, CASE, SUBSTR, REPLACE, TRIM, UPPER, LOWER, ABS, ROUND, and CONCAT (SQLite from 3.44).",
+    "example": "SELECT IFNULL(NULL, 'x')",
+    "rewrite": "SELECT COALESCE(NULL, 'x')",
+    "items": [
+      {
+        "name": "IFNULL",
+        "probe": "SELECT IFNULL(NULL, 'x')",
+        "advice": "Use COALESCE(a, b)."
+      },
+      {
+        "name": "NVL",
+        "probe": "SELECT NVL(NULL, 'x')",
+        "advice": "Use COALESCE(a, b)."
+      },
+      {
+        "name": "IF",
+        "probe": "SELECT IF(1 > 0, 'yes', 'no')",
+        "advice": "Use CASE WHEN c THEN a ELSE b END."
+      },
+      {
+        "name": "IIF",
+        "probe": "SELECT IIF(1 > 0, 'yes', 'no')",
+        "advice": "Use CASE WHEN c THEN a ELSE b END."
+      },
+      {
+        "name": "ISNULL",
+        "probe": "SELECT ISNULL(NULL)",
+        "advice": "Use x IS NULL."
+      },
+      {
+        "name": "NOW",
+        "probe": "SELECT NOW() IS NOT NULL",
+        "advice": "Use CURRENT_TIMESTAMP."
+      },
+      {
+        "name": "CURDATE",
+        "probe": "SELECT CURDATE() IS NOT NULL",
+        "advice": "Use CURRENT_DATE."
+      },
+      {
+        "name": "CURTIME",
+        "probe": "SELECT CURTIME() IS NOT NULL",
+        "advice": "Use CURRENT_TIME."
+      },
+      {
+        "name": "SYSDATE",
+        "probe": "SELECT SYSDATE() IS NOT NULL",
+        "advice": "Use CURRENT_TIMESTAMP."
+      },
+      {
+        "name": "LEFT",
+        "probe": "SELECT LEFT('abcd', 2)",
+        "advice": "Use SUBSTR(x, 1, n)."
+      },
+      {
+        "name": "RIGHT",
+        "probe": "SELECT RIGHT('abcd', 2)",
+        "advice": "No form works on all four engines; SUBSTR(x, LENGTH(x) - n + 1) works for ASCII text."
+      },
+      {
+        "name": "CHAR_LENGTH",
+        "probe": "SELECT CHAR_LENGTH('abc')",
+        "advice": "No form works on all four engines; LENGTH counts characters on SQLite (see length-bytes)."
+      },
+      {
+        "name": "CHARACTER_LENGTH",
+        "probe": "SELECT CHARACTER_LENGTH('abc')",
+        "advice": "No form works on all four engines; LENGTH counts characters on SQLite (see length-bytes)."
+      },
+      {
+        "name": "POSITION",
+        "probe": "SELECT POSITION('b' IN 'abc')",
+        "advice": "No form works on all four engines; INSTR(s, x) on SQLite, MySQL and MariaDB."
+      },
+      {
+        "name": "STRPOS",
+        "probe": "SELECT STRPOS('abc', 'b')",
+        "advice": "No form works on all four engines; INSTR(s, x) on SQLite, MySQL and MariaDB."
+      },
+      {
+        "name": "LOCATE",
+        "probe": "SELECT LOCATE('b', 'abc')",
+        "advice": "No form works on all four engines; INSTR(s, x) on SQLite, MySQL and MariaDB, POSITION(x IN s) on PostgreSQL."
+      },
+      {
+        "name": "INSTR",
+        "probe": "SELECT INSTR('abc', 'b')",
+        "advice": "No form works on all four engines; POSITION(x IN s) on PostgreSQL."
+      },
+      {
+        "name": "LPAD",
+        "probe": "SELECT LPAD('7', 3, '0')",
+        "advice": "No form works on all four engines; pad in the application, or with printf() on SQLite."
+      },
+      {
+        "name": "RPAD",
+        "probe": "SELECT RPAD('7', 3, '0')",
+        "advice": "No form works on all four engines; pad in the application, or with printf() on SQLite."
+      },
+      {
+        "name": "REPEAT",
+        "probe": "SELECT REPEAT('ab', 2)",
+        "advice": "No form works on all four engines; build the text in the application."
+      },
+      {
+        "name": "REVERSE",
+        "probe": "SELECT REVERSE('abc')",
+        "advice": "No form works on all four engines; reverse the text in the application."
+      },
+      {
+        "name": "SPACE",
+        "probe": "SELECT SPACE(2)",
+        "advice": "Write the spaces as a literal."
+      },
+      {
+        "name": "SUBSTRING_INDEX",
+        "probe": "SELECT SUBSTRING_INDEX('a.b.c', '.', 2)",
+        "advice": "No form works on all four engines; split the text in the application."
+      },
+      {
+        "name": "SPLIT_PART",
+        "probe": "SELECT SPLIT_PART('a.b.c', '.', 2)",
+        "advice": "No form works on all four engines; split the text in the application."
+      },
+      {
+        "name": "INITCAP",
+        "probe": "SELECT INITCAP('hello world')",
+        "advice": "Change the case in the application."
+      },
+      {
+        "name": "TRANSLATE",
+        "probe": "SELECT TRANSLATE('abc', 'ab', 'xy')",
+        "advice": "Use one REPLACE per character."
+      },
+      {
+        "name": "STRING_AGG",
+        "setup": "CREATE TABLE t (x VARCHAR(5));\nINSERT INTO t VALUES ('a')",
+        "probe": "SELECT STRING_AGG(x, ',') FROM t",
+        "advice": "No form works on all four engines; GROUP_CONCAT(x) on SQLite, MySQL and MariaDB.",
+        "since": {
+          "sqlite": "3.44.0"
+        }
+      },
+      {
+        "name": "GROUP_CONCAT",
+        "setup": "CREATE TABLE t (x VARCHAR(5));\nINSERT INTO t VALUES ('a')",
+        "probe": "SELECT GROUP_CONCAT(x) FROM t",
+        "advice": "No form works on all four engines; STRING_AGG(x, ',') on PostgreSQL."
+      },
+      {
+        "name": "ARRAY_AGG",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (3)",
+        "probe": "SELECT ARRAY_AGG(x) FROM t",
+        "advice": "No form works on all four engines; GROUP_CONCAT on SQLite, MySQL and MariaDB."
+      },
+      {
+        "name": "RAND",
+        "probe": "SELECT RAND() < 2",
+        "advice": "No form works on all four engines; RANDOM() on SQLite and PostgreSQL."
+      },
+      {
+        "name": "RANDOM",
+        "probe": "SELECT RANDOM() IS NOT NULL",
+        "advice": "No form works on all four engines; RAND() on MySQL and MariaDB."
+      },
+      {
+        "name": "TRUNC",
+        "probe": "SELECT TRUNC(5.7)",
+        "advice": "No form works on all four engines; TRUNCATE(x, 0) on MySQL and MariaDB."
+      },
+      {
+        "name": "TRUNCATE",
+        "probe": "SELECT TRUNCATE(5.77, 1)",
+        "advice": "No form works on all four engines; TRUNC(x, d) on PostgreSQL; ROUND(x, d) rounds on all four."
+      },
+      {
+        "name": "DATE_FORMAT",
+        "probe": "SELECT DATE_FORMAT('2024-05-06', '%Y')",
+        "advice": "No form works on all four engines; strftime() on SQLite and TO_CHAR() on PostgreSQL, or format dates in the application."
+      },
+      {
+        "name": "TO_CHAR",
+        "probe": "SELECT TO_CHAR(DATE('2024-05-06'), 'YYYY')",
+        "advice": "No form works on all four engines; strftime() on SQLite and DATE_FORMAT() on MySQL, or format dates in the application."
+      },
+      {
+        "name": "STRFTIME",
+        "probe": "SELECT STRFTIME('%Y', '2024-05-06')",
+        "advice": "No form works on all four engines; TO_CHAR() on PostgreSQL and DATE_FORMAT() on MySQL and MariaDB."
+      },
+      {
+        "name": "DATE_ADD",
+        "probe": "SELECT DATE_ADD('2024-01-31', INTERVAL 1 DAY)",
+        "advice": "No form works on all four engines; d + INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB, date(d, '+1 day') on SQLite."
+      },
+      {
+        "name": "DATE_SUB",
+        "probe": "SELECT DATE_SUB('2024-02-01', INTERVAL 1 DAY)",
+        "advice": "No form works on all four engines; d - INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB, date(d, '-1 day') on SQLite."
+      },
+      {
+        "name": "DATEDIFF",
+        "probe": "SELECT DATEDIFF('2024-03-01', '2024-02-01')",
+        "advice": "No form works on all four engines; julianday(a) - julianday(b) on SQLite, a - b on PostgreSQL."
+      },
+      {
+        "name": "TIMESTAMPDIFF",
+        "probe": "SELECT TIMESTAMPDIFF(DAY, '2024-02-01', '2024-03-01')",
+        "advice": "No form works on all four engines; julianday() on SQLite, date subtraction on PostgreSQL."
+      },
+      {
+        "name": "EXTRACT",
+        "probe": "SELECT EXTRACT(YEAR FROM DATE('2024-05-06'))",
+        "advice": "No form works on all four engines; strftime('%Y', d) on SQLite."
+      },
+      {
+        "name": "DATE_PART",
+        "probe": "SELECT DATE_PART('year', DATE('2024-05-06'))",
+        "advice": "Use EXTRACT on PostgreSQL, MySQL and MariaDB."
+      },
+      {
+        "name": "DATE_TRUNC",
+        "probe": "SELECT DATE_TRUNC('month', DATE('2024-05-06')) IS NOT NULL",
+        "advice": "No form works on all four engines; truncate dates in the application."
+      },
+      {
+        "name": "JULIANDAY",
+        "probe": "SELECT JULIANDAY('2024-05-06')",
+        "advice": "No form works on all four engines; it exists on SQLite only."
+      },
+      {
+        "name": "UNIX_TIMESTAMP",
+        "probe": "SELECT UNIX_TIMESTAMP('2024-05-06 00:00:00') > 0",
+        "advice": "No form works on all four engines; unixepoch() on SQLite, EXTRACT(EPOCH FROM t) on PostgreSQL."
+      },
+      {
+        "name": "UNIXEPOCH",
+        "probe": "SELECT UNIXEPOCH('2024-05-06')",
+        "advice": "No form works on all four engines; UNIX_TIMESTAMP() on MySQL and MariaDB, EXTRACT(EPOCH FROM t) on PostgreSQL."
+      },
+      {
+        "name": "FROM_UNIXTIME",
+        "probe": "SELECT FROM_UNIXTIME(0) IS NOT NULL",
+        "advice": "No form works on all four engines; TO_TIMESTAMP() on PostgreSQL, datetime(n, 'unixepoch') on SQLite."
+      },
+      {
+        "name": "TO_TIMESTAMP",
+        "probe": "SELECT TO_TIMESTAMP(0) IS NOT NULL",
+        "advice": "No form works on all four engines; FROM_UNIXTIME() on MySQL and MariaDB, datetime(n, 'unixepoch') on SQLite."
+      },
+      {
+        "name": "STR_TO_DATE",
+        "probe": "SELECT STR_TO_DATE('06/05/2024', '%d/%m/%Y')",
+        "advice": "Keep dates as ISO text (YYYY-MM-DD) and use DATE(x)."
+      },
+      {
+        "name": "TO_DATE",
+        "probe": "SELECT TO_DATE('2024-05-06', 'YYYY-MM-DD')",
+        "advice": "Keep dates as ISO text (YYYY-MM-DD) and use DATE(x)."
+      },
+      {
+        "name": "YEAR",
+        "probe": "SELECT YEAR('2024-05-06')",
+        "advice": "No form works on all four engines; EXTRACT(YEAR FROM d) on PostgreSQL, MySQL and MariaDB, strftime('%Y', d) on SQLite."
+      },
+      {
+        "name": "MONTH",
+        "probe": "SELECT MONTH('2024-05-06')",
+        "advice": "No form works on all four engines; EXTRACT(MONTH FROM d) on PostgreSQL, MySQL and MariaDB, strftime('%m', d) on SQLite."
+      },
+      {
+        "name": "DAY",
+        "probe": "SELECT DAY('2024-05-06')",
+        "advice": "No form works on all four engines; EXTRACT(DAY FROM d) on PostgreSQL, MySQL and MariaDB, strftime('%d', d) on SQLite."
+      },
+      {
+        "name": "DAYOFWEEK",
+        "probe": "SELECT DAYOFWEEK('2024-05-06')",
+        "advice": "No form works on all four engines; EXTRACT(DOW FROM d) on PostgreSQL, strftime('%w', d) on SQLite."
+      },
+      {
+        "name": "LAST_INSERT_ID",
+        "probe": "SELECT LAST_INSERT_ID() IS NOT NULL",
+        "advice": "Read the new id through the driver."
+      },
+      {
+        "name": "LAST_INSERT_ROWID",
+        "probe": "SELECT LAST_INSERT_ROWID() IS NOT NULL",
+        "advice": "Read the new id through the driver."
+      },
+      {
+        "name": "REGEXP_REPLACE",
+        "probe": "SELECT REGEXP_REPLACE('abc', 'b', 'x')",
+        "advice": "No form works on all four engines; SQLite has no regular expression replace."
+      },
+      {
+        "name": "REGEXP_LIKE",
+        "probe": "SELECT REGEXP_LIKE('abc', 'b')",
+        "advice": "No form works on all four engines; REGEXP on SQLite's shell, MySQL and MariaDB, ~ on PostgreSQL."
+      },
+      {
+        "name": "MD5",
+        "probe": "SELECT MD5('a')",
+        "advice": "Hash in the application."
+      },
+      {
+        "name": "SHA1",
+        "probe": "SELECT SHA1('a')",
+        "advice": "Hash in the application."
+      },
+      {
+        "name": "SHA2",
+        "probe": "SELECT SHA2('a', 256)",
+        "advice": "Hash in the application."
+      },
+      {
+        "name": "UUID",
+        "probe": "SELECT UUID() IS NOT NULL",
+        "advice": "Generate ids in the application."
+      },
+      {
+        "name": "GEN_RANDOM_UUID",
+        "probe": "SELECT GEN_RANDOM_UUID() IS NOT NULL",
+        "advice": "Generate ids in the application."
+      },
+      {
+        "name": "HEX",
+        "probe": "SELECT HEX('a')",
+        "advice": "No form works on all four engines; encode(x, 'hex') on PostgreSQL."
+      },
+      {
+        "name": "UNHEX",
+        "probe": "SELECT UNHEX('61')",
+        "advice": "No form works on all four engines; decode(x, 'hex') on PostgreSQL."
+      },
+      {
+        "name": "CHR",
+        "probe": "SELECT CHR(65)",
+        "advice": "No form works on all four engines; CHAR(n) on SQLite and MySQL, where MySQL returns bytes."
+      },
+      {
+        "name": "ASCII",
+        "probe": "SELECT ASCII('A')",
+        "advice": "No form works on all four engines; unicode() on SQLite."
+      },
+      {
+        "name": "UNICODE",
+        "probe": "SELECT UNICODE('A')",
+        "advice": "No form works on all four engines; ASCII() on PostgreSQL, MySQL and MariaDB."
+      },
+      {
+        "name": "TYPEOF",
+        "probe": "SELECT TYPEOF(1)",
+        "advice": "No form works on all four engines; it exists on SQLite only."
+      },
+      {
+        "name": "JSON_EXTRACT",
+        "probe": "SELECT JSON_EXTRACT('{\"a\": 1}', '$.a')",
+        "advice": "No form works on all four engines; the -> and ->> operators on PostgreSQL."
+      },
+      {
+        "name": "STDDEV",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (3)",
+        "probe": "SELECT STDDEV(x) > 0 FROM t",
+        "advice": "No form works on all four engines; compute it from SUM and COUNT, or in the application."
+      },
+      {
+        "name": "VARIANCE",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (3)",
+        "probe": "SELECT VARIANCE(x) > 0 FROM t",
+        "advice": "No form works on all four engines; compute it from SUM and COUNT, or in the application."
+      },
+      {
+        "name": "BOOL_AND",
+        "setup": "CREATE TABLE t (x BOOLEAN);\nINSERT INTO t VALUES (TRUE)",
+        "probe": "SELECT BOOL_AND(x) FROM t",
+        "advice": "Use MIN(CASE WHEN x THEN 1 ELSE 0 END) = 1."
+      },
+      {
+        "name": "EVERY",
+        "setup": "CREATE TABLE t (x BOOLEAN);\nINSERT INTO t VALUES (TRUE)",
+        "probe": "SELECT EVERY(x) FROM t",
+        "advice": "Use MIN(CASE WHEN x THEN 1 ELSE 0 END) = 1."
+      },
+      {
+        "name": "BIT_AND",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (3)",
+        "probe": "SELECT BIT_AND(x) FROM t",
+        "advice": "No form works on all four engines; SQLite has no bitwise aggregates."
+      },
+      {
+        "name": "CONVERT",
+        "probe": "SELECT CONVERT('12', SIGNED)",
+        "advice": "Use CAST (see cast-to-number and cast-to-text)."
+      },
+      {
+        "name": "TOTAL",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (3)",
+        "probe": "SELECT TOTAL(x) FROM t",
+        "advice": "Use COALESCE(SUM(x), 0)."
+      }
+    ]
+  },
+  {
+    "code": "operator-not-everywhere",
+    "title": "Operators that exist on some engines only",
+    "severity": "error",
+    "summary": "Operators such as ::, ILIKE, DIV and <=> belong to one or two engines and are syntax errors on the others.",
+    "detail": "Each operator in the table was used on all four engines, and the table shows where it ran and what to write instead.",
+    "advice": "Prefer the operators all four share: = <> < > <= >= + - * / % || (see pipes-concat), LIKE, IN, BETWEEN, IS NULL.",
+    "example": "SELECT 'abc' ILIKE 'ABC'",
+    "rewrite": "SELECT LOWER('abc') LIKE LOWER('ABC')",
+    "items": [
+      {
+        "name": "::",
+        "probe": "SELECT '5'::INTEGER",
+        "advice": "Use CAST(x AS type) (see cast-to-number for integers)."
+      },
+      {
+        "name": "ILIKE",
+        "probe": "SELECT 'abc' ILIKE 'ABC'",
+        "advice": "Use LOWER(x) LIKE LOWER(pattern)."
+      },
+      {
+        "name": "DIV",
+        "probe": "SELECT 7 DIV 2",
+        "advice": "Use (a - a % b) / b for a whole-number result."
+      },
+      {
+        "name": "MOD",
+        "probe": "SELECT 7 MOD 3",
+        "advice": "Use a % b."
+      },
+      {
+        "name": "<=>",
+        "probe": "SELECT 1 <=> NULL",
+        "advice": "Use (a = b OR (a IS NULL AND b IS NULL))."
+      },
+      {
+        "name": "REGEXP",
+        "probe": "SELECT 'abc' REGEXP 'b'",
+        "advice": "No form works on all four engines; ~ on PostgreSQL; REGEXP works in SQLite's shell, not in every SQLite build."
+      },
+      {
+        "name": "RLIKE",
+        "probe": "SELECT 'abc' RLIKE 'b'",
+        "advice": "No form works on all four engines; ~ on PostgreSQL."
+      },
+      {
+        "name": "~",
+        "probe": "SELECT 'abc' ~ 'b'",
+        "advice": "No form works on all four engines; REGEXP on MySQL and MariaDB."
+      },
+      {
+        "name": "SIMILAR TO",
+        "probe": "SELECT 'abc' SIMILAR TO 'a%'",
+        "advice": "Use LIKE where the pattern allows it."
+      },
+      {
+        "name": "IS DISTINCT FROM",
+        "probe": "SELECT 1 IS DISTINCT FROM NULL",
+        "advice": "Use (a <> b OR (a IS NULL) <> (b IS NULL)), or <=> on MySQL and MariaDB."
+      },
+      {
+        "name": "XOR",
+        "probe": "SELECT 1 XOR 0",
+        "advice": "Use (a OR b) AND NOT (a AND b)."
+      },
+      {
+        "name": "&&",
+        "probe": "SELECT 1 && 0",
+        "advice": "Use AND."
+      },
+      {
+        "name": "GLOB",
+        "probe": "SELECT 'abc' GLOB 'a*'",
+        "advice": "Use LIKE, with % for * and _ for ?."
+      },
+      {
+        "name": "==",
+        "probe": "SELECT 1 == 1",
+        "advice": "Use =."
+      },
+      {
+        "name": "!",
+        "probe": "SELECT !0",
+        "advice": "Use NOT."
+      },
+      {
+        "name": "->>",
+        "probe": "SELECT '{\"a\": \"x\"}' ->> '$.a'",
+        "advice": "No form works on all four engines; JSON paths and types differ on every engine."
+      }
+    ]
+  }
+]

@@ -24,8 +24,16 @@ Layout:
   caching_sha2_password, mysql_native_password, sha256_password, clear
   password).
 - `internal/testenv`: which engines a test may use (see Workflow).
-- `audit`: BareSQL Audit. `portable`: BareSQL Portable. `cmd/baresql`: CLI.
-- `testdata`: fixture databases with exact expectations.
+- `internal/sqltext`: tokenizer and statement splitter for all four
+  dialects (MySQL backslash escapes, `#` comments, dollar quotes, trigger
+  bodies).
+- `audit`: BareSQL Audit; `audit/testdata`: fixture databases with exact
+  expectations per PostgreSQL version.
+- `portable`: BareSQL Portable. `catalog.json` (written by hand: every
+  rule's text, example and rewrite), `answers.json` (written by
+  `BARESQL_RECORD=1 go test ./portable -run 'TestCatalog$'` with all four
+  engines), `rules.go` (one check per rule, in catalog order).
+- `cmd/baresql`: CLI.
 
 Site repo: github.com/photozeitgeist/baresql.com (Hugo, Launch template,
 content and config values only; never touch the theme).
@@ -49,10 +57,18 @@ content and config values only; never touch the theme).
   CI starts each engine version in Docker with `scripts/ci-engine.sh`.
 - Claude's sandbox has no Docker. `scripts/dev-engines.sh setup` installs
   PostgreSQL 16, MySQL 8.0, MariaDB 10.11 and sqlite3 under
-  /var/tmp/baresql-dev; run each server as a background job
-  (`scripts/dev-engines.sh pg`, `mysql`, `mariadb`), then
-  `scripts/dev-engines.sh passwords` once and
-  `eval "$(scripts/dev-engines.sh env)"`.
+  /var/tmp/baresql-dev; the first time, run each server as a background
+  job (`scripts/dev-engines.sh pg`, `mysql`, `mariadb`) and
+  `scripts/dev-engines.sh passwords` once. After that,
+  `scripts/dev-engines.sh run go test ./...` starts all three for one
+  command and stops them again (background jobs are killed after two hours).
+- Portable rules: a new rule is an entry in `portable/catalog.json` and a
+  check in `portable/rules.go` at the same place in the order. Record its
+  answers with `scripts/dev-engines.sh run env BARESQL_RECORD=1 go test
+  ./portable -run 'TestCatalog$'`. `TestCatalogRules` checks that lint
+  flags each example and not its rewrite. When a CI engine version answers
+  differently, its annotation prints the `"engine x.y": {...}` key to add to
+  answers.json by hand (recording keeps such keys).
 - Engine versions in CI: PostgreSQL 13 to 18, MySQL 8.0, 8.4 and 9.7,
   MariaDB 10.11, 11.4, 11.8 and 12.3. When a version is released or
   reaches end of life, change the lists in `.github/workflows/ci.yml`.
@@ -78,11 +94,28 @@ content and config values only; never touch the theme).
 ## State
 
 0.1.0 in development (started 2026-10-26). Done: repo setup, CI with one
-job per engine version, release workflow.
+job per engine version, release workflow; pgwire and mysqlwire; BareSQL
+Audit (audit, diff, --baseline, report.html, audit.json, four fixtures);
+BareSQL Portable (lint with 57 rules, compare, rules, the catalog recorded
+on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14);
+README as the manual; smoke.sh exercises every command.
 
 ## Gaps and to-do
 
 - PostgreSQL 19 is due on 2026-11-19: add it to the CI list after release.
+- Audit: one database per run; row security is judged per table (policy
+  conditions are not evaluated); write access through views and functions
+  is not traced; passwords outside ASCII are sent without SASLprep.
+- Portable: lint reads tokens, not a full parse, and knows column types
+  only from CREATE TABLE in the files it reads; JSON functions, stored
+  procedures and triggers are not covered; collation-dependent sort order
+  (PostgreSQL's depends on the cluster locale) is not a rule; MariaDB's
+  trailing-space equality ('a' = 'a ' is true there) is not a rule.
+- compare runs scripts with the logins' rights; it skips statements that
+  leave the scratch space and refuses writes to other databases on
+  MySQL/MariaDB, but it is no sandbox (README says so).
+- Answers recorded on one version per engine; CI checks the others and
+  version keys are added from its annotations.
 
 ## Next
 
@@ -91,6 +124,7 @@ order, pushing after each step:
 
 1. Repo setup, CI and the release workflow. (done)
 2. PostgreSQL and MySQL wire clients, with tests against real servers.
+   (done)
 3. BareSQL Audit for PostgreSQL: `baresql audit <dsn>` writes report.html
    and audit.json; routes through direct and column grants, group roles
    (inherit and SET ROLE), PUBLIC, ownership, superuser and
@@ -102,14 +136,14 @@ order, pushing after each step:
    `--no-sample` turns sampling off). `baresql diff old.json new.json`, and
    `--baseline audit.json` to fail when reach grows. Planted fixture
    databases with exact expectations, near misses, PostgreSQL 13 and later,
-   fuzzing, a 1,000-table and 50-login timing run.
+   fuzzing, a 1,000-table and 50-login timing run. (done)
 4. BareSQL Portable for SQLite, PostgreSQL, MySQL and MariaDB: `baresql
    lint` (static rules with portable rewrites), `baresql compare` (each
    engine in a throwaway space: a rolled-back transaction on PostgreSQL, a
    scratch database on MySQL and MariaDB, a temporary file on SQLite;
    answers compared by meaning), `baresql rules` (catalog with a minimal
    example, recorded answers per engine and the portable rewrite; CI
-   re-runs the catalog).
+   re-runs the catalog). (done)
 5. Record results, independent review, fixes, re-record.
 6. baresql.com: pages Audit, Portable, Quick Start, Sample Reports,
    Reference, Download, About (with the name), Contact

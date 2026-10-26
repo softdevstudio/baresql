@@ -34,6 +34,9 @@ func commands() []command {
 	return []command{
 		{"audit", "[flags] [connection]", "who can read what in a PostgreSQL database", runAudit},
 		{"diff", "old.json new.json", "compare two audits and list what changed", runDiff},
+		{"lint", "[flags] file.sql ...", "SQL that answers differently on SQLite, PostgreSQL, MySQL, MariaDB", runLint},
+		{"compare", "[engines] file.sql ...", "run SQL on several engines and show where the answers differ", runCompare},
+		{"rules", "[code]", "the differences lint knows, with each engine's recorded answer", runRules},
 		{"version", "", "print the version", nil},
 		{"help", "[command]", "show help", nil},
 	}
@@ -71,8 +74,14 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 func usage(w io.Writer) {
 	fmt.Fprint(w, "BareSQL: plain checks for SQL databases.\n\nUsage:\n")
+	width := 0
 	for _, c := range commands() {
-		fmt.Fprintf(w, "  baresql %-28s %s\n", strings.TrimSpace(c.name+" "+c.args), c.about)
+		if n := len(strings.TrimSpace(c.name + " " + c.args)); n > width {
+			width = n
+		}
+	}
+	for _, c := range commands() {
+		fmt.Fprintf(w, "  baresql %-*s  %s\n", width, strings.TrimSpace(c.name+" "+c.args), c.about)
 	}
 	fmt.Fprint(w, "\nRun baresql help <command> for its flags. Manual: https://github.com/softdevstudio/baresql#readme\n")
 }
