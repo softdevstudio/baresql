@@ -2,10 +2,10 @@
 
 ## 0.1.0
 
-Not released yet. The first release: BareSQL Audit for PostgreSQL and
-BareSQL Portable for SQLite, PostgreSQL, MySQL and MariaDB, in one binary
-for Linux, macOS and Windows. An independent review of both tools came
-before it; what it found is fixed or listed under Limits in the README.
+The first release: BareSQL Audit for PostgreSQL and BareSQL Portable for
+SQLite, PostgreSQL, MySQL and MariaDB, in one binary for Linux, macOS and
+Windows. An independent review of both tools came before it; what it
+found is fixed or listed under Limits in the README.
 
 BareSQL Audit (PostgreSQL 13 to 18):
 
@@ -24,7 +24,8 @@ BareSQL Audit (PostgreSQL 13 to 18):
   through pg_stats.
 - It works in a read-only transaction and never calls a user-defined
   function: values are read through their types' output functions, each
-  table with ONLY, and foreign tables never. JSON keys in the evidence show
+  table on its own with ONLY (or through its top parent when the login may
+  read a partition only that way), and foreign tables never. JSON keys in the evidence show
   as `*` unless they are words the rules know. What it could not see is
   listed in the report.
 - `baresql diff old.json new.json` and `baresql audit --baseline` exit 1
