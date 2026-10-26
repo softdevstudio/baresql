@@ -17,7 +17,10 @@ echo "version ok: $out"
 "$bin" help >/dev/null || fail "help failed"
 n=$("$bin" rules | grep -c '^  [a-z]' || true)
 [ "$n" -ge 50 ] || fail "rules listed $n rules"
-"$bin" rules integer-division | grep -q '3.5000' || fail "rules integer-division has no recorded MySQL answer"
+# Read the whole output first: grep -q stops at the first match, and the
+# rest of the output would then hit a closed pipe (SIGPIPE under pipefail).
+rules=$("$bin" rules integer-division)
+grep -q '3.5000' <<<"$rules" || fail "rules integer-division has no recorded MySQL answer"
 echo "rules ok: $n rules"
 
 printf 'SELECT 7 / 2;\nSELECT ROUND(7 * 1.0 / 2, 2);\n' > "$tmp/q.sql"
