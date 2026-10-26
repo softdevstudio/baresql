@@ -63,7 +63,7 @@ func runAudit(ctx context.Context, args []string, stdout, stderr io.Writer) int 
 	res, err := audit.Run(ctx, cfg, audit.RunOptions{Schemas: schemas, Logins: logins, Sample: !*noSample,
 		SampleRows: *rows, StatementTimeout: *timeout})
 	if err != nil {
-		fmt.Fprintf(stderr, "baresql audit: %v\n", err)
+		fmt.Fprintf(stderr, "baresql audit: %v\n", audit.CleanText(err.Error()))
 		return 2
 	}
 	if err := audit.WriteFiles(*out, res); err != nil {

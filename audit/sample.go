@@ -13,10 +13,18 @@ import (
 // stay in memory only while their table is being classified; reports carry
 // counts, never values.
 //
+// Each table is read with ONLY, so a partition or an inheritance child is
+// read as itself and never through its parent; a partitioned table holds no
+// rows of its own and takes what its partitions hold. Values are turned
+// into text by their type's output function (format('%s', x)), never by a
+// cast: the owner of a type may define a cast to text with a function of
+// their own, and reading through it would run that function with the
+// auditor's rights.
+//
 // What is never read: views (reading one runs its query, which can call
-// functions), foreign tables (reading one connects to another server),
-// partitions (their partitioned table is read instead), binary columns,
-// virtual generated columns, and types whose text output isn't C code.
+// functions), foreign tables (reading one connects to another server or
+// runs a program), binary columns, virtual generated columns, and types
+// whose text output isn't C code.
 
 // Value limits per column: enough for an address or a token, and for a
 // JSON document's first few kilobytes.
@@ -28,11 +36,18 @@ const (
 
 func quoteAlways(s string) string { return `"` + strings.ReplaceAll(s, `"`, `""`) + `"` }
 
-// sampleable lists the columns of rel that sampling reads.
+// sampleable lists the columns of rel that sampling reads: tables
+// (partitions and inheritance children too, each on its own) and
+// materialized views.
 func sampleable(rel *Relation) []*Column {
-	if rel.Kind != 'r' && rel.Kind != 'p' && rel.Kind != 'm' || rel.IsPartition {
+	if rel.Kind != 'r' && rel.Kind != 'm' {
 		return nil
 	}
+	return readableColumns(rel)
+}
+
+// readableColumns are the columns whose values can be read as text safely.
+func readableColumns(rel *Relation) []*Column {
 	var out []*Column
 	for _, c := range rel.Columns {
 		if c.Readable && !c.Binary && c.Generated != 'v' {
@@ -44,8 +59,10 @@ func sampleable(rel *Relation) []*Column {
 
 // sampleRelation reads up to rows rows of the given columns. A failure (no privilege, row
 // security on the auditor, a timeout) is returned as an error and leaves
-// the transaction usable: each read runs in its own savepoint.
-func sampleRelation(ctx context.Context, c *pgwire.Conn, s *Snapshot, rel *Relation, cols []*Column, rows int) (map[int]*valueStats, error) {
+// the transaction usable: each read runs in its own savepoint. With only
+// set the table is read without its partitions or children; without it,
+// the caller has made sure no foreign table hangs below rel.
+func sampleRelation(ctx context.Context, c *pgwire.Conn, s *Snapshot, rel *Relation, cols []*Column, rows int, only bool) (map[int]*valueStats, error) {
 	out := map[int]*valueStats{}
 	for start := 0; start < len(cols); start += maxCols {
 		part := cols[start:min(start+maxCols, len(cols))]
@@ -55,10 +72,14 @@ func sampleRelation(ctx context.Context, c *pgwire.Conn, s *Snapshot, rel *Relat
 			if col.JSON {
 				limit = jsonLimit
 			}
-			exprs = append(exprs, fmt.Sprintf("pg_catalog.left(%s::pg_catalog.text, %d)", quoteAlways(col.Name), limit))
+			exprs = append(exprs, fmt.Sprintf("pg_catalog.left(pg_catalog.format('%%s', %s), %d)", quoteAlways(col.Name), limit))
 		}
 		schema := s.Schemas[rel.Schema].Name
-		sql := fmt.Sprintf("SELECT %s FROM %s.%s LIMIT %d", strings.Join(exprs, ", "),
+		from := "ONLY "
+		if !only {
+			from = ""
+		}
+		sql := fmt.Sprintf("SELECT %s FROM %s%s.%s LIMIT %d", strings.Join(exprs, ", "), from,
 			quoteAlways(schema), quoteAlways(rel.Name), rows)
 		res, err := savepointQuery(ctx, c, sql)
 		if err != nil {
@@ -97,6 +118,10 @@ func savepointQuery(ctx context.Context, c *pgwire.Conn, sql string) (*pgwire.Re
 
 // sampleError explains in plain words why a relation wasn't sampled.
 func sampleError(err error) string {
+	// Row security refuses with the same code as a missing privilege.
+	if e, ok := err.(*pgwire.Error); ok && strings.Contains(e.Message, "row-level security") {
+		return "row security applies to the auditor's login"
+	}
 	switch {
 	case pgwire.IsCode(err, "42501"):
 		return "the auditor's login may not read it"
@@ -106,9 +131,6 @@ func sampleError(err error) string {
 		return "the table was locked by another session"
 	case pgwire.IsCode(err, "55000"):
 		return "the materialized view has not been populated"
-	}
-	if e, ok := err.(*pgwire.Error); ok && strings.Contains(e.Message, "row-level security") {
-		return "row security applies to the auditor's login"
 	}
 	return err.Error()
 }

@@ -70,6 +70,11 @@ func (r *Result) Lines() []string {
 	for _, f := range r.Findings {
 		out = append(out, "finding "+f.Severity+" "+f.Code+" "+f.Subject)
 	}
+	// Names are escaped where they are made; this catches the rest (policy
+	// and server names, the server's own words), so one fact stays one line.
+	for i := range out {
+		out[i] = cleanText(out[i])
+	}
 	sort.Strings(out)
 	return out
 }

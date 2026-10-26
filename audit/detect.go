@@ -80,11 +80,64 @@ func isPhone(v string) bool {
 	if strings.Count(v, "(") != strings.Count(v, ")") {
 		return false
 	}
-	// Dates, IP addresses and decimal numbers have the same characters.
-	if reDateLike.MatchString(v) || isIP(v) || reDecimal.MatchString(v) {
+	// Dates, IP addresses, decimal numbers, US social security numbers and
+	// book numbers have the same characters.
+	if reDateLike.MatchString(v) || isIP(v) || reDecimal.MatchString(v) || reSSN.MatchString(v) || isISBN(v) {
 		return false
 	}
 	return v[0] == '+' || v[0] == '0' || v[0] == '(' || strings.ContainsAny(v, " -./")
+}
+
+// isISBN: a book number written with hyphens, ISBN-13 (978 or 979 first)
+// or ISBN-10, with a valid check digit.
+func isISBN(v string) bool {
+	if strings.Count(v, "-") < 3 {
+		return false
+	}
+	var d []byte
+	for i := 0; i < len(v); i++ {
+		switch c := v[i]; {
+		case c >= '0' && c <= '9':
+			d = append(d, c)
+		case (c == 'X' || c == 'x') && i == len(v)-1:
+			d = append(d, 'X')
+		case c == '-':
+		default:
+			return false
+		}
+	}
+	switch len(d) {
+	case 13:
+		if string(d[:3]) != "978" && string(d[:3]) != "979" {
+			return false
+		}
+		sum := 0
+		for i, c := range d {
+			if c == 'X' {
+				return false
+			}
+			w := 1
+			if i%2 == 1 {
+				w = 3
+			}
+			sum += int(c-'0') * w
+		}
+		return sum%10 == 0
+	case 10:
+		sum := 0
+		for i, c := range d {
+			n := int(c - '0')
+			if c == 'X' {
+				if i != 9 {
+					return false
+				}
+				n = 10
+			}
+			sum += n * (10 - i)
+		}
+		return sum%11 == 0
+	}
+	return false
 }
 
 var (

@@ -42,7 +42,7 @@ func splitName(s string) []string {
 	var cur []rune
 	flush := func() {
 		if len(cur) > 0 {
-			words = append(words, strings.ToLower(string(cur)))
+			words = append(words, foldAccents(strings.ToLower(string(cur))))
 			cur = cur[:0]
 		}
 	}
@@ -68,6 +68,37 @@ func splitName(s string) []string {
 	return words
 }
 
+// accentFold spells letters with diacritics the way the rules do: prénom
+// is prenom, straße is strasse, contraseña is contrasena.
+var accentFold = func() map[rune]string {
+	m := map[rune]string{}
+	for plain, accented := range map[string]string{
+		"a": "àáâãäåāąă", "c": "çćč", "d": "ďđ", "e": "èéêëēęěė", "g": "ğ", "i": "ìíîïīı", "l": "łľ",
+		"n": "ñńň", "o": "òóôõöøō", "r": "ř", "s": "śšş", "t": "ťţ", "u": "ùúûüūů", "y": "ýÿ", "z": "źżž",
+		"ss": "ß", "ae": "æ", "oe": "œ",
+	} {
+		for _, r := range accented {
+			m[r] = plain
+		}
+	}
+	return m
+}()
+
+func foldAccents(s string) string {
+	if strings.IndexFunc(s, func(r rune) bool { return r > 127 }) < 0 {
+		return s
+	}
+	var b strings.Builder
+	for _, r := range s {
+		if f, ok := accentFold[r]; ok {
+			b.WriteString(f)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // nameRule matches a sequence of words anywhere in a column name.
 type nameRule struct {
 	category string
@@ -85,28 +116,37 @@ var nameRules = func() []nameRule {
 			rules = append(rules, nameRule{cat, strings.Fields(n)})
 		}
 	}
-	add("email", "email", "e mail", "mail", "emailaddress", "mailaddress")
+	add("email", "email", "e mail", "mail", "emailaddress", "mailaddress", "emailadresse", "mailadresse", "correo",
+		"correo electronico", "courriel", "e post", "epost")
 	add("phone", "phone", "telephone", "tel", "mobile", "cellphone", "cell phone", "fax", "msisdn",
-		"phonenumber", "telefon", "telefono", "telephone number", "handy", "mobil")
+		"phonenumber", "telefon", "telefono", "telephone number", "handy", "mobil", "telefonnummer",
+		"handynummer", "mobilnummer", "celular", "cellulare", "telefone", "telefoon", "mobiel")
 	add("name", "first name", "firstname", "last name", "lastname", "surname", "family name", "familyname",
 		"given name", "givenname", "full name", "fullname", "middle name", "maiden name", "middlename",
-		"vorname", "nachname", "nombre", "apellido", "apellidos", "prenom", "cognome", "achternaam", "voornaam")
-	add("address", "address", "street", "streetaddress", "address line", "addressline", "postcode",
+		"fname", "lname", "customer name", "client name", "billing name", "shipping name", "cardholder name",
+		"card holder name", "holder name", "account holder", "contact name", "display name", "patient name",
+		"person name", "employee name", "member name", "recipient name", "sender name", "guest name",
+		"passenger name", "vorname", "nachname", "nombre", "apellido", "apellidos", "prenom", "nom complet",
+		"nom de famille", "cognome", "nome completo", "sobrenome", "achternaam", "voornaam", "volledige naam",
+		"nazwisko", "imie")
+	add("address", "address", "street", "street name", "streetaddress", "address line", "addressline", "postcode",
 		"postal code", "postalcode", "zip", "zipcode", "zip code", "house number", "housenumber",
-		"strasse", "plz", "calle", "direccion", "adresse")
+		"strasse", "plz", "postleitzahl", "calle", "direccion", "adresse", "endereco", "indirizzo", "adres",
+		"straat")
 	add("birth-date", "birth", "birthdate", "birthday", "dob", "born", "date of birth", "geburtsdatum",
-		"nacimiento", "naissance", "nascita")
+		"geburtstag", "geboortedatum", "nacimiento", "naissance", "nascita")
 	add("national-id", "ssn", "social security", "national id", "nationalid", "nino", "personnummer",
 		"bsn", "dni", "nie", "cpf", "pesel", "codice fiscale", "fiscal code", "aadhaar", "nir", "hetu",
-		"id card", "idcard", "id number", "national insurance")
+		"id card", "idcard", "id number", "national insurance", "personalausweis", "ausweisnummer")
 	add("passport", "passport", "drivers license", "driver license", "drivers licence", "driving licence",
 		"driving license", "licence number")
-	add("tax-id", "tax id", "taxid", "tax number", "tin", "steuer id", "steuernummer")
+	add("tax-id", "tax id", "taxid", "tax number", "tin", "steuer id", "steuernummer", "nif", "pan card",
+		"pan number", "pan no")
 	add("card", "card number", "cardnumber", "credit card", "creditcard", "cc number", "ccnumber", "ccnum",
 		"cvv", "cvc", "cvv2", "card cvv", "pan")
 	add("bank-account", "iban", "bank account", "bankaccount", "account iban", "sort code", "routing number")
 	add("password", "password", "passwd", "pwd", "pass hash", "passhash", "passcode", "pin code", "pincode",
-		"passwort", "contrasena")
+		"passwort", "kennwort", "contrasena", "mot de passe", "wachtwoord", "senha", "haslo")
 	add("secret", "secret", "api key", "apikey", "access key", "accesskey", "secret key", "private key",
 		"privatekey", "token", "otp secret", "totp", "mfa secret", "client secret", "credentials", "credential")
 	add("ip-address", "ip", "ip address", "ipaddress", "ip addr", "ipaddr", "remote addr", "client ip", "ipv4", "ipv6")
@@ -119,7 +159,7 @@ var nameRules = func() []nameRule {
 		"union member", "trade union", "biometric", "fingerprint", "face encoding", "genetic", "dna")
 	add("gender", "gender", "sex")
 	add("insurance-id", "insurance number", "insurance id", "insurance no", "insurancenumber", "kvnr",
-		"health insurance", "medicare number", "nhs number")
+		"health insurance", "medicare number", "nhs number", "versicherungsnummer", "krankenversicherungsnummer")
 	return rules
 }()
 
@@ -170,6 +210,66 @@ var peopleTables = map[string]bool{
 	"doctors": true, "physician": true, "physicians": true, "nurse": true, "nurses": true, "teacher": true,
 	"teachers": true, "parent": true, "parents": true, "account": true, "accounts": true, "player": true,
 	"players": true, "athlete": true, "athletes": true, "tenant_user": true, "attendee": true, "attendees": true,
+	// The same in the common European languages.
+	"kunde": true, "kunden": true, "klant": true, "klanten": true, "cliente": true, "clientes": true, "clienti": true,
+	"klienci": true, "klient": true, "patienten": true, "paciente": true, "pacientes": true, "paziente": true,
+	"pazienti": true, "pacjenci": true, "mitarbeiter": true, "empleado": true, "empleados": true, "dipendenti": true,
+	"medewerkers": true, "usuario": true, "usuarios": true, "utente": true, "utenti": true, "utilisateur": true,
+	"utilisateurs": true, "gebruiker": true, "gebruikers": true, "uzytkownicy": true, "benutzer": true,
+	"personen": true, "personas": true, "persone": true, "membre": true, "membres": true, "mitglied": true,
+	"mitglieder": true, "leden": true, "socio": true, "socios": true, "soci": true, "kontakt": true, "kontakte": true,
+	"contactos": true, "contatti": true, "alumnos": true, "studenti": true, "schueler": true, "schuler": true,
+}
+
+// contextWords: short rule words that mean personal data only on their own
+// or next to one of these words (zip_code, tin_number), never in names
+// like zip_file, tin_plate or pan_size.
+var contextWords = map[string]map[string]bool{
+	"zip": {"code": true, "postal": true, "plus": true, "plus4": true, "4": true},
+	"tin": {"number": true, "no": true, "nr": true, "tax": true, "id": true},
+	"pan": {},
+}
+
+// categoryNegatives turn off one category only: health_score and
+// treatment_arm describe a system or a study, not a person's health.
+var categoryNegatives = map[string]map[string]bool{
+	"health": {"score": true, "arm": true, "endpoint": true, "probe": true, "monitor": true},
+}
+
+// compoundSuffixes catch German compounds such as lieferadresse and
+// telefonnummer, whose words run together.
+func compoundCategory(word string) string {
+	switch {
+	case strings.HasSuffix(word, "adresse") && len(word) > len("adresse"):
+		prefix := strings.TrimSuffix(word, "adresse")
+		switch prefix {
+		case "email", "mail", "emailadresse":
+			return "email"
+		case "ip":
+			return "ip-address"
+		case "web", "url", "internet", "mac":
+			return ""
+		}
+		return "address"
+	case strings.HasSuffix(word, "nummer") && len(word) > len("nummer"):
+		switch prefix := strings.TrimSuffix(word, "nummer"); prefix {
+		case "telefon", "handy", "mobil", "fax", "mobiltelefon":
+			return "phone"
+		case "steuer", "steueridentifikations":
+			return "tax-id"
+		case "versicherungs", "versicherten", "krankenversicherungs", "kranken":
+			return "insurance-id"
+		case "sozialversicherungs", "ausweis", "personalausweis":
+			return "national-id"
+		case "pass", "reisepass", "fuhrerschein":
+			return "passport"
+		case "konto":
+			return "bank-account"
+		case "kreditkarten", "karten":
+			return "card"
+		}
+	}
+	return ""
 }
 
 // nameCategories returns the categories a column name points to.
@@ -181,19 +281,27 @@ func nameCategories(table, column string) []string {
 		if seen[r.category] || !containsSeq(words, r.words) {
 			continue
 		}
-		if hasNegative(words, r) {
+		if hasNegative(words, r) || !inContext(words, r) {
 			continue
 		}
 		out = append(out, r.category)
 		seen[r.category] = true
+	}
+	for _, w := range words {
+		if c := compoundCategory(w); c != "" && !seen[c] {
+			out = append(out, c)
+			seen[c] = true
+		}
 	}
 	// "email address" and "ip address" are not postal addresses.
 	if seen["address"] && (seen["email"] || seen["ip-address"] || containsSeq(words, []string{"mac"}) ||
 		containsSeq(words, []string{"web"}) || containsSeq(words, []string{"url"}) || containsSeq(words, []string{"wallet"})) {
 		out = remove(out, "address")
 	}
-	// A bare name column in a table of people.
-	if !seen["name"] && len(words) == 1 && (words[0] == "name" || words[0] == "fullname") {
+	// A bare name column in a table of people (nom, nome and naam are
+	// name in French, Italian and Portuguese, and Dutch).
+	if !seen["name"] && len(words) == 1 && (words[0] == "name" || words[0] == "fullname" ||
+		words[0] == "nom" || words[0] == "nome" || words[0] == "naam") {
 		for _, w := range splitName(table) {
 			if peopleTables[w] {
 				out = append(out, "name")
@@ -213,11 +321,29 @@ func hasNegative(words []string, r nameRule) bool {
 		if inRule[w] || negativeExceptions[r.category][w] {
 			continue
 		}
-		if negativeWords[w] {
+		if negativeWords[w] || categoryNegatives[r.category][w] {
 			return true
 		}
 	}
 	return false
+}
+
+// inContext checks the short rule words of contextWords: every other word
+// of the name must be one they allow.
+func inContext(words []string, r nameRule) bool {
+	if len(r.words) != 1 {
+		return true
+	}
+	allowed, ok := contextWords[r.words[0]]
+	if !ok {
+		return true
+	}
+	for _, w := range words {
+		if w != r.words[0] && !allowed[w] {
+			return false
+		}
+	}
+	return true
 }
 
 func containsSeq(words, seq []string) bool {

@@ -24,13 +24,15 @@ func (rs readSet) add(rel uint32, attnum int, r Route) {
 }
 
 // setRoleTargets returns the roles a login may SET ROLE to that give it
-// something new: roles it doesn't already inherit, and superuser roles
-// (being a superuser is never inherited).
+// something new: roles it doesn't already inherit, and roles whose
+// attributes don't pass to members: superuser and BYPASSRLS.
 func (a *analysis) setRoleTargets(login uint32) []uint32 {
 	inh := a.s.inherited(login)
 	var out []uint32
 	for id := range a.s.settable(login) {
-		if _, ok := inh[id]; !ok || a.s.isSuper(id) {
+		_, inherited := inh[id]
+		r := a.s.Roles[id]
+		if !inherited || r != nil && (r.Super || r.BypassRLS) {
 			out = append(out, id)
 		}
 	}
@@ -38,57 +40,95 @@ func (a *analysis) setRoleTargets(login uint32) []uint32 {
 	return out
 }
 
-// ownRoute reports whether a route only repeats what the login has without
-// SET ROLE (a grant to PUBLIC or to a role it already inherits).
+// ownRoute reports whether a route repeats a grant the login has without
+// SET ROLE (one to PUBLIC or to a role it already inherits).
 func (a *analysis) ownRoute(login uint32, r Route) bool {
-	if r.Kind == "grant" || r.Kind == "column-grant" || r.Kind == "owner" || r.Kind == "predefined" {
-		if r.Role == "PUBLIC" {
+	switch r.Kind {
+	case "grant", "column-grant", "owner", "predefined":
+		if r.public {
 			return true
 		}
-		if role := a.s.RoleByName[r.Role]; role != nil {
-			_, ok := a.s.inherited(login)[role.OID]
+		if r.grantee != 0 {
+			_, ok := a.s.inherited(login)[r.grantee]
 			return ok
 		}
 	}
 	return false
 }
 
+// reader is a role whose rights a login uses: its own, or one it may SET
+// ROLE to (setRole names it).
+type reader struct {
+	role    uint32
+	setRole string
+}
+
+func (a *analysis) readers(login uint32, public bool) []reader {
+	out := []reader{{role: login}}
+	if !public {
+		for _, x := range a.setRoleTargets(login) {
+			out = append(out, reader{role: x, setRole: a.s.RoleName(x)})
+		}
+	}
+	return out
+}
+
+// readRows is what reading rel by name gives a role: the Rows of its
+// routes, and false when there is nothing to list. A role without USAGE on
+// the schema can't name the table, yet pg_stats shows it sampled values of
+// the columns it may select (unless row security is in the way). A foreign
+// table needs a user mapping for the role.
+func (a *analysis) readRows(role uint32, rel *Relation) (string, bool) {
+	rows := a.rowsFor(role, rel)
+	if !a.usage(role, rel.Schema) {
+		if !isBase(rel) || rel.Kind == 'f' || rel.RLS && !strings.HasPrefix(rows, "all rows") {
+			return "", false
+		}
+		return statsPrefix + "no USAGE on schema " + quoteIdent(a.s.Schemas[rel.Schema].Name) +
+			", but pg_stats shows it sampled values of the columns it may select", true
+	}
+	if why := a.mappingFailure(role, rel); why != "" {
+		return failsPrefix + why, true
+	}
+	return rows, true
+}
+
 // reads works out every relation column a role can read: directly, after
 // SET ROLE, and through views.
 func (a *analysis) reads(login uint32, public bool) readSet {
 	rs := readSet{}
-	type reader struct {
-		role    uint32
-		setRole string
-	}
-	readers := []reader{{role: login}}
-	if !public {
-		for _, x := range a.setRoleTargets(login) {
-			readers = append(readers, reader{role: x, setRole: a.s.RoleName(x)})
-		}
-	}
-	for _, rd := range readers {
+	roleOf := map[string]uint32{}
+	for _, rd := range a.readers(login, public) {
+		roleOf[rd.setRole] = rd.role
 		for relID, privs := range a.eval(rd.role) {
 			gs := privs["SELECT"]
 			if gs == nil {
 				continue
 			}
 			rel := a.s.Relations[relID]
+			rows, ok := a.readRows(rd.role, rel)
+			if !ok {
+				continue
+			}
 			for _, col := range rel.Columns {
 				for _, r := range gs.colRoutes(col.Attnum) {
 					if rd.setRole != "" {
-						if a.ownRoute(login, r) {
+						// The same grant without SET ROLE is listed already,
+						// unless SET ROLE lets more through: a role that
+						// bypasses row security, or has a policy of its own.
+						if own, _ := a.readRows(login, rel); a.ownRoute(login, r) && own == rows {
 							continue
 						}
 						r.SetRole = rd.setRole
 					}
-					r.Rows = a.rowsFor(rd.role, rel)
+					r.Rows = rows
 					rs.add(relID, col.Attnum, r)
 				}
 			}
 		}
 	}
-	// Through views: each readable view column hands out its base columns.
+	// Through views: each view column read by a route that gives rows
+	// hands out its base columns.
 	for k, routes := range rs {
 		rel := a.s.Relations[k.rel]
 		if rel.Kind != 'v' {
@@ -96,13 +136,12 @@ func (a *analysis) reads(login uint32, public bool) readSet {
 		}
 		setRoles := map[string]bool{}
 		for _, r := range routes {
-			setRoles[r.SetRole] = true
+			if r.GivesRows() {
+				setRoles[r.SetRole] = true
+			}
 		}
 		for sr := range setRoles {
-			role := login
-			if sr != "" {
-				role = a.s.RoleByName[sr].OID
-			}
+			role := roleOf[sr]
 			if why := a.viewFailure(rel, role, 0); why != "" {
 				for i := range rs[k] {
 					if rs[k][i].SetRole == sr {
@@ -152,18 +191,21 @@ func (a *analysis) columnReach(rs readSet) []ColumnReach {
 	return out
 }
 
+// writeRows is what changing rel by name gives a role: the Rows of its
+// routes (row security on INSERT, UPDATE and DELETE), and false when it
+// can't name the table at all.
+func (a *analysis) writeRows(role uint32, rel *Relation, priv string) (string, bool) {
+	if !a.usage(role, rel.Schema) {
+		return "", false
+	}
+	if why := a.mappingFailure(role, rel); why != "" {
+		return failsPrefix + why, true
+	}
+	return a.rowsForCmd(role, rel, priv), true
+}
+
 // writes lists what a role can change.
 func (a *analysis) writes(login uint32, public bool) []TableWrite {
-	type reader struct {
-		role    uint32
-		setRole string
-	}
-	readers := []reader{{role: login}}
-	if !public {
-		for _, x := range a.setRoleTargets(login) {
-			readers = append(readers, reader{role: x, setRole: a.s.RoleName(x)})
-		}
-	}
 	type key struct {
 		rel  uint32
 		priv string
@@ -187,21 +229,27 @@ func (a *analysis) writes(login uint32, public bool) []TableWrite {
 		}
 		x.routes = append(x.routes, r)
 	}
-	for _, rd := range readers {
+	for _, rd := range a.readers(login, public) {
 		for relID, privs := range a.eval(rd.role) {
+			rel := a.s.Relations[relID]
 			for _, priv := range []string{"INSERT", "UPDATE", "DELETE", "TRUNCATE"} {
 				gs := privs[priv]
 				if gs == nil {
 					continue
 				}
+				rows, ok := a.writeRows(rd.role, rel, priv)
+				if !ok {
+					continue
+				}
 				k := key{relID, priv}
 				fix := func(r Route) (Route, bool) {
 					if rd.setRole != "" {
-						if a.ownRoute(login, r) {
+						if own, _ := a.writeRows(login, rel, priv); a.ownRoute(login, r) && own == rows {
 							return r, false
 						}
 						r.SetRole = rd.setRole
 					}
+					r.Rows = rows
 					return r, true
 				}
 				if gs.All {
@@ -268,7 +316,7 @@ func (a *analysis) functions(login uint32, public bool) []FunctionAccess {
 		if public {
 			for _, acl := range f.ACL {
 				if acl.Priv == "EXECUTE" && acl.Grantee == 0 {
-					routes = append(routes, Route{Kind: "grant", Role: "PUBLIC"})
+					routes = append(routes, Route{Kind: "grant", Role: "PUBLIC", public: true})
 				}
 			}
 		} else {
@@ -403,7 +451,7 @@ func (a *analysis) mappings(login uint32) []MappingAccess {
 		if !(m.Role == 0 || mine) || !a.serverUse[login][m.ServerOID] {
 			continue
 		}
-		r := Route{Kind: "grant", Role: a.s.RoleName(m.Role)}
+		r := Route{Kind: "grant", Role: a.s.RoleName(m.Role), grantee: m.Role, public: m.Role == 0}
 		if v, ok := (&rights{s: a.s, role: login, closure: inh}).via(m.Role); ok {
 			r.Via = v
 		}
@@ -413,7 +461,7 @@ func (a *analysis) mappings(login uint32) []MappingAccess {
 }
 
 func (a *analysis) loginReport(role *Role) LoginReport {
-	lr := LoginReport{Name: role.Name, Attributes: roleAttributes(role), Password: role.PasswordKind}
+	lr := LoginReport{Name: a.s.RoleName(role.OID), Attributes: roleAttributes(role), Password: role.PasswordKind, oid: role.OID}
 	var member []string
 	for _, m := range a.s.Memberships {
 		if m.Member != role.OID || m.Implicit {
@@ -450,6 +498,43 @@ func (a *analysis) loginReport(role *Role) LoginReport {
 	lr.Functions = a.functions(role.OID, false)
 	lr.Server = a.serverAccess(role.OID, lr.Functions)
 	lr.Mappings = a.mappings(role.OID)
+	if !a.canConnect(role.OID) {
+		// Its grants here give it nothing until it may connect: keep them
+		// in the report, marked, and out of the counts.
+		lr.CannotConnect = true
+		why := connectPrefix + "no CONNECT privilege on database " + quoteIdent(a.s.Server.Database)
+		if role.ConnLimit == 0 {
+			why = connectPrefix + "its connection limit is 0"
+		}
+		for i := range lr.Read {
+			for j := range lr.Read[i].Routes {
+				lr.Read[i].Routes[j].Rows = why
+			}
+		}
+		for i := range lr.Write {
+			for j := range lr.Write[i].Routes {
+				lr.Write[i].Routes[j].Rows = why
+			}
+		}
+		lr.Functions, lr.Mappings = []FunctionAccess{}, []MappingAccess{}
+		var server []ServerAccess
+		for _, sa := range lr.Server {
+			if sa.Capability == "read-server-files" || sa.Capability == "write-server-files" || sa.Capability == "run-server-programs" || sa.Capability == "see-all-queries" {
+				// Granted through roles, these work from any database the
+				// login may connect to; through functions, only from this one.
+				var routes []Route
+				for _, r := range sa.Routes {
+					if r.Kind != "function" {
+						routes = append(routes, r)
+					}
+				}
+				if len(routes) > 0 {
+					server = append(server, ServerAccess{Capability: sa.Capability, Routes: routes})
+				}
+			}
+		}
+		lr.Server = server
+	}
 	lr.Summary = a.summary(lr)
 	return lr
 }
@@ -511,6 +596,9 @@ func (a *analysis) summary(lr LoginReport) LoginSummary {
 	wt := map[string]bool{}
 	wp := map[string]bool{}
 	for _, w := range lr.Write {
+		if !givesRows(w.Routes) {
+			continue
+		}
 		wt[w.Relation] = true
 		if w.Personal {
 			wp[w.Relation] = true

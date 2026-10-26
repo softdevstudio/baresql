@@ -80,3 +80,44 @@ func TestCompareRowSecurity(t *testing.T) {
 		}
 	}
 }
+
+// TestCompareRowsWiden: row security that lets more rows through is growth,
+// even when the login reached the column before (review finding H6).
+func TestCompareRowsWiden(t *testing.T) {
+	result := func(rows ...string) *Result {
+		var routes []Route
+		for _, r := range rows {
+			routes = append(routes, Route{Kind: "grant", Role: "reader", Rows: r})
+		}
+		return &Result{Logins: []LoginReport{{Name: "reader", Read: []ColumnReach{{Relation: "app.rls", Column: "ssn",
+			Personal: &Personal{Categories: []string{"national-id"}}, Routes: routes}}}}}
+	}
+	for _, tc := range []struct {
+		name     string
+		old, new *Result
+		want     string
+	}{
+		{"row security turned off", result("rows allowed by policy p"), result(""),
+			"rows reader app.rls.ssn (row security no longer narrows it: all rows)"},
+		{"BYPASSRLS", result("rows allowed by policy p"), result("all rows (BYPASSRLS)"),
+			"rows reader app.rls.ssn (row security no longer narrows it: all rows)"},
+		{"another permissive policy", result("rows allowed by policy p"), result("rows allowed by policy p, q"),
+			"rows reader app.rls.ssn (policy q now lets rows through)"},
+		{"a restrictive policy dropped", result("rows allowed by policy p and restricted by r"), result("rows allowed by policy p"),
+			"rows reader app.rls.ssn (restrictive policy r no longer applies)"},
+		{"narrower", result(""), result("rows allowed by policy p"), ""},
+		{"unchanged", result("rows allowed by policy p"), result("rows allowed by policy p"), ""},
+	} {
+		cmp := Compare(tc.old, tc.new)
+		var got []string
+		for _, ch := range cmp.Grew {
+			got = append(got, ch.String())
+		}
+		if strings.Join(got, "|") != tc.want {
+			t.Errorf("%s: grew %q, want %q", tc.name, got, tc.want)
+		}
+		if cmp.GrewAny() != (tc.want != "") {
+			t.Errorf("%s: GrewAny %v", tc.name, cmp.GrewAny())
+		}
+	}
+}

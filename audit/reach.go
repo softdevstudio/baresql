@@ -26,18 +26,42 @@ type Route struct {
 	Views []ViewHop `json:"views,omitempty"`
 	// Rows says which rows row security lets through, for tables that
 	// have it on: "all rows (...)", "rows allowed by policy ...", "no rows
-	// (...)"; or, for a view that can't be read, "reading it fails: ...".
+	// (...)"; for a view that can't be read, "reading it fails: ..."; for a
+	// grant in a schema the role may not use, "statistics only ..."; for a
+	// login that may not connect to the database, "cannot connect ...".
 	Rows string `json:"rows,omitempty"`
+
+	// The role holding the grant or ownership, by OID (0 with public set
+	// for the PUBLIC pseudo-role); names can't tell a real role called
+	// "PUBLIC" from it. Not in audit.json.
+	grantee uint32
+	public  bool
 }
 
 // failsPrefix starts the Rows of a route to a view whose query PostgreSQL
-// refuses (see viewFailure).
+// refuses (see viewFailure), or to a foreign table the role has no user
+// mapping for.
 const failsPrefix = "reading it fails: "
 
+// statsPrefix starts the Rows of a grant in a schema the role has no USAGE
+// on: it can't name the table, yet pg_stats shows it sampled values (most
+// common values and histogram bounds) of the columns it may select.
+const statsPrefix = "statistics only: "
+
+// connectPrefix starts the Rows of every route of a login that may not
+// connect to the audited database.
+const connectPrefix = "cannot connect: "
+
 // GivesRows reports whether the route hands out data today: row security
-// doesn't filter it down to no rows, and it isn't a view that fails.
+// doesn't filter it down to no rows, it isn't a view that fails, and the
+// login may connect and name the table.
 func (r Route) GivesRows() bool {
-	return !strings.HasPrefix(r.Rows, "no rows") && !strings.HasPrefix(r.Rows, failsPrefix)
+	for _, p := range []string{"no rows", failsPrefix, statsPrefix, connectPrefix} {
+		if strings.HasPrefix(r.Rows, p) {
+			return false
+		}
+	}
+	return true
 }
 
 // givesRows reports whether any of the routes hands out data.
@@ -132,7 +156,9 @@ func (r *rights) via(role uint32) ([]string, bool) {
 	return r.s.between(p), true
 }
 
-// usage reports whether the role may look into a schema.
+// usage reports whether the role may look into a schema: name the tables
+// in it. Owners hold USAGE through the schema's access list like anyone
+// else, so an owner that revoked its own USAGE has none.
 func (r *rights) usage(schema uint32) bool {
 	if r.super || r.readAll != nil || r.writeAll != nil {
 		return true
@@ -140,9 +166,6 @@ func (r *rights) usage(schema uint32) bool {
 	sc := r.s.Schemas[schema]
 	if sc == nil {
 		return false
-	}
-	if _, ok := r.closure[sc.Owner]; ok {
-		return true
 	}
 	for _, a := range sc.ACL {
 		if a.Priv == "USAGE" {
@@ -154,14 +177,24 @@ func (r *rights) usage(schema uint32) bool {
 	return false
 }
 
-// privRoutes lists the routes giving priv on a relation column (attnum 0:
-// the table-level privilege only).
-func (r *rights) privRoutes(rel *Relation, attnum int, priv string) []Route {
-	if !r.usage(rel.Schema) {
-		return nil
+// holds reports whether an access list gives role the privilege itself
+// (not through a membership).
+func holds(acl []ACLItem, role uint32, priv string) bool {
+	for _, a := range acl {
+		if a.Grantee == role && a.Priv == priv {
+			return true
+		}
 	}
+	return false
+}
+
+// privRoutes lists the routes giving priv on a relation column (attnum 0:
+// the table-level privilege only). Schema USAGE is left to the callers:
+// PostgreSQL checks it when a role names a table, and not for the tables a
+// view's stored query reads.
+func (r *rights) privRoutes(rel *Relation, attnum int, priv string) []Route {
 	if r.super {
-		return []Route{{Kind: "superuser", Role: r.s.RoleName(r.role)}}
+		return []Route{{Kind: "superuser", Role: r.s.RoleName(r.role), grantee: r.role}}
 	}
 	var out []Route
 	all := r.readAll
@@ -172,10 +205,13 @@ func (r *rights) privRoutes(rel *Relation, attnum int, priv string) []Route {
 		}
 	}
 	if all != nil {
-		out = append(out, Route{Kind: "predefined", Role: r.s.RoleName(all[len(all)-1]), Via: r.s.between(all)})
+		out = append(out, Route{Kind: "predefined", Role: r.s.RoleName(all[len(all)-1]), Via: r.s.between(all), grantee: all[len(all)-1]})
 	}
-	if v, ok := r.via(rel.Owner); ok && rel.Owner != 0 {
-		out = append(out, Route{Kind: "owner", Role: r.s.RoleName(rel.Owner), Via: v})
+	// The owner holds what the table's access list gives it: everything
+	// until it revokes some of it from itself.
+	ownerHas := rel.Owner != 0 && holds(rel.ACL, rel.Owner, priv)
+	if v, ok := r.via(rel.Owner); ok && ownerHas {
+		out = append(out, Route{Kind: "owner", Role: r.s.RoleName(rel.Owner), Via: v, grantee: rel.Owner})
 	}
 	seen := map[string]bool{}
 	add := func(kind string, acl []ACLItem) {
@@ -183,8 +219,9 @@ func (r *rights) privRoutes(rel *Relation, attnum int, priv string) []Route {
 			if a.Priv != priv {
 				continue
 			}
-			// The owner's own entry is covered by the owner route.
-			if a.Grantee == rel.Owner {
+			// The owner's own table-level entry is covered by the owner
+			// route.
+			if a.Grantee == rel.Owner && ownerHas {
 				continue
 			}
 			v, ok := r.via(a.Grantee)
@@ -196,7 +233,8 @@ func (r *rights) privRoutes(rel *Relation, attnum int, priv string) []Route {
 				continue
 			}
 			seen[key] = true
-			out = append(out, Route{Kind: kind, Role: r.s.RoleName(a.Grantee), Via: v, Grantable: a.Grantable})
+			out = append(out, Route{Kind: kind, Role: r.s.RoleName(a.Grantee), Via: v, Grantable: a.Grantable,
+				grantee: a.Grantee, public: a.Grantee == 0})
 		}
 	}
 	add("grant", rel.ACL)

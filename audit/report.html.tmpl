@@ -79,6 +79,7 @@ For every login, the server's own privilege checks were asked about every table 
 {{range .Logins}}
 <h3 id="login-{{.Anchor}}">{{.L.Name}}</h3>
 <p class="meta">{{if .L.Attributes}}{{range $i, $a := .L.Attributes}}{{if $i}}, {{end}}{{$a}}{{end}} · {{end}}{{if .L.MemberOf}}member of {{range $i, $m := .L.MemberOf}}{{if $i}}, {{end}}{{$m}}{{end}}{{else}}member of no role{{end}}{{if .L.CanSetRole}} · can SET ROLE {{range $i, $m := .L.CanSetRole}}{{if $i}}, {{end}}{{$m}}{{end}}{{end}}{{if .L.Password}} · {{password .L.Password}}{{end}}</p>
+{{if .L.CannotConnect}}<p class="note">This login may not connect to the database, so what it is granted here gives it nothing until it may. Its grants are listed below as giving it nothing today.</p>{{end}}
 {{if .Personal}}
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -128,7 +129,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h2>Method</h2>
 <p>Schemas audited: {{range $i, $s := .R.Settings.Schemas}}{{if $i}}, {{end}}<code>{{$s}}</code>{{end}}. Connection: <code>{{.R.Server.Target}}</code>, login method {{.R.Server.Auth}}.</p>
-<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Sampled values are turned into text by their type's own output function, never by a cast, and each table is read on its own, without its partitions or child tables. Views are traced to the columns they read from their stored definitions, without running them.</p>
 {{if .R.NotSeen}}<p><b>What BareSQL could not see.</b></p><ul>{{range .R.NotSeen}}<li>{{.What}}: {{.Why}}</li>{{end}}</ul>{{end}}
 {{if .R.Mismatches}}<p class="bad">BareSQL's reading of the catalogs disagreed with the server {{len .R.Mismatches}} time{{if ne (len .R.Mismatches) 1}}s{{end}}. The server's answer is used above; please report these:</p><ul>{{range .R.Mismatches}}<li class="mono">{{.}}</li>{{end}}</ul>{{end}}
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>

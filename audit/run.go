@@ -61,7 +61,9 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 		SET LOCAL lock_timeout = 5000;
 		SET LOCAL idle_in_transaction_session_timeout = 0;
 		SET LOCAL search_path = pg_catalog, pg_temp;
-		SET LOCAL row_security = off`, timeout.Milliseconds())); err != nil {
+		SET LOCAL row_security = off;
+		SET LOCAL DateStyle = 'ISO, MDY';
+		SET LOCAL IntervalStyle = 'postgres'`, timeout.Milliseconds())); err != nil {
 		return nil, fmt.Errorf("audit: starting the read-only transaction: %w", err)
 	}
 	defer c.Exec(context.Background(), "ROLLBACK")
@@ -75,7 +77,7 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 		return nil, err
 	}
 	a := &analysis{ctx: ctx, c: c, s: snap, evals: map[uint32]map[uint32]map[string]*grantSet{},
-		personal: map[colRef]*Personal{}, sampled: map[uint32]bool{}}
+		personal: map[colRef]*Personal{}, sampled: map[uint32]bool{}, throughParent: map[uint32]uint32{}}
 
 	logins, err := pickLogins(snap, opt.Logins)
 	if err != nil {
@@ -91,6 +93,10 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 	if err != nil {
 		return nil, err
 	}
+	if a.usageTruth, a.connect, err = schemaTruth(ctx, c, snap, subjects); err != nil {
+		return nil, err
+	}
+	a.checkUsage(subjects)
 	for _, sub := range subjects {
 		e := snap.rightsOf(sub).evaluate()
 		a.mismatches = append(a.mismatches, reconcile(snap, sub, e, truth)...)

@@ -1,0 +1,92 @@
+# The exact audit of the edge fixture: the setups the independent review
+# of 0.1.0 found the audit getting wrong (see setup.sql), with what the
+# server really does. pg_read_all_data exists from 14, security_invoker
+# views from 15.
+
+finding low rls-no-policies app."notes\n  low    all-clear                    ok"
+finding low rls-no-policies app.patient_visits
+pg>=14: finding medium read-all-data edge_analyst
+read "edge_x\nfinding low all-clear nothing-to-see" app."edge_\x1b[2Jred".id [-] granted to "edge_x\nfinding low all-clear nothing-to-see"
+read "edge_x\nfinding low all-clear nothing-to-see" app."notes\n  low    all-clear                    ok".body [-] granted to "edge_x\nfinding low all-clear nothing-to-see"; no rows (row security on, no policy lets this role read)
+read "edge_x\nfinding low all-clear nothing-to-see" app."notes\n  low    all-clear                    ok".id [-] granted to "edge_x\nfinding low all-clear nothing-to-see"; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app."edge_\x1b[2Jred".id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app."notes\n  low    all-clear                    ok".body [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app."notes\n  low    all-clear                    ok".id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app.cards.holder_email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app.cards.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app.contacts.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.contacts.phone [phone] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.events.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.events.note [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.events_archive.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: no user mapping for pg_read_all_data on foreign server edge_elsewhere
+pg>=14: read edge_analyst app.events_archive.note [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: no user mapping for pg_read_all_data on foreign server edge_elsewhere
+pg>=14: read edge_analyst app.events_recent.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.events_recent.note [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.log.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.log.payload [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.log_archive.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: no user mapping for pg_read_all_data on foreign server edge_elsewhere
+pg>=14: read edge_analyst app.log_archive.payload [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: no user mapping for pg_read_all_data on foreign server edge_elsewhere
+pg>=14: read edge_analyst app.patient_visits.diagnosis [health] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app.patient_visits.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app.patient_visits.note [email] after SET ROLE pg_read_all_data: member of pg_read_all_data; no rows (row security on, no policy lets this role read)
+pg>=14: read edge_analyst app.remote_people.email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: no user mapping for pg_read_all_data on foreign server edge_otherdb
+pg>=14: read edge_analyst app.remote_people.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: no user mapping for pg_read_all_data on foreign server edge_otherdb
+pg>=14: read edge_analyst app.selfless.email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.selfless.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.tasks.assignee_email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.tasks.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.tasks.id [-] after SET ROLE pg_read_all_data: through view pub.task_ids (rights of edge_viewowner)
+pg>=14: read edge_analyst app.tasks.private_note [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.visits.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst app.visits.note [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst closed.things.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst closed.things.phone [phone] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst hidden.people.email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=15: read edge_analyst hidden.people.email [email] after SET ROLE pg_read_all_data: through view pub.people_inv (rights of the reader)
+pg>=14: read edge_analyst hidden.people.email [email] after SET ROLE pg_read_all_data: through view pub.people_v (rights of edge_viewowner)
+pg>=14: read edge_analyst hidden.people.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=15: read edge_analyst hidden.people.id [-] after SET ROLE pg_read_all_data: through view pub.people_inv (rights of the reader)
+pg>=14: read edge_analyst hidden.people.id [-] after SET ROLE pg_read_all_data: through view pub.people_v (rights of edge_viewowner)
+pg>=15: read edge_analyst pub.people_inv.email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=15: read edge_analyst pub.people_inv.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst pub.people_v.email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst pub.people_v.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst pub.task_ids.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst pub.tasks_locked.assignee_email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: the view locks rows with FOR UPDATE, which needs UPDATE on app.tasks, and its owner edge_viewowner may not update it
+pg>=14: read edge_analyst pub.tasks_locked.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data; reading it fails: the view locks rows with FOR UPDATE, which needs UPDATE on app.tasks, and its owner edge_viewowner may not update it
+pg>=14: read edge_analyst types.feelings.also [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst types.feelings.email [email] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst types.feelings.history [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst types.feelings.id [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+pg>=14: read edge_analyst types.feelings.mood [-] after SET ROLE pg_read_all_data: member of pg_read_all_data
+read edge_app app.selfless.id [-] column granted to edge_selfrevoker
+read edge_app closed.things.id [-] owner edge_selfrevoker; statistics only: no USAGE on schema closed, but pg_stats shows it sampled values of the columns it may select
+read edge_app closed.things.phone [phone] owner edge_selfrevoker; statistics only: no USAGE on schema closed, but pg_stats shows it sampled values of the columns it may select
+read edge_events app.visits.id [-] granted to edge_events
+read edge_events app.visits.note [email] granted to edge_events
+read edge_inhpublic app.contacts.id [-] granted to "PUBLIC"
+read edge_inhpublic app.contacts.phone [phone] granted to "PUBLIC"
+pg>=15: read edge_invreader hidden.people.email [email] granted to edge_invreader; statistics only: no USAGE on schema hidden, but pg_stats shows it sampled values of the columns it may select
+pg>=15: read edge_invreader hidden.people.email [email] through view pub.people_inv (rights of the reader)
+pg>=15: read edge_invreader hidden.people.id [-] granted to edge_invreader; statistics only: no USAGE on schema hidden, but pg_stats shows it sampled values of the columns it may select
+pg>=15: read edge_invreader hidden.people.id [-] through view pub.people_inv (rights of the reader)
+pg>=15: read edge_invreader pub.people_inv.email [email] granted to edge_invreader
+pg>=15: read edge_invreader pub.people_inv.id [-] granted to edge_invreader
+read edge_noconnect app.contacts.id [-] granted to edge_noconnect; cannot connect: no CONNECT privilege on database baresql_fx_edge
+read edge_noconnect app.contacts.phone [phone] granted to edge_noconnect; cannot connect: no CONNECT privilege on database baresql_fx_edge
+read edge_remote app.remote_people.email [email] granted to edge_remote; reading it fails: no user mapping for edge_remote on foreign server edge_otherdb
+read edge_remote app.remote_people.id [-] granted to edge_remote; reading it fails: no user mapping for edge_remote on foreign server edge_otherdb
+read edge_setpublic app.contacts.id [-] after SET ROLE "PUBLIC": granted to "PUBLIC"
+read edge_setpublic app.contacts.phone [phone] after SET ROLE "PUBLIC": granted to "PUBLIC"
+read edge_support app.cards.holder_email [email] after SET ROLE edge_bypass: granted to edge_cardgroup; all rows (BYPASSRLS)
+read edge_support app.cards.holder_email [email] granted to edge_cardgroup through edge_bypass; no rows (row security on, no policy lets this role read)
+read edge_support app.cards.id [-] after SET ROLE edge_bypass: granted to edge_cardgroup; all rows (BYPASSRLS)
+read edge_support app.cards.id [-] granted to edge_cardgroup through edge_bypass; no rows (row security on, no policy lets this role read)
+read edge_viewreader app.tasks.id [-] through view pub.task_ids (rights of edge_viewowner)
+read edge_viewreader hidden.people.email [email] through view pub.people_v (rights of edge_viewowner)
+read edge_viewreader hidden.people.id [-] through view pub.people_v (rights of edge_viewowner)
+read edge_viewreader pub.people_v.email [email] granted to edge_viewreader
+read edge_viewreader pub.people_v.id [-] granted to edge_viewreader
+read edge_viewreader pub.task_ids.id [-] granted to edge_viewreader
+read edge_viewreader pub.tasks_locked.assignee_email [email] granted to edge_viewreader; reading it fails: the view locks rows with FOR UPDATE, which needs UPDATE on app.tasks, and its owner edge_viewowner may not update it
+read edge_viewreader pub.tasks_locked.id [-] granted to edge_viewreader; reading it fails: the view locks rows with FOR UPDATE, which needs UPDATE on app.tasks, and its owner edge_viewowner may not update it

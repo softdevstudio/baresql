@@ -41,10 +41,13 @@ func serverTruth(ctx context.Context, c *pgwire.Conn, s *Snapshot, subjects []ui
 				AND NOT a.attisdropped AND pg_catalog.has_column_privilege(s.s, c.oid, a.attnum, '%[1]s')
 				ORDER BY a.attnum)::text END`, priv)
 	}
+	// Schema USAGE is asked separately (schemaTruth): the table privileges
+	// hold whether or not the role may name the table, and they are what a
+	// view's stored query is checked against.
 	sql := `SELECT s.s, c.oid, ` + cols("SELECT") + `, ` + cols("INSERT") + `, ` + cols("UPDATE") + `,
 		pg_catalog.has_table_privilege(s.s, c.oid, 'DELETE'), pg_catalog.has_table_privilege(s.s, c.oid, 'TRUNCATE')
 		FROM pg_catalog.unnest($1::oid[]) s(s) CROSS JOIN pg_catalog.pg_class c
-		WHERE c.oid = ANY($2::oid[]) AND pg_catalog.has_schema_privilege(s.s, c.relnamespace, 'USAGE')`
+		WHERE c.oid = ANY($2::oid[])`
 	// Batches keep each answer a few megabytes at most.
 	const batch = 25
 	for i := 0; i < len(subjects); i += batch {
@@ -79,6 +82,43 @@ func serverTruth(ctx context.Context, c *pgwire.Conn, s *Snapshot, subjects []ui
 		}
 	}
 	return out, nil
+}
+
+// schemaTruth asks the server which subjects may use each audited schema
+// and which may connect to the database at all.
+func schemaTruth(ctx context.Context, c *pgwire.Conn, s *Snapshot, subjects []uint32) (map[[2]uint32]bool, map[uint32]bool, error) {
+	usage, connect := map[[2]uint32]bool{}, map[uint32]bool{}
+	if len(subjects) == 0 {
+		return usage, connect, nil
+	}
+	var ids, schemas []string
+	for _, id := range subjects {
+		ids = append(ids, strconv.FormatUint(uint64(id), 10))
+	}
+	for id, sc := range s.Schemas {
+		if sc.Audited {
+			schemas = append(schemas, strconv.FormatUint(uint64(id), 10))
+		}
+	}
+	sort.Strings(schemas)
+	res, err := c.QueryArgs(ctx, `SELECT s.s, n.n, pg_catalog.has_schema_privilege(s.s, n.n, 'USAGE')
+		FROM pg_catalog.unnest($1::oid[]) s(s) CROSS JOIN pg_catalog.unnest($2::oid[]) n(n)`,
+		"{"+strings.Join(ids, ",")+"}", "{"+strings.Join(schemas, ",")+"}")
+	if err != nil {
+		return nil, nil, fmt.Errorf("audit: asking the server about schemas: %w", err)
+	}
+	for _, r := range res.Rows {
+		usage[[2]uint32{u32(r[0]), u32(r[1])}] = boolv(r[2])
+	}
+	res, err = c.QueryArgs(ctx, `SELECT s.s, pg_catalog.has_database_privilege(s.s, pg_catalog.current_database(), 'CONNECT')
+		FROM pg_catalog.unnest($1::oid[]) s(s)`, "{"+strings.Join(ids, ",")+"}")
+	if err != nil {
+		return nil, nil, fmt.Errorf("audit: asking the server about the database: %w", err)
+	}
+	for _, r := range res.Rows {
+		connect[u32(r[0])] = boolv(r[1])
+	}
+	return usage, connect, nil
 }
 
 func parseIntArray(s string) []int {
