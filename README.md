@@ -272,21 +272,21 @@ shop.sql:6:8: warning: || joins text on SQLite and PostgreSQL. On MySQL and Mari
     Use CONCAT(a, b), which all four engines have (SQLite from version 3.44). CONCAT treats NULL differently on different engines; see concat-null.
 shop.sql:7:8: warning: Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL; MySQL and MariaDB keep it. [integer-division]
     SUM(stock) / COUNT(*)
-    Multiply one side by 1.0 to get the fraction on every engine: 7 * 1.0 / 2. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.
+    Multiply one side by 1.0 for the fraction and round it to the places you need (see decimal-division): ROUND(7 * 1.0 / 2, 2) is 3.5 on every engine. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.
 shop.sql:9:37: error: PostgreSQL has no = between a boolean and a number. [boolean-as-number]
     active = 1
     Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All four engines accept them.
-shop.sql:10:8: warning: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
+shop.sql:10:8: error: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
     name
     Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).
-shop.sql:10:14: warning: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
+shop.sql:10:14: error: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
     price
     Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).
 shop.sql:12:8: error: IFNULL() works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [function-not-everywhere]
     IFNULL(stock, 0)
     Use COALESCE(a, b).
 
-6 problems: 2 errors, 4 warnings. 4 notes not shown (differences that depend on the data); --all shows them.
+6 problems: 4 errors, 2 warnings. 4 notes not shown (differences that depend on the data); --all shows them.
 ```
 
 Each problem has a severity:
@@ -308,10 +308,12 @@ queries.sql`) and it can tell an integer division from a decimal one.
 | `--ignore CODES` | leave these rule codes out (repeat, or separate with commas) |
 | `--format F` | `text` (default) or `json` |
 
-`--engines` keeps a problem when the rule's recorded example answers
-differently among the engines named, so `--engines sqlite,postgres` drops
-the MySQL-only problems from a project that tests on SQLite and runs on
-PostgreSQL.
+`--engines` keeps a problem when the construct it found answers
+differently, by meaning, among the engines named: each construct has
+answers recorded on all four engines (the rule's example, or its own row in
+the catalog where a rule covers several forms, such as INSERT IGNORE and
+INSERT OR IGNORE). So `--engines sqlite,postgres` drops the MySQL-only
+problems from a project that tests on SQLite and runs on PostgreSQL.
 
 A comment `-- baresql:ignore integer-division` on the line of a problem, or
 on the line before it, silences that rule there. Several codes are separated
@@ -402,9 +404,11 @@ its answers.
 
 The answers come from running each example on real engines; the file
 `portable/answers.json` keeps them, and CI runs every example again on each
-engine version it tests. Lint's messages for functions, operators and types
-come from those runs too, and say where an answer depends on the version
-("MD5() works on PostgreSQL, MySQL (before 9.6) and MariaDB"). Some builds
+engine version it tests. Lint's messages for functions, operators, types
+and the other forms with a row in the catalog come from those runs too, and
+say where an answer depends on the version ("MD5() works on PostgreSQL,
+MySQL (before 9.6) and MariaDB"). So does each problem's severity: an error
+when an engine refuses the construct, a warning when they all run it. Some builds
 of sqlite3 leave out its math functions (LOG, POWER, TRUNC and others) or
 fold case beyond A to Z; the catalog says which answers assume the usual
 build.
@@ -416,6 +420,7 @@ Rule codes never change.
 | Code | Severity | Title |
 |---|---|---|
 | `integer-division` | warning | Integer division |
+| `decimal-division` | warning | Dividing decimals |
 | `pipes-concat` | warning | \|\| joins text on some engines only |
 | `concat-null` | warning | CONCAT with a NULL argument |
 | `text-compare-case` | info | Text comparisons and letter case |

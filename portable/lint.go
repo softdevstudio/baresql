@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"testing"
 	"unicode"
 
 	"github.com/softdevstudio/baresql/internal/sqltext"
@@ -165,8 +166,28 @@ func identName(t sqltext.Token) string {
 // LintScript checks a whole script: it learns the tables its CREATE TABLE
 // statements define, then checks each statement and the comments.
 func LintScript(name, src string) []Problem {
-	stmts := sqltext.Split(src)
-	schema := SchemaOf(stmts)
+	return LintFiles([]Script{{Name: name, SQL: src}})
+}
+
+// LintFiles lints several files against one schema, learned from the
+// CREATE TABLE statements of all of them, so queries in one file are
+// checked against tables another file creates.
+func LintFiles(files []Script) []Problem {
+	split := make([][]sqltext.Statement, len(files))
+	var all []sqltext.Statement
+	for i, f := range files {
+		split[i] = sqltext.Split(f.SQL)
+		all = append(all, split[i]...)
+	}
+	schema := SchemaOf(all)
+	var out []Problem
+	for i, f := range files {
+		out = append(out, lintStatements(f.Name, f.SQL, split[i], schema)...)
+	}
+	return out
+}
+
+func lintStatements(name, src string, stmts []sqltext.Statement, schema *Schema) []Problem {
 	var out []Problem
 	ignores := ignoreComments(src)
 	keep := func(p Problem) {
@@ -270,6 +291,60 @@ func (c *lintCtx) hitMsg(r *rule, i, j int, severity, msg, advice string) {
 		}
 	}
 	c.out = append(c.out, Problem{Code: r.code, Severity: severity, File: c.file, Line: c.ts[i].Line, Col: c.ts[i].Col, Text: text, Message: msg, Advice: advice})
+}
+
+// hitForm records a problem about one form of a rule, a row of its entry:
+// the row's recorded answers decide --engines, and the message is msg when
+// the code words it, else the row's own, else the entry's summary when
+// every engine accepts the form, else one worked out from the answers.
+// what is the construct as the SQL writes it.
+func (c *lintCtx) hitForm(r *rule, i, j int, form, what, msg string) {
+	e := entry(r.code)
+	it := e.item(form)
+	if it == nil {
+		if testing.Testing() {
+			panic("portable: rule " + r.code + " has no form " + form)
+		}
+		c.hitMsg(r, i, j, "", msg, "")
+		return
+	}
+	if msg == "" {
+		msg = strings.ReplaceAll(it.Message, "{what}", what)
+	}
+	refused := refusedSomewhere(RecordedAnswers(r.code).Items[it.Name])
+	if msg == "" && refused {
+		msg = itemMessage(r.code, it, what)
+	}
+	// An engine that refuses the form makes it an error, as everywhere,
+	// and a form every engine runs is at most a warning.
+	severity := it.Severity
+	switch {
+	case severity != "":
+	case refused:
+		severity = "error"
+	case e.Severity == "error":
+		severity = "warning"
+	}
+	if it.Note != "" {
+		if msg == "" {
+			msg = e.Summary
+		}
+		msg += " " + it.Note
+	}
+	n := len(c.out)
+	c.hitMsg(r, i, j, severity, msg, it.Advice)
+	if len(c.out) > n {
+		c.out[len(c.out)-1].Item = it.Name
+	}
+}
+
+func refusedSomewhere(m map[string]Recorded) bool {
+	for _, a := range m {
+		if a.Error != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // hitItem records a problem about one row of a table rule.
@@ -385,8 +460,12 @@ type rule struct {
 // (catalog.json) holds what each one means and how each engine answers.
 var rules []*rule
 
-func addRule(code, severity string, check func(r *rule, c *lintCtx)) {
-	r := &rule{code: code, severity: severity}
+// addRule registers a rule; its severity is its catalog entry's.
+func addRule(code string, check func(r *rule, c *lintCtx)) {
+	r := &rule{code: code}
+	if e := entry(code); e != nil {
+		r.severity = e.Severity
+	}
 	r.check = func(c *lintCtx) { check(r, c) }
 	rules = append(rules, r)
 }

@@ -5,9 +5,19 @@
     "severity": "warning",
     "summary": "Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL; MySQL and MariaDB keep it.",
     "detail": "SQLite and PostgreSQL give an integer result when both sides of / are integers, so 7 / 2 is 3. MySQL and MariaDB always divide as decimals and answer 3.5000. Averages written as SUM(x) / COUNT(*) are where this usually bites: the sum of an integer column is an integer on SQLite and PostgreSQL, so the average loses its fraction there.",
-    "advice": "Multiply one side by 1.0 to get the fraction on every engine: 7 * 1.0 / 2. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.",
+    "advice": "Multiply one side by 1.0 for the fraction and round it to the places you need (see decimal-division): ROUND(7 * 1.0 / 2, 2) is 3.5 on every engine. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.",
     "example": "SELECT 7 / 2",
-    "rewrite": "SELECT 7 * 1.0 / 2"
+    "rewrite": "SELECT ROUND(7 * 1.0 / 2, 2)"
+  },
+  {
+    "code": "decimal-division",
+    "title": "Dividing decimals",
+    "severity": "warning",
+    "summary": "80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333333333333333 on PostgreSQL and a floating point number on SQLite.",
+    "detail": "MySQL and MariaDB give the result of a decimal division four more decimal places than the dividend has (the div_precision_increment setting) and cut it there. PostgreSQL keeps at least 16 significant digits, and SQLite divides as floating point numbers. Shares of an amount, prices per unit and AVG of a DECIMAL column then differ in the last digits, and sums of them by a cent here and there.",
+    "advice": "Round on purpose to the places you need: ROUND(80.50 / 3, 2) is 26.83 on all four engines.",
+    "example": "SELECT 80.50 / 3",
+    "rewrite": "SELECT ROUND(80.50 / 3, 2)"
   },
   {
     "code": "pipes-concat",
@@ -59,13 +69,32 @@
   {
     "code": "text-number-compare",
     "title": "Comparing text with a number",
-    "severity": "warning",
+    "severity": "error",
     "summary": "Comparing a text column with a number matches text like 'abc' to 0 on MySQL and MariaDB, matches nothing on SQLite and fails on PostgreSQL.",
     "detail": "MySQL and MariaDB turn the text into a number, and text that does not start with digits becomes 0, so WHERE code = 0 finds every code like 'abc'. SQLite compares the number as text and finds nothing. PostgreSQL refuses to compare character varying with integer. '1' = 1 trips over the same thing in another way: false on SQLite, true on the other three.",
     "advice": "Compare like with like: quote the number when the column holds text (code = '0'), or convert one side with CAST.",
     "setup": "CREATE TABLE items (code VARCHAR(10));\nINSERT INTO items VALUES ('abc')",
     "example": "SELECT COUNT(*) FROM items WHERE code = 0",
-    "rewrite": "SELECT COUNT(*) FROM items WHERE code = '0'"
+    "rewrite": "SELECT COUNT(*) FROM items WHERE code = '0'",
+    "items": [
+      {
+        "name": "text column = number",
+        "setup": "CREATE TABLE items (code VARCHAR(10), n INTEGER);\nINSERT INTO items VALUES ('abc', 0)",
+        "probe": "SELECT COUNT(*) FROM items WHERE code = 0",
+        "advice": ""
+      },
+      {
+        "name": "'1' = 1",
+        "probe": "SELECT '1' = 1",
+        "advice": ""
+      },
+      {
+        "name": "'abc' = number column",
+        "setup": "CREATE TABLE items (code VARCHAR(10), n INTEGER);\nINSERT INTO items VALUES ('abc', 0)",
+        "probe": "SELECT COUNT(*) FROM items WHERE n = 'abc'",
+        "advice": ""
+      }
+    ]
   },
   {
     "code": "double-quotes",
@@ -92,7 +121,7 @@
   {
     "code": "ungrouped-column",
     "title": "Columns missing from GROUP BY",
-    "severity": "warning",
+    "severity": "error",
     "summary": "A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query.",
     "detail": "SELECT a, b FROM t GROUP BY a asks for one b per group without saying which. SQLite and MariaDB pick one (MariaDB's default mode leaves out ONLY_FULL_GROUP_BY). PostgreSQL and MySQL stop with an error, unless the grouped column is the table's primary key, which fixes every other column of that table.",
     "advice": "Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).",
@@ -111,7 +140,33 @@
     "rewrite": "SELECT CONCAT(123)",
     "since": {
       "sqlite": "3.44.0"
-    }
+    },
+    "items": [
+      {
+        "name": "CHAR",
+        "probe": "SELECT CAST(123 AS CHAR)",
+        "advice": "",
+        "message": "CAST(x AS CHAR) keeps one character on PostgreSQL, where CHAR means CHAR(1).",
+        "severity": "warning"
+      },
+      {
+        "name": "CHAR(n)",
+        "probe": "SELECT CAST(123 AS CHAR(5))",
+        "advice": "",
+        "message": "CAST(x AS CHAR(n)) pads the value with spaces to n characters on PostgreSQL.",
+        "severity": "warning"
+      },
+      {
+        "name": "VARCHAR",
+        "probe": "SELECT CAST(123 AS VARCHAR(5))",
+        "advice": ""
+      },
+      {
+        "name": "TEXT",
+        "probe": "SELECT CAST(123 AS TEXT)",
+        "advice": ""
+      }
+    ]
   },
   {
     "code": "cast-to-number",
@@ -121,7 +176,67 @@
     "detail": "SQLite drops the fraction and PostgreSQL and MariaDB round it. MySQL takes only SIGNED and UNSIGNED as integer types in CAST, and PostgreSQL refuses both. Decimals differ as well: SQLite ignores the scale of CAST(x AS DECIMAL(10, 1)) and keeps every digit, and MySQL and MariaDB read DECIMAL without a precision as DECIMAL(10, 0), a whole number.",
     "advice": "Round on purpose with ROUND(x) or ROUND(x, digits), which every engine has.",
     "example": "SELECT CAST(5.7 AS INTEGER)",
-    "rewrite": "SELECT ROUND(5.7)"
+    "rewrite": "SELECT ROUND(5.7)",
+    "items": [
+      {
+        "name": "INTEGER",
+        "probe": "SELECT CAST(5.7 AS INTEGER)",
+        "advice": "",
+        "message": "MySQL refuses CAST(x AS {what}), and SQLite drops the fraction where PostgreSQL and MariaDB round it."
+      },
+      {
+        "name": "INT",
+        "probe": "SELECT CAST(5.7 AS INT)",
+        "advice": "",
+        "message": "MySQL refuses CAST(x AS {what}), and SQLite drops the fraction where PostgreSQL and MariaDB round it."
+      },
+      {
+        "name": "BIGINT",
+        "probe": "SELECT CAST(5 AS BIGINT)",
+        "advice": ""
+      },
+      {
+        "name": "SMALLINT",
+        "probe": "SELECT CAST(5 AS SMALLINT)",
+        "advice": ""
+      },
+      {
+        "name": "TINYINT",
+        "probe": "SELECT CAST(5 AS TINYINT)",
+        "advice": ""
+      },
+      {
+        "name": "SIGNED",
+        "probe": "SELECT CAST(5.7 AS SIGNED)",
+        "advice": "",
+        "message": "PostgreSQL refuses CAST(x AS {what}), and SQLite keeps the fraction."
+      },
+      {
+        "name": "UNSIGNED",
+        "probe": "SELECT CAST(5.7 AS UNSIGNED)",
+        "advice": "",
+        "message": "PostgreSQL refuses CAST(x AS {what}), and SQLite keeps the fraction."
+      },
+      {
+        "name": "NUMERIC",
+        "probe": "SELECT CAST(5.75 AS NUMERIC)",
+        "advice": ""
+      },
+      {
+        "name": "DECIMAL",
+        "probe": "SELECT CAST(5.75 AS DECIMAL)",
+        "advice": "",
+        "message": "CAST(x AS DECIMAL) rounds to a whole number on MySQL and MariaDB (DECIMAL(10, 0)) and keeps every digit on PostgreSQL and SQLite.",
+        "severity": "warning"
+      },
+      {
+        "name": "DECIMAL(p, s)",
+        "probe": "SELECT CAST(5.75 AS DECIMAL(5, 1))",
+        "advice": "",
+        "message": "SQLite ignores the scale of DECIMAL(p, s) and keeps every digit; the other engines round.",
+        "severity": "warning"
+      }
+    ]
   },
   {
     "code": "cast-to-date",
@@ -131,7 +246,34 @@
     "detail": "SQLite keeps dates as text or numbers and reads a CAST to DATE, DATETIME or TIMESTAMP as a conversion to a number, which keeps only the leading digits. MySQL and MariaDB also refuse CAST(x AS TIMESTAMP), and PostgreSQL refuses DATETIME.",
     "advice": "DATE(x) gives a date on PostgreSQL, MySQL and MariaDB and ISO text (2024-05-06) on SQLite, which sorts and compares the same way.",
     "example": "SELECT CAST('2024-05-06' AS DATE)",
-    "rewrite": "SELECT DATE('2024-05-06')"
+    "rewrite": "SELECT DATE('2024-05-06')",
+    "items": [
+      {
+        "name": "DATE",
+        "probe": "SELECT CAST('2024-05-06' AS DATE)",
+        "advice": ""
+      },
+      {
+        "name": "TIME",
+        "probe": "SELECT CAST('10:30:00' AS TIME)",
+        "advice": "",
+        "message": "SQLite has no time type: CAST(x AS TIME) turns the value into a number there."
+      },
+      {
+        "name": "DATETIME",
+        "probe": "SELECT CAST('2024-05-06 10:30:00' AS DATETIME)",
+        "advice": "",
+        "message": "PostgreSQL refuses CAST(x AS DATETIME), and SQLite turns the value into a number.",
+        "severity": "error"
+      },
+      {
+        "name": "TIMESTAMP",
+        "probe": "SELECT CAST('2024-05-06 10:30:00' AS TIMESTAMP)",
+        "advice": "",
+        "message": "MySQL and MariaDB refuse CAST(x AS TIMESTAMP), and SQLite turns the value into a number.",
+        "severity": "error"
+      }
+    ]
   },
   {
     "code": "date-arithmetic",
@@ -140,7 +282,20 @@
     "summary": "A date plus 1 is the next day on PostgreSQL, the number 20240132 on MySQL and MariaDB, and 2025 on SQLite.",
     "detail": "MySQL and MariaDB turn the date into the number 20240131 and add 1. SQLite turns the text into the number 2024. PostgreSQL adds a day. Subtracting two dates goes the same way: PostgreSQL counts days and MySQL and MariaDB subtract the numbers. INTERVAL arithmetic works on PostgreSQL, MySQL and MariaDB, with different result types, and SQLite has no INTERVAL.",
     "advice": "No date arithmetic reads the same on all four engines. Use date(d, '+1 day') on SQLite and d + INTERVAL '1' DAY on the other three, or do the arithmetic in the application.",
-    "example": "SELECT CAST('2024-01-31' AS DATE) + 1"
+    "example": "SELECT CAST('2024-01-31' AS DATE) + 1",
+    "items": [
+      {
+        "name": "date + number",
+        "probe": "SELECT CAST('2024-01-31' AS DATE) + 1",
+        "advice": ""
+      },
+      {
+        "name": "INTERVAL",
+        "probe": "SELECT CAST('2024-01-31' AS DATE) + INTERVAL '1' DAY",
+        "advice": "",
+        "message": "SQLite has no INTERVAL, and the other engines give the result different types."
+      }
+    ]
   },
   {
     "code": "division-by-zero",
@@ -171,7 +326,21 @@
     "detail": "PostgreSQL's REAL is a 4-byte float, and so is FLOAT on MySQL and MariaDB, while the other engines store 8 bytes for the same name. 1.23456789 comes back as 1.2345679 or 1.23457.",
     "advice": "Use DOUBLE PRECISION, an 8-byte float on all four engines.",
     "example": "CREATE TABLE t (r REAL, f FLOAT);\nINSERT INTO t VALUES (1.23456789, 1.23456789);\nSELECT r, f FROM t",
-    "rewrite": "CREATE TABLE t (r DOUBLE PRECISION, f DOUBLE PRECISION);\nINSERT INTO t VALUES (1.23456789, 1.23456789);\nSELECT r, f FROM t"
+    "rewrite": "CREATE TABLE t (r DOUBLE PRECISION, f DOUBLE PRECISION);\nINSERT INTO t VALUES (1.23456789, 1.23456789);\nSELECT r, f FROM t",
+    "items": [
+      {
+        "name": "REAL",
+        "probe": "CREATE TABLE t (r REAL);\nINSERT INTO t VALUES (1.23456789);\nSELECT r FROM t",
+        "advice": "",
+        "message": "REAL keeps about 6 significant digits on PostgreSQL, against 15 on SQLite, MySQL and MariaDB."
+      },
+      {
+        "name": "FLOAT",
+        "probe": "CREATE TABLE t (f FLOAT);\nINSERT INTO t VALUES (1.23456789);\nSELECT f FROM t",
+        "advice": "",
+        "message": "FLOAT keeps about 6 significant digits on MySQL and MariaDB, against 15 on SQLite and PostgreSQL."
+      }
+    ]
   },
   {
     "code": "char-padding",
@@ -221,7 +390,27 @@
     "summary": "MySQL and MariaDB read a backslash in a string as an escape character; SQLite and PostgreSQL keep it as a backslash.",
     "detail": "'C:\\\\temp' is C:\\\\temp, two backslashes, on SQLite and PostgreSQL and C:\\temp on MySQL and MariaDB. '\\t' is a tab and '\\'' a quote there, while PostgreSQL needs its E'...' strings for escapes, which no other engine reads. MySQL's NO_BACKSLASH_ESCAPES mode makes it read backslashes like the others.",
     "advice": "Keep backslashes out of SQL string literals: pass such values as query parameters, which every driver sends without escaping.",
-    "example": "SELECT 'C:\\\\temp'"
+    "example": "SELECT 'C:\\\\temp'",
+    "items": [
+      {
+        "name": "backslash",
+        "probe": "SELECT 'C:\\\\temp'",
+        "advice": ""
+      },
+      {
+        "name": "E'...'",
+        "probe": "SELECT E'a\\tb'",
+        "advice": "",
+        "severity": "error"
+      },
+      {
+        "name": "\\'",
+        "probe": "SELECT 'it\\'s'",
+        "advice": "Write a quote inside a string as two quotes: 'it''s'.",
+        "message": "\\' ends the string on SQLite and PostgreSQL; only MySQL and MariaDB read it as a quote inside it.",
+        "severity": "error"
+      }
+    ]
   },
   {
     "code": "like-escape",
@@ -249,7 +438,7 @@
   {
     "code": "caret-operator",
     "title": "The ^ operator",
-    "severity": "warning",
+    "severity": "error",
     "summary": "2 ^ 3 is 8 on PostgreSQL, where ^ is a power, 1 on MySQL and MariaDB, where it is a bitwise exclusive or, and an error on SQLite.",
     "detail": "PostgreSQL raises the left side to the power of the right one. MySQL and MariaDB combine the bits of both numbers. SQLite has no ^ operator.",
     "advice": "Use POWER(a, b), which all four engines have (SQLite when it is built with its math functions).",
@@ -293,11 +482,28 @@
   {
     "code": "type-not-enforced",
     "title": "SQLite keeps values that do not fit the column",
-    "severity": "warning",
+    "severity": "error",
     "summary": "SQLite stores 'abc' in an INTEGER column and 'abcdef' in a VARCHAR(3) column; PostgreSQL, MySQL and MariaDB refuse both.",
     "detail": "Column types on SQLite are preferences: a value that does not fit is stored as it is, and lengths are never checked. Tests that run on SQLite then pass with data the production engine rejects. SQLite's STRICT tables (version 3.37 and later) check types but not lengths, and the other engines do not accept the STRICT keyword.",
     "advice": "Run the tests on the production engine as well, or check values in the application before they reach the database.",
-    "example": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('abc');\nSELECT n FROM t"
+    "example": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('abc');\nSELECT n FROM t",
+    "items": [
+      {
+        "name": "text in a number column",
+        "probe": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('abc');\nSELECT n FROM t",
+        "advice": ""
+      },
+      {
+        "name": "a fraction in an integer column",
+        "probe": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('12.50');\nSELECT n FROM t",
+        "advice": ""
+      },
+      {
+        "name": "too long for VARCHAR(n)",
+        "probe": "CREATE TABLE t (x VARCHAR(3));\nINSERT INTO t VALUES ('abcdef');\nSELECT x FROM t",
+        "advice": ""
+      }
+    ]
   },
   {
     "code": "boolean-as-number",
@@ -308,7 +514,26 @@
     "advice": "Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All four engines accept them.",
     "setup": "CREATE TABLE users (active BOOLEAN);\nINSERT INTO users VALUES (TRUE)",
     "example": "SELECT COUNT(*) FROM users WHERE active = 1",
-    "rewrite": "SELECT COUNT(*) FROM users WHERE active = TRUE"
+    "rewrite": "SELECT COUNT(*) FROM users WHERE active = TRUE",
+    "items": [
+      {
+        "name": "boolean = number",
+        "setup": "CREATE TABLE t (b BOOLEAN);\nINSERT INTO t VALUES (TRUE)",
+        "probe": "SELECT COUNT(*) FROM t WHERE b = 1",
+        "advice": ""
+      },
+      {
+        "name": "WHERE number",
+        "setup": "CREATE TABLE t (b BOOLEAN);\nINSERT INTO t VALUES (TRUE)",
+        "probe": "SELECT COUNT(*) FROM t WHERE 1",
+        "advice": "Write a comparison: WHERE x <> 0, or WHERE 1 = 1."
+      },
+      {
+        "name": "number into BOOLEAN",
+        "probe": "CREATE TABLE t (b BOOLEAN);\nINSERT INTO t VALUES (1);\nSELECT COUNT(*) FROM t",
+        "advice": "Insert TRUE or FALSE."
+      }
+    ]
   },
   {
     "code": "auto-increment",
@@ -317,7 +542,43 @@
     "summary": "Every engine numbers new rows with its own syntax, and SERIAL, which works on PostgreSQL, MySQL and MariaDB, leaves the column NULL on SQLite.",
     "detail": "AUTO_INCREMENT belongs to MySQL and MariaDB, AUTOINCREMENT to SQLite, and GENERATED BY DEFAULT AS IDENTITY to PostgreSQL. SERIAL is PostgreSQL's as well, and MySQL and MariaDB accept it as BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE. SQLite accepts any type name, so SERIAL is only a name there and the column stays NULL: SQLite numbers rows for a column declared INTEGER PRIMARY KEY and nothing else.",
     "advice": "No column definition numbers rows on all four engines. Keep one schema file per engine for these tables, or let the application assign the ids.",
-    "example": "CREATE TABLE t (id SERIAL PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t"
+    "example": "CREATE TABLE t (id SERIAL PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+    "items": [
+      {
+        "name": "SERIAL",
+        "probe": "CREATE TABLE t (id SERIAL PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+        "advice": "",
+        "message": "SERIAL numbers rows on PostgreSQL, MySQL and MariaDB; on SQLite it is only a type name and the column stays NULL.",
+        "severity": "warning"
+      },
+      {
+        "name": "BIGSERIAL",
+        "probe": "CREATE TABLE t (id BIGSERIAL PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+        "advice": "",
+        "message": "{what} exists on PostgreSQL only; MySQL and MariaDB refuse it, and SQLite leaves the column NULL."
+      },
+      {
+        "name": "AUTO_INCREMENT",
+        "probe": "CREATE TABLE t (id INTEGER PRIMARY KEY AUTO_INCREMENT, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+        "advice": ""
+      },
+      {
+        "name": "AUTOINCREMENT",
+        "probe": "CREATE TABLE t (id INTEGER PRIMARY KEY AUTOINCREMENT, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+        "advice": ""
+      },
+      {
+        "name": "GENERATED AS IDENTITY",
+        "probe": "CREATE TABLE t (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+        "advice": ""
+      },
+      {
+        "name": "IDENTITY(1, 1)",
+        "probe": "CREATE TABLE t (id INTEGER IDENTITY(1, 1) PRIMARY KEY, x INTEGER);\nINSERT INTO t (x) VALUES (5);\nSELECT id FROM t",
+        "advice": "",
+        "message": "IDENTITY(1, 1) belongs to SQL Server: PostgreSQL, MySQL and MariaDB refuse it, and SQLite reads it as part of the type name and leaves the column NULL."
+      }
+    ]
   },
   {
     "code": "backticks",
@@ -371,7 +632,21 @@
     "advice": "Use LIMIT n, with OFFSET m when you need an offset.",
     "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2), (3)",
     "example": "SELECT x FROM t ORDER BY x FETCH FIRST 2 ROWS ONLY",
-    "rewrite": "SELECT x FROM t ORDER BY x LIMIT 2"
+    "rewrite": "SELECT x FROM t ORDER BY x LIMIT 2",
+    "items": [
+      {
+        "name": "FETCH FIRST",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2), (3)",
+        "probe": "SELECT x FROM t ORDER BY x FETCH FIRST 2 ROWS ONLY",
+        "advice": ""
+      },
+      {
+        "name": "OFFSET n ROWS",
+        "setup": "CREATE TABLE t (x INTEGER);\nINSERT INTO t VALUES (1), (2), (3)",
+        "probe": "SELECT x FROM t ORDER BY x OFFSET 1 ROWS",
+        "advice": "Use LIMIT n OFFSET m, which all four accept."
+      }
+    ]
   },
   {
     "code": "alias-in-where",
@@ -426,7 +701,34 @@
     "advice": "Use subqueries, which all four accept: UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id), and DELETE FROM t WHERE id IN (SELECT id FROM u).",
     "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nCREATE TABLE u (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 0);\nINSERT INTO u VALUES (1, 7)",
     "example": "UPDATE t SET x = u.x FROM u WHERE u.id = t.id;\nSELECT x FROM t ORDER BY id",
-    "rewrite": "UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id);\nSELECT x FROM t ORDER BY id"
+    "rewrite": "UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id);\nSELECT x FROM t ORDER BY id",
+    "items": [
+      {
+        "name": "UPDATE ... FROM",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nCREATE TABLE u (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 0);\nINSERT INTO u VALUES (1, 7)",
+        "probe": "UPDATE t SET x = u.x FROM u WHERE u.id = t.id;\nSELECT x FROM t ORDER BY id",
+        "advice": ""
+      },
+      {
+        "name": "UPDATE ... JOIN",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nCREATE TABLE u (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 0);\nINSERT INTO u VALUES (1, 7)",
+        "probe": "UPDATE t JOIN u ON u.id = t.id SET t.x = u.x;\nSELECT x FROM t ORDER BY id",
+        "advice": ""
+      },
+      {
+        "name": "DELETE ... JOIN",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nCREATE TABLE u (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 0);\nINSERT INTO u VALUES (1, 7)",
+        "probe": "DELETE t FROM t JOIN u ON u.id = t.id;\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "DELETE ... USING",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nCREATE TABLE u (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 0), (2, 0);\nINSERT INTO u VALUES (1, 7)",
+        "probe": "DELETE FROM t USING u WHERE u.id = t.id;\nSELECT COUNT(*) FROM t",
+        "advice": "",
+        "message": "DELETE ... USING means one thing on PostgreSQL and another on MySQL and MariaDB, and SQLite refuses it."
+      }
+    ]
   },
   {
     "code": "full-outer-join",
@@ -484,7 +786,27 @@
     "advice": "Insert from a SELECT that checks first: INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). When two sessions insert the same row at once, the unique key still stops the second one, with an error instead of a skip.",
     "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY);\nINSERT INTO t VALUES (1)",
     "example": "INSERT IGNORE INTO t VALUES (1);\nSELECT COUNT(*) FROM t",
-    "rewrite": "INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);\nSELECT COUNT(*) FROM t"
+    "rewrite": "INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);\nSELECT COUNT(*) FROM t",
+    "items": [
+      {
+        "name": "INSERT IGNORE",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY);\nINSERT INTO t VALUES (1)",
+        "probe": "INSERT IGNORE INTO t VALUES (1);\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "INSERT OR IGNORE",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY);\nINSERT INTO t VALUES (1)",
+        "probe": "INSERT OR IGNORE INTO t VALUES (1);\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "ON CONFLICT DO NOTHING",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY);\nINSERT INTO t VALUES (1)",
+        "probe": "INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING;\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      }
+    ]
   },
   {
     "code": "upsert",
@@ -495,7 +817,44 @@
     "advice": "Update first, then insert what is missing: UPDATE t SET n = 2 WHERE id = 1, then INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). Run both in one transaction.",
     "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
     "example": "INSERT INTO t VALUES (1, 2) ON CONFLICT (id) DO UPDATE SET n = excluded.n;\nSELECT n FROM t",
-    "rewrite": "UPDATE t SET n = 2 WHERE id = 1;\nINSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);\nSELECT n FROM t"
+    "rewrite": "UPDATE t SET n = 2 WHERE id = 1;\nINSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);\nSELECT n FROM t",
+    "items": [
+      {
+        "name": "ON CONFLICT DO UPDATE",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
+        "probe": "INSERT INTO t VALUES (1, 2) ON CONFLICT (id) DO UPDATE SET n = excluded.n;\nSELECT n FROM t",
+        "advice": ""
+      },
+      {
+        "name": "ON DUPLICATE KEY UPDATE",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
+        "probe": "INSERT INTO t VALUES (1, 2) ON DUPLICATE KEY UPDATE n = 2;\nSELECT n FROM t",
+        "advice": ""
+      },
+      {
+        "name": "REPLACE INTO",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
+        "probe": "REPLACE INTO t VALUES (1, 2);\nSELECT n FROM t",
+        "advice": "",
+        "note": "It deletes the old row first, so the columns it leaves out lose their values."
+      },
+      {
+        "name": "INSERT OR REPLACE",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
+        "probe": "INSERT OR REPLACE INTO t VALUES (1, 2);\nSELECT n FROM t",
+        "advice": "",
+        "note": "It deletes the old row first, so the columns it leaves out lose their values."
+      },
+      {
+        "name": "MERGE",
+        "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);\nINSERT INTO t VALUES (1, 1)",
+        "probe": "MERGE INTO t USING (SELECT 1 AS id, 2 AS n) s ON t.id = s.id WHEN MATCHED THEN UPDATE SET n = s.n WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.n);\nSELECT n FROM t",
+        "advice": "",
+        "since": {
+          "postgres": "15"
+        }
+      }
+    ]
   },
   {
     "code": "returning",
@@ -506,7 +865,27 @@
     "advice": "Read the new id through the driver, which has a call for it on every engine, or select the row again by a unique key after the insert.",
     "setup": "CREATE TABLE t (id INTEGER, x INTEGER)",
     "example": "INSERT INTO t VALUES (1, 5) RETURNING id",
-    "rewrite": "INSERT INTO t VALUES (1, 5);\nSELECT id FROM t WHERE x = 5"
+    "rewrite": "INSERT INTO t VALUES (1, 5);\nSELECT id FROM t WHERE x = 5",
+    "items": [
+      {
+        "name": "INSERT ... RETURNING",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 5)",
+        "probe": "INSERT INTO t VALUES (2, 6) RETURNING id",
+        "advice": ""
+      },
+      {
+        "name": "UPDATE ... RETURNING",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 5)",
+        "probe": "UPDATE t SET x = 6 RETURNING id",
+        "advice": ""
+      },
+      {
+        "name": "DELETE ... RETURNING",
+        "setup": "CREATE TABLE t (id INTEGER, x INTEGER);\nINSERT INTO t VALUES (1, 5)",
+        "probe": "DELETE FROM t RETURNING id",
+        "advice": ""
+      }
+    ]
   },
   {
     "code": "varchar-length",
@@ -673,7 +1052,67 @@
     "detail": "Dumps made with mysqldump carry these options on every table. SQLite's own options, WITHOUT ROWID and STRICT, fail on the other three engines in the same way.",
     "advice": "Leave the options out of schemas meant for every engine, and create indexes with separate CREATE INDEX statements.",
     "example": "CREATE TABLE t (x INTEGER) ENGINE=InnoDB;\nSELECT COUNT(*) FROM t",
-    "rewrite": "CREATE TABLE t (x INTEGER);\nSELECT COUNT(*) FROM t"
+    "rewrite": "CREATE TABLE t (x INTEGER);\nSELECT COUNT(*) FROM t",
+    "items": [
+      {
+        "name": "ENGINE",
+        "probe": "CREATE TABLE t (x INTEGER) ENGINE=InnoDB;\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "WITHOUT ROWID",
+        "probe": "CREATE TABLE t (x INTEGER PRIMARY KEY) WITHOUT ROWID;\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "STRICT",
+        "probe": "CREATE TABLE t (x INTEGER) STRICT;\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "WITH (...)",
+        "probe": "CREATE TABLE t (x INTEGER) WITH (fillfactor = 70);\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "INHERITS",
+        "setup": "CREATE TABLE u (y INTEGER)",
+        "probe": "CREATE TABLE t (x INTEGER) INHERITS (u);\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "PARTITION BY",
+        "probe": "CREATE TABLE t (x INTEGER) PARTITION BY HASH (x);\nSELECT COUNT(*) FROM t",
+        "advice": "",
+        "message": "PARTITION BY has a different syntax on PostgreSQL and on MySQL and MariaDB, and SQLite has none."
+      },
+      {
+        "name": "index inside CREATE TABLE",
+        "probe": "CREATE TABLE t (x INTEGER, KEY t_x (x));\nSELECT COUNT(*) FROM t",
+        "advice": "Create the index with a separate CREATE INDEX statement."
+      },
+      {
+        "name": "CHARACTER SET",
+        "probe": "CREATE TABLE t (x VARCHAR(10) CHARACTER SET utf8mb4);\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "COMMENT",
+        "probe": "CREATE TABLE t (x INTEGER COMMENT 'a number');\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      },
+      {
+        "name": "ON UPDATE",
+        "probe": "CREATE TABLE t (x INTEGER, changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);\nSELECT COUNT(*) FROM t",
+        "advice": "Set the column in the UPDATE statements, or with a trigger per engine."
+      },
+      {
+        "name": "COLLATE",
+        "probe": "CREATE TABLE t (x VARCHAR(10) COLLATE utf8mb4_bin);\nSELECT COUNT(*) FROM t",
+        "advice": "",
+        "message": "Collation names differ on every engine."
+      }
+    ]
   },
   {
     "code": "text-default",
@@ -725,7 +1164,20 @@
     "advice": "Drop and create: DROP VIEW IF EXISTS v, then CREATE VIEW v AS ...",
     "setup": "CREATE TABLE t (x INTEGER)",
     "example": "CREATE OR REPLACE VIEW v AS SELECT x FROM t;\nSELECT COUNT(*) FROM v",
-    "rewrite": "DROP VIEW IF EXISTS v;\nCREATE VIEW v AS SELECT x FROM t;\nSELECT COUNT(*) FROM v"
+    "rewrite": "DROP VIEW IF EXISTS v;\nCREATE VIEW v AS SELECT x FROM t;\nSELECT COUNT(*) FROM v",
+    "items": [
+      {
+        "name": "VIEW",
+        "setup": "CREATE TABLE t (x INTEGER)",
+        "probe": "CREATE OR REPLACE VIEW v AS SELECT x FROM t;\nSELECT COUNT(*) FROM v",
+        "advice": ""
+      },
+      {
+        "name": "TABLE",
+        "probe": "CREATE OR REPLACE TABLE t (x INTEGER);\nSELECT COUNT(*) FROM t",
+        "advice": ""
+      }
+    ]
   },
   {
     "code": "function-not-everywhere",
@@ -965,6 +1417,17 @@
         "name": "JULIANDAY",
         "probe": "SELECT JULIANDAY('2024-05-06')",
         "advice": "No form works on all four engines; it exists on SQLite only."
+      },
+      {
+        "name": "DATE(x, modifier)",
+        "probe": "SELECT DATE('2024-05-06', '+1 day')",
+        "advice": "No form works on all four engines; d + INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB.",
+        "min_args": 2
+      },
+      {
+        "name": "DATETIME",
+        "probe": "SELECT DATETIME('2024-05-06 10:30:00')",
+        "advice": "No form works on all four engines; CAST(x AS TIMESTAMP) on PostgreSQL and CAST(x AS DATETIME) on MySQL and MariaDB."
       },
       {
         "name": "UNIX_TIMESTAMP",

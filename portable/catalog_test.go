@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -58,9 +59,12 @@ func runCatalogOn(ctx context.Context, o opener) (map[string]*entryRun, error) {
 					return nil, fmt.Errorf("%s item %s on %s: %w", e.Code, it.Name, o.name, err)
 				}
 				run.items[it.Name] = a
-				if _, err := eng.Run(ctx, "DROP TABLE IF EXISTS t"); err != nil {
-					eng.Close()
-					return nil, err
+				// Rows share the engine: drop what their setups make.
+				for _, drop := range []string{"DROP VIEW IF EXISTS v", "DROP TABLE IF EXISTS t", "DROP TABLE IF EXISTS u"} {
+					if _, err := eng.Run(ctx, drop); err != nil {
+						eng.Close()
+						return nil, err
+					}
 				}
 			}
 			eng.Close()
@@ -212,6 +216,27 @@ func engineFeatures(t *testing.T, ctx context.Context, o opener) map[string]bool
 	return out
 }
 
+// checkSeverity holds lint to its definitions: error when an engine
+// refuses the statement, and not when every engine runs it.
+func checkSeverity(t *testing.T, what, severity string, m map[string]Recorded) {
+	t.Helper()
+	refused := false
+	for _, eng := range EngineOrder {
+		if a, ok := m[eng]; ok && a.Error != "" {
+			refused = true
+		}
+	}
+	if len(m) == 0 {
+		return
+	}
+	switch {
+	case refused && severity != "error":
+		t.Errorf("%s: an engine refuses it, and lint says %s", what, severity)
+	case !refused && severity == "error":
+		t.Errorf("%s: every engine runs it, and lint says error", what)
+	}
+}
+
 func lastStatement(src string) sqltext.Statement {
 	st := sqltext.Split(src)
 	if len(st) == 0 {
@@ -331,6 +356,11 @@ func TestCatalogRules(t *testing.T) {
 		for _, p := range LintScript("example.sql", e.Setup+";\n"+e.Example) {
 			if p.Code == e.Code {
 				found = true
+				checkSeverity(t, e.Code+" example", p.Severity, RecordedAnswers(e.Code).Example)
+				// --engines judges a rule with rows by the row's answers.
+				if len(e.Items) > 0 && e.item(p.Item) == nil {
+					t.Errorf("%s: the example's problem names no row (%q)", e.Code, p.Item)
+				}
 			}
 		}
 		if !found {
@@ -343,6 +373,33 @@ func TestCatalogRules(t *testing.T) {
 				}
 			}
 		}
+		for _, it := range e.Items {
+			for _, field := range []string{it.Advice, it.Message, it.Note} {
+				if strings.ContainsAny(field, "—–") {
+					t.Errorf("%s %s: dash in %q", e.Code, it.Name, field)
+				}
+			}
+			switch it.Severity {
+			case "", "error", "warning", "info":
+			default:
+				t.Errorf("%s %s: severity %q", e.Code, it.Name, it.Severity)
+			}
+			// Every row's probe is flagged, as that row.
+			src := it.Probe
+			if it.Setup != "" {
+				src = it.Setup + ";\n" + it.Probe
+			}
+			found := false
+			for _, p := range LintScript("probe.sql", src) {
+				if p.Code == e.Code && p.Item == it.Name {
+					found = true
+					checkSeverity(t, e.Code+" "+it.Name, p.Severity, RecordedAnswers(e.Code).Items[it.Name])
+				}
+			}
+			if !found {
+				t.Errorf("%s %s: lint does not flag its probe as this row", e.Code, it.Name)
+			}
+		}
 	}
 	if strings.Join(order, " ") != strings.Join(RuleCodes(), " ") {
 		t.Errorf("rules and catalog are in different orders")
@@ -351,29 +408,6 @@ func TestCatalogRules(t *testing.T) {
 		for _, it := range e.Items {
 			if operatorMatch[it.Name] == nil {
 				t.Errorf("operator %s has no matcher", it.Name)
-			}
-			found := false
-			for _, p := range LintScript("probe.sql", it.Probe) {
-				if p.Code == e.Code {
-					found = true
-				}
-			}
-			if !found {
-				t.Errorf("operator %s: lint does not flag its probe", it.Name)
-			}
-		}
-	}
-	for _, code := range []string{"function-not-everywhere", "type-not-everywhere"} {
-		e := Lookup(code)
-		for _, it := range e.Items {
-			found := false
-			for _, p := range LintScript("probe.sql", it.Setup+";\n"+it.Probe) {
-				if p.Code == code {
-					found = true
-				}
-			}
-			if !found {
-				t.Errorf("%s %s: lint does not flag its probe", code, it.Name)
 			}
 		}
 	}
@@ -387,4 +421,30 @@ func TestCatalogRules(t *testing.T) {
 		}
 	}
 	_ = sort.Strings
+}
+
+// TestFormNames checks the form names rules.go passes as literals.
+func TestFormNames(t *testing.T) {
+	src, err := os.ReadFile("rules.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := map[string]bool{}
+	for _, e := range Catalog() {
+		for _, it := range e.Items {
+			names[it.Name] = true
+		}
+	}
+	re := regexp.MustCompile("hitForm\\(r, [^,]+, [^,]+, (\"[^\"]*\"|`[^`]*`)")
+	n := 0
+	for _, m := range re.FindAllStringSubmatch(string(src), -1) {
+		name := strings.Trim(m[1], "\"`")
+		n++
+		if !names[name] {
+			t.Errorf("rules.go names a form %q the catalog lacks", name)
+		}
+	}
+	if n < 40 {
+		t.Errorf("found only %d form names in rules.go", n)
+	}
 }

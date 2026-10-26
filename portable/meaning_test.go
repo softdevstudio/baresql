@@ -122,3 +122,31 @@ func TestVersions(t *testing.T) {
 		t.Error("Pick found postgres")
 	}
 }
+
+func TestRecordedSameMeaning(t *testing.T) {
+	for _, tc := range []struct {
+		a, b []string
+		same bool
+	}{
+		{[]string{"5.0"}, []string{"5"}, true},
+		{[]string{"1.23456789"}, []string{"1.2345679"}, false},
+		{[]string{"'a, b', 1"}, []string{"'a, b', 1.0"}, true},
+		{[]string{"'it''s', NULL"}, []string{"'it''s', NULL"}, true},
+		{[]string{"'a'"}, []string{"'A'"}, false},
+		{[]string{"2024-05-06 00:00:00"}, []string{"2024-05-06T00:00:00+00:00"}, true},
+		{[]string{"true"}, []string{"1"}, true},
+		{[]string{"NULL"}, []string{"''"}, false},
+		{[]string{"1", "2"}, []string{"1"}, false},
+	} {
+		a, b := Recorded{Rows: tc.a}, Recorded{Rows: tc.b}
+		if got := a.SameMeaning(b); got != tc.same {
+			t.Errorf("%q vs %q: %v, want %v", tc.a, tc.b, got, tc.same)
+		}
+	}
+	if (Recorded{Error: "x"}).SameMeaning(Recorded{Rows: []string{"1"}}) {
+		t.Error("a refusal and an answer compared the same")
+	}
+	if got := recordedCells("'a, b', 12, NULL, X'00FF'"); len(got) != 4 || got[0].Text != "a, b" || got[1].Kind != KindInt || !got[2].Null || got[3].Kind != KindBytes {
+		t.Errorf("recordedCells: %+v", got)
+	}
+}

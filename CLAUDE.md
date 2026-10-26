@@ -102,7 +102,7 @@ content and config values only; never touch the theme).
 0.1.0 in development (started 2026-10-26). Done: repo setup, CI with one
 job per engine version, release workflow; pgwire and mysqlwire; BareSQL
 Audit (audit, diff, --baseline, report.html, audit.json, four fixtures);
-BareSQL Portable (lint with 57 rules, compare, rules, the catalog recorded
+BareSQL Portable (lint with 58 rules, compare, rules, the catalog recorded
 on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14);
 README as the manual; smoke.sh exercises every command.
 

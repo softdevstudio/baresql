@@ -24,7 +24,7 @@ BareSQL Audit (PostgreSQL 13 to 18):
 
 BareSQL Portable:
 
-- `baresql lint` reports 57 kinds of SQL that fail or answer differently
+- `baresql lint` reports 58 kinds of SQL that fail or answer differently
   on SQLite, PostgreSQL, MySQL and MariaDB, each with what to write
   instead. `--engines` narrows it to the engines a project uses.
 - `baresql compare` runs scripts on real engines, each in a throwaway space,

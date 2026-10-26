@@ -74,7 +74,7 @@ func FilterEngines(ps []Problem, engines []string) []Problem {
 			}
 			if first == nil {
 				first = &r
-			} else if !first.Same(r) {
+			} else if !first.SameMeaning(r) {
 				differs = true
 			}
 		}
@@ -270,30 +270,7 @@ func WriteEntry(w io.Writer, e *Entry) {
 	}
 	fmt.Fprintf(w, "\n%s\n", wrap(e.Advice, 78, ""))
 	if len(e.Items) > 0 {
-		fmt.Fprintf(w, "\n%-24s %-7s %-10s %-7s %-7s\n", "", "SQLite", "PostgreSQL", "MySQL", "MariaDB")
-		for _, it := range e.Items {
-			m := rec.Items[it.Name]
-			var cells []string
-			for _, eng := range EngineOrder {
-				r, ok := m[eng]
-				switch {
-				case !ok:
-					cells = append(cells, "?")
-				case r.Error != "":
-					cells = append(cells, "no")
-				default:
-					cells = append(cells, "yes")
-				}
-			}
-			advice := it.Advice
-			notes := VersionNotes(m, it.Since, it.Requires)
-			for _, eng := range EngineOrder {
-				if n := notes[eng]; len(n) > 0 {
-					advice += " The " + EngineTitle(eng) + " answer holds " + strings.Join(n, ", ") + "."
-				}
-			}
-			fmt.Fprintf(w, "%-24s %-7s %-10s %-7s %-7s %s\n", it.Name, cells[0], cells[1], cells[2], cells[3], advice)
-		}
+		writeItems(w, e, rec)
 	}
 	if since := sinceNote(e.Since); since != "" {
 		fmt.Fprintf(w, "\n%s\n", since)
@@ -302,6 +279,70 @@ func WriteEntry(w io.Writer, e *Entry) {
 		if f := e.Requires[eng]; f != "" {
 			fmt.Fprintf(w, "\nThe %s answers assume a build with %s.\n", EngineTitle(eng), featureNames[f])
 		}
+	}
+}
+
+// writeItems prints an entry's rows: "no" where an engine refuses, "yes"
+// where it runs, or each engine's answer when those that run it answer
+// differently.
+func writeItems(w io.Writer, e *Entry, rec *Answers) {
+	rows := [][]string{{""}}
+	for _, eng := range EngineOrder {
+		rows[0] = append(rows[0], EngineTitle(eng))
+	}
+	for _, it := range e.Items {
+		m := rec.Items[it.Name]
+		var first *Recorded
+		values := false
+		for _, eng := range EngineOrder {
+			if r, ok := m[eng]; ok && r.Error == "" {
+				if first == nil {
+					first = &r
+				} else if !first.SameMeaning(r) {
+					values = true
+				}
+			}
+		}
+		row := []string{it.Name}
+		for _, eng := range EngineOrder {
+			r, ok := m[eng]
+			switch {
+			case !ok:
+				row = append(row, "?")
+			case r.Error != "":
+				row = append(row, "no")
+			case values:
+				row = append(row, oneLine(r.String(), 18))
+			default:
+				row = append(row, "yes")
+			}
+		}
+		advice := it.Advice
+		notes := VersionNotes(m, it.Since, it.Requires)
+		for _, eng := range EngineOrder {
+			if n := notes[eng]; len(n) > 0 {
+				advice += " The " + EngineTitle(eng) + " answer holds " + strings.Join(n, ", ") + "."
+			}
+		}
+		rows = append(rows, append(row, strings.TrimSpace(advice)))
+	}
+	widths := make([]int, 5)
+	for _, row := range rows {
+		for i := 0; i < 5; i++ {
+			widths[i] = max(widths[i], len([]rune(row[i])))
+		}
+	}
+	fmt.Fprintln(w)
+	for _, row := range rows {
+		var b strings.Builder
+		for i, cell := range row {
+			if i == len(row)-1 && i >= 5 {
+				b.WriteString(cell)
+				break
+			}
+			b.WriteString(cell + strings.Repeat(" ", widths[i]-len([]rune(cell))+1))
+		}
+		fmt.Fprintln(w, strings.TrimRight(b.String(), " "))
 	}
 }
 

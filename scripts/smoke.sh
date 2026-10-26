@@ -20,7 +20,7 @@ n=$("$bin" rules | grep -c '^  [a-z]' || true)
 "$bin" rules integer-division | grep -q '3.5000' || fail "rules integer-division has no recorded MySQL answer"
 echo "rules ok: $n rules"
 
-printf 'SELECT 7 / 2;\nSELECT 7 * 1.0 / 2;\n' > "$tmp/q.sql"
+printf 'SELECT 7 / 2;\nSELECT ROUND(7 * 1.0 / 2, 2);\n' > "$tmp/q.sql"
 set +e
 "$bin" lint "$tmp/q.sql" > "$tmp/lint.txt"
 code=$?

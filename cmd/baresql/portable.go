@@ -102,15 +102,13 @@ func runLint(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	var problems []portable.Problem
 	hidden := 0
-	for _, sc := range scripts {
-		for _, p := range portable.FilterEngines(portable.LintScript(sc.Name, sc.SQL), names) {
-			switch {
-			case contains(ignore, p.Code):
-			case p.Severity == "info" && !*all:
-				hidden++
-			default:
-				problems = append(problems, p)
-			}
+	for _, p := range portable.FilterEngines(portable.LintFiles(scripts), names) {
+		switch {
+		case contains(ignore, p.Code):
+		case p.Severity == "info" && !*all:
+			hidden++
+		default:
+			problems = append(problems, p)
 		}
 	}
 	if *format == "json" {

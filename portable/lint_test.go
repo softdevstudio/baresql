@@ -87,7 +87,7 @@ func TestLintRules(t *testing.T) {
 		{"SELECT NOW() - INTERVAL 1 DAY", []string{"date-arithmetic"}, nil},
 		{"SELECT 1 + 1; SELECT -1; CREATE TABLE t (d DATE); SELECT d FROM t WHERE d > '2024-01-01'", nil, []string{"date-arithmetic"}},
 		// division-by-zero
-		{"SELECT 1 / 0", []string{"division-by-zero:warning"}, nil},
+		{"SELECT 1 / 0", []string{"division-by-zero:error"}, nil},
 		{"SELECT a / b FROM t", []string{"division-by-zero:info"}, nil},
 		{"SELECT a / 2 FROM t; SELECT a / NULLIF(b, 0) FROM t; SELECT a % 3 FROM t", nil, []string{"division-by-zero"}},
 		// decimal-as-float, float-precision, char-padding

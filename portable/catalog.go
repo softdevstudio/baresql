@@ -62,6 +62,29 @@ type Item struct {
 	Advice   string            `json:"advice"`
 	Since    map[string]string `json:"since,omitempty"`
 	Requires map[string]string `json:"requires,omitempty"`
+	// Forms of a rule (the constructs one rule flags) may say more than
+	// which engines refuse them: Message replaces the message worked out
+	// from the answers ({what} is the construct as written), Note follows
+	// either, and Severity replaces the entry's.
+	Message  string `json:"message,omitempty"`
+	Note     string `json:"note,omitempty"`
+	Severity string `json:"severity,omitempty"`
+	// MinArgs: a function row that holds only for calls with at least
+	// this many arguments, such as SQLite's DATE(x, modifier).
+	MinArgs int `json:"min_args,omitempty"`
+}
+
+// item finds a row of an entry by name.
+func (e *Entry) item(name string) *Item {
+	if e == nil {
+		return nil
+	}
+	for i := range e.Items {
+		if e.Items[i].Name == name {
+			return &e.Items[i]
+		}
+	}
+	return nil
 }
 
 // Recorded is an engine's answer as kept in answers.json: the rows as
@@ -258,6 +281,70 @@ func (r Recorded) Same(o Recorded) bool {
 		return true
 	}
 	return strings.Join(r.Rows, "\n") == strings.Join(o.Rows, "\n") && strings.Join(r.Columns, "\x00") == strings.Join(o.Columns, "\x00")
+}
+
+// SameMeaning reports whether two recorded answers mean the same, the way
+// compare judges answers: refusals alike, numbers by value, dates however
+// they are printed, text exactly.
+func (r Recorded) SameMeaning(o Recorded) bool {
+	if (r.Error != "") != (o.Error != "") {
+		return false
+	}
+	if r.Error != "" {
+		return true
+	}
+	if len(r.Rows) != len(o.Rows) {
+		return false
+	}
+	for i := range r.Rows {
+		a, b := recordedCells(r.Rows[i]), recordedCells(o.Rows[i])
+		if len(a) != len(b) {
+			return false
+		}
+		for j := range a {
+			if !cellsEqual(a[j], b[j]) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// recordedCells reads a recorded row ('a', 12, NULL) back into values.
+func recordedCells(row string) []Cell {
+	var out []Cell
+	start, quoted := 0, false
+	for j := 0; j < len(row); j++ {
+		switch {
+		case row[j] == '\'' && quoted && j+1 < len(row) && row[j+1] == '\'':
+			j++ // a quote inside the text
+		case row[j] == '\'':
+			quoted = !quoted
+		case !quoted && row[j] == ',' && j+1 < len(row) && row[j+1] == ' ':
+			out = append(out, recordedCell(row[start:j]))
+			start = j + 2
+			j++
+		}
+	}
+	return append(out, recordedCell(row[start:]))
+}
+
+func recordedCell(v string) Cell {
+	switch {
+	case v == "NULL":
+		return Cell{Null: true}
+	case len(v) >= 3 && strings.HasPrefix(v, "X'") && strings.HasSuffix(v, "'"):
+		return Cell{Kind: KindBytes, Text: v[2 : len(v)-1]}
+	case len(v) >= 2 && v[0] == '\'' && v[len(v)-1] == '\'':
+		return Cell{Kind: KindText, Text: strings.ReplaceAll(v[1:len(v)-1], "''", "'")}
+	case v == "true" || v == "false":
+		return Cell{Kind: KindBool, Text: v}
+	case numericText(v) && strings.ContainsAny(v, ".eE"):
+		return Cell{Kind: KindFloat, Text: v}
+	case numericText(v):
+		return Cell{Kind: KindInt, Text: v}
+	}
+	return Cell{Kind: KindTimestamp, Text: v} // dates and times print unquoted
 }
 
 // String is one line: "3", "'ab'", "NULL; 1; 2" for three rows, or

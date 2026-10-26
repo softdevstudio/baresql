@@ -663,6 +663,34 @@ var clauseWord = map[string]bool{
 	"RETURNING": true, "QUALIFY": true,
 }
 
+// assignment reports whether the = at i sets a value (UPDATE ... SET,
+// ON DUPLICATE KEY UPDATE, ON CONFLICT ... DO UPDATE SET, SET name = x)
+// rather than compares two.
+func (c *lintCtx) assignment(i int) bool {
+	d := c.depth[i]
+	for k := i - 1; k >= 0; k-- {
+		if c.depth[k] > d {
+			continue
+		}
+		if c.depth[k] < d {
+			return false
+		}
+		t := c.ts[k]
+		switch {
+		case t.Is("SET"):
+			return true
+		case t.Is("UPDATE") && c.at(k-1).Is("KEY"):
+			return true
+		case t.Kind != sqltext.Word:
+		case clauseWord[t.Upper()], boundaryWord[t.Upper()], t.Is("AND"), t.Is("OR"), t.Is("NOT"), t.Is("ON"),
+			t.Is("WHEN"), t.Is("THEN"), t.Is("ELSE"), t.Is("CASE"), t.Is("SELECT"), t.Is("JOIN"), t.Is("USING"),
+			t.Is("CHECK"), t.Is("IF"), t.Is("RETURN"):
+			return false
+		}
+	}
+	return false
+}
+
 // items splits tokens s..e-1 into comma-separated items at depth d.
 func (c *lintCtx) items(s, e, d int) [][2]int {
 	var out [][2]int

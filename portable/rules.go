@@ -13,63 +13,64 @@ import (
 // entry's table row for functions, operators and types.
 
 func init() {
-	addRule("integer-division", "warning", ruleIntegerDivision)
-	addRule("pipes-concat", "warning", rulePipesConcat)
-	addRule("concat-null", "warning", ruleConcatNull)
-	addRule("text-compare-case", "info", ruleTextCompareCase)
-	addRule("like-case", "info", ruleLikeCase)
-	addRule("text-number-compare", "warning", ruleTextNumberCompare)
-	addRule("double-quotes", "warning", ruleDoubleQuotes)
-	addRule("null-order", "info", ruleNullOrder)
-	addRule("ungrouped-column", "warning", ruleUngroupedColumn)
-	addRule("cast-to-text", "warning", ruleCastToText)
-	addRule("cast-to-number", "error", ruleCastToNumber)
-	addRule("cast-to-date", "warning", ruleCastToDate)
-	addRule("date-arithmetic", "warning", ruleDateArithmetic)
-	addRule("division-by-zero", "info", ruleDivisionByZero)
-	addRule("decimal-as-float", "info", ruleDecimalAsFloat)
-	addRule("float-precision", "warning", ruleFloatPrecision)
-	addRule("char-padding", "info", ruleCharPadding)
-	addRule("length-bytes", "info", ruleLengthBytes)
-	addRule("lower-non-ascii", "info", ruleLowerNonASCII)
-	addRule("substring-start", "warning", ruleSubstringStart)
-	addRule("backslash-escapes", "warning", ruleBackslashEscapes)
-	addRule("like-escape", "warning", ruleLikeEscape)
-	addRule("log-base", "warning", ruleLogBase)
-	addRule("caret-operator", "warning", ruleCaretOperator)
-	addRule("dash-comment", "warning", func(*rule, *lintCtx) {}) // checked on the whole script
-	addRule("column-name-case", "warning", ruleColumnNameCase)
-	addRule("table-name-case", "error", ruleTableNameCase)
-	addRule("type-not-enforced", "warning", ruleTypeNotEnforced)
-	addRule("boolean-as-number", "error", ruleBooleanAsNumber)
-	addRule("auto-increment", "error", ruleAutoIncrement)
-	addRule("backticks", "error", ruleBackticks)
-	addRule("hash-comment", "error", func(*rule, *lintCtx) {}) // checked on the whole script
-	addRule("nulls-first-last", "error", ruleNullsFirstLast)
-	addRule("limit-comma", "error", ruleLimitComma)
-	addRule("fetch-first", "error", ruleFetchFirst)
-	addRule("alias-in-where", "error", ruleAliasInWhere)
-	addRule("alias-in-having", "error", ruleAliasInHaving)
-	addRule("limit-in-subquery", "error", ruleLimitInSubquery)
-	addRule("update-same-table", "error", ruleUpdateSameTable)
-	addRule("update-join", "error", ruleUpdateJoin)
-	addRule("full-outer-join", "error", ruleFullOuterJoin)
-	addRule("distinct-on", "error", ruleDistinctOn)
-	addRule("count-distinct-columns", "error", ruleCountDistinctColumns)
-	addRule("greatest-least", "error", ruleGreatestLeast)
-	addRule("insert-ignore", "error", ruleInsertIgnore)
-	addRule("upsert", "error", ruleUpsert)
-	addRule("returning", "error", ruleReturning)
-	addRule("varchar-length", "error", ruleVarcharLength)
-	addRule("type-not-everywhere", "error", ruleTypeNotEverywhere)
-	addRule("table-options", "error", ruleTableOptions)
-	addRule("text-default", "error", ruleTextDefault)
-	addRule("index-on-text", "error", ruleIndexOnText)
-	addRule("index-if-not-exists", "error", ruleIndexIfNotExists)
-	addRule("truncate", "error", ruleTruncate)
-	addRule("create-or-replace", "error", ruleCreateOrReplace)
-	addRule("function-not-everywhere", "error", ruleFunctionNotEverywhere)
-	addRule("operator-not-everywhere", "error", ruleOperatorNotEverywhere)
+	addRule("integer-division", ruleIntegerDivision)
+	addRule("decimal-division", ruleDecimalDivision)
+	addRule("pipes-concat", rulePipesConcat)
+	addRule("concat-null", ruleConcatNull)
+	addRule("text-compare-case", ruleTextCompareCase)
+	addRule("like-case", ruleLikeCase)
+	addRule("text-number-compare", ruleTextNumberCompare)
+	addRule("double-quotes", ruleDoubleQuotes)
+	addRule("null-order", ruleNullOrder)
+	addRule("ungrouped-column", ruleUngroupedColumn)
+	addRule("cast-to-text", ruleCastToText)
+	addRule("cast-to-number", ruleCastToNumber)
+	addRule("cast-to-date", ruleCastToDate)
+	addRule("date-arithmetic", ruleDateArithmetic)
+	addRule("division-by-zero", ruleDivisionByZero)
+	addRule("decimal-as-float", ruleDecimalAsFloat)
+	addRule("float-precision", ruleFloatPrecision)
+	addRule("char-padding", ruleCharPadding)
+	addRule("length-bytes", ruleLengthBytes)
+	addRule("lower-non-ascii", ruleLowerNonASCII)
+	addRule("substring-start", ruleSubstringStart)
+	addRule("backslash-escapes", ruleBackslashEscapes)
+	addRule("like-escape", ruleLikeEscape)
+	addRule("log-base", ruleLogBase)
+	addRule("caret-operator", ruleCaretOperator)
+	addRule("dash-comment", func(*rule, *lintCtx) {}) // checked on the whole script
+	addRule("column-name-case", ruleColumnNameCase)
+	addRule("table-name-case", ruleTableNameCase)
+	addRule("type-not-enforced", ruleTypeNotEnforced)
+	addRule("boolean-as-number", ruleBooleanAsNumber)
+	addRule("auto-increment", ruleAutoIncrement)
+	addRule("backticks", ruleBackticks)
+	addRule("hash-comment", func(*rule, *lintCtx) {}) // checked on the whole script
+	addRule("nulls-first-last", ruleNullsFirstLast)
+	addRule("limit-comma", ruleLimitComma)
+	addRule("fetch-first", ruleFetchFirst)
+	addRule("alias-in-where", ruleAliasInWhere)
+	addRule("alias-in-having", ruleAliasInHaving)
+	addRule("limit-in-subquery", ruleLimitInSubquery)
+	addRule("update-same-table", ruleUpdateSameTable)
+	addRule("update-join", ruleUpdateJoin)
+	addRule("full-outer-join", ruleFullOuterJoin)
+	addRule("distinct-on", ruleDistinctOn)
+	addRule("count-distinct-columns", ruleCountDistinctColumns)
+	addRule("greatest-least", ruleGreatestLeast)
+	addRule("insert-ignore", ruleInsertIgnore)
+	addRule("upsert", ruleUpsert)
+	addRule("returning", ruleReturning)
+	addRule("varchar-length", ruleVarcharLength)
+	addRule("type-not-everywhere", ruleTypeNotEverywhere)
+	addRule("table-options", ruleTableOptions)
+	addRule("text-default", ruleTextDefault)
+	addRule("index-on-text", ruleIndexOnText)
+	addRule("index-if-not-exists", ruleIndexIfNotExists)
+	addRule("truncate", ruleTruncate)
+	addRule("create-or-replace", ruleCreateOrReplace)
+	addRule("function-not-everywhere", ruleFunctionNotEverywhere)
+	addRule("operator-not-everywhere", ruleOperatorNotEverywhere)
 }
 
 func ruleIntegerDivision(r *rule, c *lintCtx) {
@@ -90,6 +91,31 @@ func ruleIntegerDivision(r *rule, c *lintCtx) {
 		}
 		e := c.primaryEnd(i + 1)
 		if c.kindOfPrimary(i+1, e) != kInt {
+			continue
+		}
+		c.hit(r, s, e, "")
+	}
+}
+
+func ruleDecimalDivision(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if !t.IsOp("/") || i == 0 || i+1 >= len(c.ts) {
+			continue
+		}
+		s := c.primaryStart(i - 1)
+		kinds := []vkind{c.kindOfPrimary(s, i-1)}
+		for s >= 2 && c.ts[s-1].IsOp("*", "/", "%") {
+			s2 := c.primaryStart(s - 2)
+			kinds = append(kinds, c.kindOfPrimary(s2, s-2))
+			s = s2
+		}
+		e := c.primaryEnd(i + 1)
+		lk, rk := combine(kinds), c.kindOfPrimary(i+1, e)
+		if !(lk == kDecimal && (rk == kInt || rk == kDecimal) || lk == kInt && rk == kDecimal) {
+			continue
+		}
+		// ROUND(a / b, n) gives the same digits everywhere.
+		if c.at(s-1).IsOp("(") && c.isCall(s-2) && c.ts[s-2].Is("ROUND") && c.at(e+1).IsOp(",") {
 			continue
 		}
 		c.hit(r, s, e, "")
@@ -153,7 +179,7 @@ func (c *lintCtx) letterLiteral(s, e int) bool {
 
 func ruleTextCompareCase(r *rule, c *lintCtx) {
 	for i, t := range c.ts {
-		if !t.IsOp("=", "<>", "!=", "==") || i == 0 {
+		if !t.IsOp("=", "<>", "!=", "==") || i == 0 || c.assignment(i) {
 			continue
 		}
 		ls, le := c.exprBefore(i-1), i-1
@@ -216,7 +242,7 @@ var comparisonOps = []string{"=", "<>", "!=", "<", ">", "<=", ">=", "=="}
 
 func ruleTextNumberCompare(r *rule, c *lintCtx) {
 	for i, t := range c.ts {
-		if !t.IsOp(comparisonOps...) || i == 0 {
+		if !t.IsOp(comparisonOps...) || i == 0 || c.assignment(i) {
 			continue
 		}
 		ls, le := c.exprBefore(i-1), i-1
@@ -224,26 +250,30 @@ func ruleTextNumberCompare(r *rule, c *lintCtx) {
 		if rs > re {
 			continue
 		}
-		if c.textNumberMix(ls, le, rs, re) || c.textNumberMix(rs, re, ls, le) {
-			c.hit(r, ls, re, "")
+		form := c.textNumberMix(ls, le, rs, re)
+		if form == "" {
+			form = c.textNumberMix(rs, re, ls, le)
+		}
+		if form != "" {
+			c.hitForm(r, ls, re, form, "", "")
 		}
 	}
 }
 
-// textNumberMix: a is text and b a number in a way the engines read
-// differently.
-func (c *lintCtx) textNumberMix(as, ae, bs, be int) bool {
+// textNumberMix says how a is text and b a number in a way the engines
+// read differently: the catalog row's name, or "".
+func (c *lintCtx) textNumberMix(as, ae, bs, be int) string {
 	aLit := as == ae && isPlainString(c.ts[as])
 	bNum := bs == be && c.ts[bs].Kind == sqltext.Number || be == bs+1 && c.ts[bs].IsOp("-") && c.ts[be].Kind == sqltext.Number
 	switch {
 	case aLit && bNum:
-		return true // '1' = 1
+		return "'1' = 1"
 	case aLit && !numericText(c.ts[as].StringValue()) && c.kindOf(bs, be).numeric():
-		return true // 'abc' = int_column
+		return "'abc' = number column"
 	case !aLit && c.kindOf(as, ae) == kText && bNum:
-		return true // text_column = 0
+		return "text column = number"
 	}
-	return false
+	return ""
 }
 
 func ruleDoubleQuotes(r *rule, c *lintCtx) {
@@ -265,7 +295,7 @@ func ruleNullOrder(r *rule, c *lintCtx) {
 		e := s
 		for e < len(c.ts) {
 			u := c.ts[e]
-			if c.depth[e] < d || c.depth[e] == d && u.Kind == sqltext.Word && (clauseWord[u.Upper()] || u.Is("ROWS") || u.Is("RANGE") || u.Is("GROUPS")) {
+			if c.depth[e] < d || c.depth[e] == d && u.Kind == sqltext.Word && (clauseWord[u.Upper()] || u.Is("ROWS") || u.Is("RANGE") || u.Is("GROUPS") || u.Is("SEPARATOR")) {
 				break
 			}
 			e++
@@ -322,6 +352,8 @@ func ruleUngroupedColumn(r *rule, c *lintCtx) {
 		d := c.depth[b[0]]
 		items := c.selectItems(b)
 		grouped := map[string]bool{}
+		qualified := map[string]bool{} // "u.id" for GROUP BY u.id
+		bare := map[string]bool{}      // "id" for GROUP BY id
 		for _, g := range c.items(gs, ge, d) {
 			gs, gee := g[0], g[1]
 			for gee > gs && (c.ts[gee].Is("ASC") || c.ts[gee].Is("DESC")) {
@@ -340,7 +372,13 @@ func ruleUngroupedColumn(r *rule, c *lintCtx) {
 			}
 			grouped[strings.ToLower(c.span(gs, gee))] = true
 			if isName(c.ts[gee]) && (gs == gee || gee == gs+2 && c.ts[gs+1].IsOp(".")) {
-				grouped[strings.ToLower(identName(c.ts[gee]))] = true
+				col := strings.ToLower(identName(c.ts[gee]))
+				grouped[col] = true
+				if gs == gee {
+					bare[col] = true
+				} else {
+					qualified[strings.ToLower(identName(c.ts[gs]))+"."+col] = true
+				}
 			}
 		}
 		for _, it := range items {
@@ -359,7 +397,7 @@ func ruleUngroupedColumn(r *rule, c *lintCtx) {
 				if grouped[col] || c.ts[e].Kind == sqltext.Word && (boundaryWord[c.ts[e].Upper()] || c.ts[e].Is("NULL") || c.ts[e].Is("TRUE") || c.ts[e].Is("FALSE") || strings.HasPrefix(c.ts[e].Upper(), "CURRENT_")) {
 					continue
 				}
-				if c.groupedByKey(s, e, grouped) {
+				if c.groupedByKey(s, e, bare, qualified) {
 					continue
 				}
 			}
@@ -369,8 +407,10 @@ func ruleUngroupedColumn(r *rule, c *lintCtx) {
 }
 
 // groupedByKey: the column's table has a primary key whose columns are all
-// grouped, which fixes every other column of that table.
-func (c *lintCtx) groupedByKey(s, e int, grouped map[string]bool) bool {
+// grouped, which fixes every other column of that table. A key column
+// counts when grouped bare (GROUP BY id) or under a name of the same table
+// (GROUP BY u.id, with u an alias of the table).
+func (c *lintCtx) groupedByKey(s, e int, bare, qualified map[string]bool) bool {
 	if c.schema == nil || c.schema.pk == nil {
 		return false
 	}
@@ -379,7 +419,7 @@ func (c *lintCtx) groupedByKey(s, e int, grouped map[string]bool) bool {
 	if e == s+2 {
 		table = strings.ToLower(identName(c.ts[s]))
 		if t, ok := c.aliases[table]; ok {
-			table = t
+			table = strings.ToLower(t)
 		}
 	} else {
 		for _, t := range c.tables {
@@ -393,8 +433,18 @@ func (c *lintCtx) groupedByKey(s, e int, grouped map[string]bool) bool {
 	if len(pk) == 0 {
 		return false
 	}
+	names := []string{table}
+	for a, t := range c.aliases {
+		if strings.EqualFold(t, table) {
+			names = append(names, strings.ToLower(a))
+		}
+	}
 	for _, k := range pk {
-		if !grouped[k] {
+		ok := bare[k]
+		for _, n := range names {
+			ok = ok || qualified[n+"."+k]
+		}
+		if !ok {
 			return false
 		}
 	}
@@ -426,17 +476,18 @@ func (c *lintCtx) castTarget(i int) (string, int, bool) {
 func ruleCastToText(r *rule, c *lintCtx) {
 	for i := range c.ts {
 		typ, _, sized := c.castTarget(i)
+		end := c.close(i + 1)
 		switch typ {
 		case "CHAR", "CHARACTER", "NCHAR":
-			msg := "CAST(x AS CHAR) keeps one character on PostgreSQL, where CHAR means CHAR(1)."
+			form := "CHAR"
 			if sized {
-				msg = "CAST(x AS CHAR(n)) pads the value with spaces to n characters on PostgreSQL."
+				form = "CHAR(n)"
 			}
-			c.hitMsg(r, i, c.close(i+1), "warning", msg, "")
-		case "VARCHAR", "CHARACTER VARYING", "NVARCHAR":
-			c.hitMsg(r, i, c.close(i+1), "error", "MySQL refuses VARCHAR in CAST.", "")
-		case "TEXT", "STRING", "CLOB":
-			c.hitMsg(r, i, c.close(i+1), "error", "MySQL and MariaDB refuse "+typ+" in CAST.", "")
+			c.hitForm(r, i, end, form, "", "")
+		case "VARCHAR", "CHARACTER VARYING":
+			c.hitForm(r, i, end, "VARCHAR", "CAST(x AS "+typ+")", "")
+		case "TEXT":
+			c.hitForm(r, i, end, "TEXT", "CAST(x AS TEXT)", "")
 		}
 	}
 }
@@ -445,20 +496,24 @@ func ruleCastToNumber(r *rule, c *lintCtx) {
 	for i := range c.ts {
 		typ, as, sized := c.castTarget(i)
 		end := c.close(i + 1)
-		switch typ {
-		case "INTEGER", "INT":
-			c.hitMsg(r, i, end, "error", "MySQL refuses CAST(x AS "+typ+"), SQLite drops the fraction where PostgreSQL and MariaDB round it.", "")
-		case "BIGINT", "SMALLINT", "TINYINT", "INT2", "INT4", "INT8":
-			c.hitMsg(r, i, end, "error", "MySQL and MariaDB refuse CAST(x AS "+typ+").", "")
-		case "SIGNED", "UNSIGNED":
-			c.hitMsg(r, i, end, "error", "PostgreSQL refuses CAST(x AS "+typ+"), and SQLite keeps the fraction.", "")
-		case "NUMERIC":
-			c.hitMsg(r, i, end, "error", "MySQL and MariaDB refuse CAST(x AS NUMERIC).", "")
-		case "DECIMAL", "DEC":
+		switch {
+		case typ == "INTEGER", typ == "INT":
+			c.hitForm(r, i, end, typ, typ, "")
+		case typ == "BIGINT", typ == "INT2", typ == "INT4", typ == "INT8":
+			c.hitForm(r, i, end, "BIGINT", "CAST(x AS "+typ+")", "")
+		case typ == "SMALLINT", typ == "TINYINT":
+			c.hitForm(r, i, end, typ, "CAST(x AS "+typ+")", "")
+		case strings.HasPrefix(typ, "SIGNED"):
+			c.hitForm(r, i, end, "SIGNED", typ, "")
+		case strings.HasPrefix(typ, "UNSIGNED"):
+			c.hitForm(r, i, end, "UNSIGNED", typ, "")
+		case typ == "NUMERIC":
+			c.hitForm(r, i, end, "NUMERIC", "CAST(x AS NUMERIC)", "")
+		case typ == "DECIMAL", typ == "DEC":
 			if !sized {
-				c.hitMsg(r, i, end, "warning", "CAST(x AS DECIMAL) rounds to a whole number on MySQL and MariaDB (DECIMAL(10, 0)) and keeps every digit on PostgreSQL and SQLite.", "")
+				c.hitForm(r, i, end, "DECIMAL", typ, "")
 			} else if args := c.args(as + 2); len(args) == 2 {
-				c.hitMsg(r, i, end, "warning", "SQLite ignores the scale of DECIMAL(p, s) and keeps every digit; the other engines round.", "")
+				c.hitForm(r, i, end, "DECIMAL(p, s)", typ, "")
 			}
 		}
 	}
@@ -469,12 +524,12 @@ func ruleCastToDate(r *rule, c *lintCtx) {
 		typ, _, _ := c.castTarget(i)
 		end := c.close(i + 1)
 		switch {
-		case typ == "DATE" || typ == "TIME":
-			c.hit(r, i, end, "warning")
+		case typ == "DATE", typ == "TIME":
+			c.hitForm(r, i, end, typ, "CAST(x AS "+typ+")", "")
 		case typ == "DATETIME":
-			c.hitMsg(r, i, end, "error", "PostgreSQL refuses CAST(x AS DATETIME), and SQLite turns the value into a number.", "")
+			c.hitForm(r, i, end, "DATETIME", "", "")
 		case strings.HasPrefix(typ, "TIMESTAMP"):
-			c.hitMsg(r, i, end, "error", "MySQL and MariaDB refuse CAST(x AS TIMESTAMP), and SQLite turns the value into a number.", "")
+			c.hitForm(r, i, end, "TIMESTAMP", "", "")
 		}
 	}
 }
@@ -506,9 +561,9 @@ func ruleDateArithmetic(r *rule, c *lintCtx) {
 		lk, rk := c.kindOfPrimary(ls, i-1), c.kindOfPrimary(i+1, re)
 		switch {
 		case lk == kInterval || rk == kInterval:
-			c.hitMsg(r, ls, re, "", "SQLite has no INTERVAL, and the other engines give the result different types.", "")
+			c.hitForm(r, ls, re, "INTERVAL", "", "")
 		case lk == kDate && (rk.numeric() || rk == kDate), rk == kDate && lk.numeric():
-			c.hit(r, ls, re, "")
+			c.hitForm(r, ls, re, "date + number", "", "")
 		}
 	}
 }
@@ -523,7 +578,7 @@ func ruleDivisionByZero(r *rule, c *lintCtx) {
 		switch {
 		case i+1 == re && d.Kind == sqltext.Number:
 			if f, err := strconv.ParseFloat(d.Text, 64); err == nil && f == 0 {
-				c.hit(r, c.primaryStart(i-1), re, "warning")
+				c.hit(r, c.primaryStart(i-1), re, "error")
 			}
 		case c.isCall(i+1) && d.Is("NULLIF"):
 		case d.IsOp("(") && c.isCall(i+2) && c.at(i+2).Is("NULLIF") && c.close(i+3) == re-1:
@@ -577,14 +632,14 @@ func ruleFloatPrecision(r *rule, c *lintCtx) {
 		}
 		switch d.typeName {
 		case "REAL", "FLOAT4":
-			c.hitMsg(r, d.typ, d.typEnd, "", "REAL keeps about 6 significant digits on PostgreSQL, against 15 on SQLite, MySQL and MariaDB.", "")
+			c.hitForm(r, d.typ, d.typEnd, "REAL", "", "")
 		case "FLOAT":
 			if d.typEnd > d.typ {
 				if n, err := strconv.Atoi(c.at(d.typ + 2).Text); err == nil && n > 24 {
 					continue
 				}
 			}
-			c.hitMsg(r, d.typ, d.typEnd, "", "FLOAT keeps about 6 significant digits on MySQL and MariaDB, against 15 on SQLite and PostgreSQL.", "")
+			c.hitForm(r, d.typ, d.typEnd, "FLOAT", "", "")
 		}
 	}
 }
@@ -683,17 +738,17 @@ func ruleBackslashEscapes(r *rule, c *lintCtx) {
 			continue
 		}
 		if strings.HasPrefix(t.Text, "E'") || strings.HasPrefix(t.Text, "e'") {
-			c.hitMsg(r, i, i, "error", "E'...' strings exist on PostgreSQL only.", "")
+			c.hitForm(r, i, i, "E'...'", "E'...'", "")
 			continue
 		}
 		if !strings.HasPrefix(t.Text, "'") || !strings.Contains(t.Text, `\`) || c.at(i-1).Is("LIKE") || c.at(i-1).Is("ESCAPE") {
 			continue
 		}
 		if mysqlQuote(t.Text) {
-			c.hitMsg(r, i, i, "error", `\' ends the string on SQLite and PostgreSQL; only MySQL and MariaDB read it as a quote inside it.`, "Write a quote inside a string as two quotes: 'it''s'.")
+			c.hitForm(r, i, i, `\'`, "", "")
 			continue
 		}
-		c.hit(r, i, i, "")
+		c.hitForm(r, i, i, "backslash", "", "")
 	}
 }
 
@@ -808,9 +863,14 @@ func ruleTypeNotEnforced(r *rule, c *lintCtx) {
 			v := c.ts[a[0]].StringValue()
 			switch kind := typeKind(ci.typ); {
 			case kind.numeric() && !numericText(v):
-				c.hitMsg(r, a[0], a[0], "", "SQLite stores the text "+c.ts[a[0]].Text+" in the "+ci.typ+" column "+cols[n]+"; PostgreSQL, MySQL and MariaDB refuse it.", "")
+				c.hitForm(r, a[0], a[0], "text in a number column", "",
+					"SQLite stores the text "+c.ts[a[0]].Text+" in the "+ci.typ+" column "+cols[n]+"; PostgreSQL, MySQL and MariaDB refuse it.")
+			case kind == kInt && strings.ContainsAny(v, ".eE"):
+				c.hitForm(r, a[0], a[0], "a fraction in an integer column", "",
+					"PostgreSQL refuses the text "+c.ts[a[0]].Text+" for the "+ci.typ+" column "+cols[n]+"; MySQL and MariaDB round it to a whole number, and SQLite keeps a fraction as it is.")
 			case kind == kText && ci.length > 0 && len([]rune(v)) > ci.length:
-				c.hitMsg(r, a[0], a[0], "", fmt.Sprintf("The value is %d characters long and %s holds %d: SQLite stores it whole, the other engines refuse it.", len([]rune(v)), cols[n], ci.length), "")
+				c.hitForm(r, a[0], a[0], "too long for VARCHAR(n)", "",
+					fmt.Sprintf("The value is %d characters long and %s holds %d: SQLite stores it whole, the other engines refuse it.", len([]rune(v)), cols[n], ci.length))
 			}
 		}
 		k = c.close(k) + 1
@@ -828,8 +888,13 @@ func ruleBooleanAsNumber(r *rule, c *lintCtx) {
 			ls, rs := c.primaryStart(i-1), i+1
 			re := c.primaryEnd(rs)
 			lk, rk := c.kindOfPrimary(ls, i-1), c.kindOfPrimary(rs, re)
-			if lk == kBool && rs == re && isNum(rs) || rk == kBool && ls == i-1 && isNum(ls) {
-				c.hitMsg(r, ls, re, "", "PostgreSQL has no = between a boolean and a number.", "")
+			switch {
+			case c.assignment(i):
+				if lk == kBool && rs == re && isNum(rs) {
+					c.hitForm(r, rs, rs, "number into BOOLEAN", "", "PostgreSQL refuses a number for the BOOLEAN column "+identName(c.ts[i-1])+".")
+				}
+			case lk == kBool && rs == re && isNum(rs) || rk == kBool && ls == i-1 && isNum(ls):
+				c.hitForm(r, ls, re, "boolean = number", "", "PostgreSQL has no = between a boolean and a number.")
 			}
 		}
 		// A bare number or integer column where a condition goes.
@@ -844,7 +909,7 @@ func ruleBooleanAsNumber(r *rule, c *lintCtx) {
 				continue
 			}
 			if e == i+1 && isNum(i+1) || c.kindOfPrimary(i+1, e) == kInt && c.ts[i+1].Kind == sqltext.Word && !c.isCall(i+1) {
-				c.hitMsg(r, i+1, e, "", "PostgreSQL wants a boolean after "+t.Upper()+" and refuses a number.", "Write a comparison: WHERE x <> 0, or WHERE 1 = 1.")
+				c.hitForm(r, i+1, e, "WHERE number", "", "PostgreSQL wants a boolean after "+t.Upper()+" and refuses a number.")
 			}
 		}
 	}
@@ -876,7 +941,7 @@ func ruleBooleanAsNumber(r *rule, c *lintCtx) {
 	for k++; k < len(c.ts) && c.ts[k].IsOp("("); {
 		for n, a := range c.args(k) {
 			if n < len(cols) && a[0] == a[1] && isNum(a[0]) && typeKind(c.schema.cols[table][cols[n]].typ) == kBool {
-				c.hitMsg(r, a[0], a[0], "", "PostgreSQL refuses a number for the BOOLEAN column "+cols[n]+".", "Insert TRUE or FALSE.")
+				c.hitForm(r, a[0], a[0], "number into BOOLEAN", "", "PostgreSQL refuses a number for the BOOLEAN column "+cols[n]+".")
 			}
 		}
 		k = c.close(k) + 1
@@ -911,22 +976,22 @@ func ruleAutoIncrement(r *rule, c *lintCtx) {
 			continue
 		}
 		switch d.typeName {
-		case "SERIAL", "SERIAL4":
-			c.hitMsg(r, d.typ, d.typ, "warning", "SERIAL numbers rows on PostgreSQL, MySQL and MariaDB; on SQLite it is only a type name and the column stays NULL.", "")
-		case "BIGSERIAL", "SMALLSERIAL", "SERIAL8", "SERIAL2":
-			c.hitMsg(r, d.typ, d.typ, "error", d.typeName+" exists on PostgreSQL only; MySQL and MariaDB refuse it, and SQLite leaves the column NULL.", "")
+		case "SERIAL":
+			c.hitForm(r, d.typ, d.typ, "SERIAL", "", "")
+		case "BIGSERIAL", "SMALLSERIAL", "SERIAL8", "SERIAL4", "SERIAL2":
+			c.hitForm(r, d.typ, d.typ, "BIGSERIAL", d.typeName, "")
 		}
 		for k := d.typEnd + 1; k <= d.end; k++ {
 			switch {
 			case c.ts[k].Is("AUTO_INCREMENT"):
-				c.hitMsg(r, k, k, "error", "AUTO_INCREMENT is MySQL's and MariaDB's; SQLite and PostgreSQL refuse it.", "")
+				c.hitForm(r, k, k, "AUTO_INCREMENT", "AUTO_INCREMENT", "")
 			case c.ts[k].Is("AUTOINCREMENT"):
-				c.hitMsg(r, k, k, "error", "AUTOINCREMENT is SQLite's; the other engines refuse it.", "")
+				c.hitForm(r, k, k, "AUTOINCREMENT", "AUTOINCREMENT", "")
 			case c.ts[k].Is("GENERATED") && c.has(k, d.end, "IDENTITY"):
-				c.hitMsg(r, k, d.end, "error", "GENERATED ... AS IDENTITY works on PostgreSQL only of these four engines.", "")
+				c.hitForm(r, k, d.end, "GENERATED AS IDENTITY", "GENERATED ... AS IDENTITY", "")
 			case c.ts[k].Is("IDENTITY"):
 				if !c.has(d.typEnd+1, k, "GENERATED") {
-					c.hitMsg(r, k, k, "error", "IDENTITY columns of this form exist on none of the four engines.", "")
+					c.hitForm(r, k, k, "IDENTITY(1, 1)", "", "")
 				}
 			}
 		}
@@ -970,9 +1035,9 @@ func ruleFetchFirst(r *rule, c *lintCtx) {
 			for e+1 < len(c.ts) && !c.ts[e].Is("ONLY") && !c.ts[e].Is("TIES") {
 				e++
 			}
-			c.hit(r, i, e, "")
+			c.hitForm(r, i, e, "FETCH FIRST", "FETCH "+c.at(i+1).Upper(), "")
 		case t.Is("OFFSET") && (c.at(i+2).Is("ROWS") || c.at(i+2).Is("ROW")):
-			c.hitMsg(r, i, i+2, "", "OFFSET n ROWS works on PostgreSQL and MariaDB; SQLite and MySQL refuse it.", "Write OFFSET n without ROWS.")
+			c.hitForm(r, i, i+2, "OFFSET n ROWS", "OFFSET n ROWS", "")
 		}
 	}
 }
@@ -1099,7 +1164,11 @@ func ruleUpdateJoin(r *rule, c *lintCtx) {
 	case c.ts[0].Is("UPDATE"):
 		for k := 1; k < len(c.ts) && !c.ts[k].Is("SET"); k++ {
 			if c.depth[k] == 0 && (c.ts[k].Is("JOIN") || c.ts[k].IsOp(",")) {
-				c.hitMsg(r, 0, k, "", "UPDATE ... JOIN (and UPDATE t, u) works on MySQL and MariaDB only.", "")
+				what := "UPDATE ... JOIN"
+				if c.ts[k].IsOp(",") {
+					what = "UPDATE t, u"
+				}
+				c.hitForm(r, 0, k, "UPDATE ... JOIN", what, "")
 				return
 			}
 		}
@@ -1109,18 +1178,18 @@ func ruleUpdateJoin(r *rule, c *lintCtx) {
 				set = k
 			}
 			if set > 0 && t.Is("FROM") && c.depth[k] == 0 {
-				c.hitMsg(r, k, k, "", "UPDATE ... FROM works on SQLite and PostgreSQL only; MySQL and MariaDB refuse it.", "")
+				c.hitForm(r, k, k, "UPDATE ... FROM", "UPDATE ... FROM", "")
 				return
 			}
 		}
 	case c.ts[0].Is("DELETE"):
 		if !c.ts[1].Is("FROM") {
-			c.hitMsg(r, 0, 1, "", "DELETE t FROM t JOIN ... works on MySQL and MariaDB only.", "")
+			c.hitForm(r, 0, 1, "DELETE ... JOIN", "DELETE t FROM t JOIN ...", "")
 			return
 		}
 		for k, t := range c.ts {
 			if t.Is("USING") && c.depth[k] == 0 {
-				c.hitMsg(r, k, k, "", "DELETE ... USING works on PostgreSQL, MySQL and MariaDB with different meanings, and SQLite refuses it.", "")
+				c.hitForm(r, k, k, "DELETE ... USING", "", "")
 				return
 			}
 		}
@@ -1164,16 +1233,16 @@ func ruleInsertIgnore(r *rule, c *lintCtx) {
 		return
 	}
 	if c.ts[0].Is("INSERT") && c.ts[1].Is("IGNORE") {
-		c.hitMsg(r, 0, 1, "", "INSERT IGNORE works on MySQL and MariaDB only.", "")
+		c.hitForm(r, 0, 1, "INSERT IGNORE", "INSERT IGNORE", "")
 	}
 	if c.ts[0].Is("INSERT") && c.ts[1].Is("OR") && c.at(2).Is("IGNORE") {
-		c.hitMsg(r, 0, 2, "", "INSERT OR IGNORE works on SQLite only.", "")
+		c.hitForm(r, 0, 2, "INSERT OR IGNORE", "INSERT OR IGNORE", "")
 	}
 	for k, t := range c.ts {
 		if t.Is("CONFLICT") && c.at(k-1).Is("ON") {
 			for j := k; j < len(c.ts); j++ {
 				if c.ts[j].Is("DO") && c.at(j+1).Is("NOTHING") {
-					c.hitMsg(r, k-1, j+1, "", "ON CONFLICT ... DO NOTHING works on SQLite and PostgreSQL only.", "")
+					c.hitForm(r, k-1, j+1, "ON CONFLICT DO NOTHING", "ON CONFLICT ... DO NOTHING", "")
 				}
 			}
 		}
@@ -1186,22 +1255,22 @@ func ruleUpsert(r *rule, c *lintCtx) {
 	}
 	switch {
 	case c.ts[0].Is("REPLACE") && c.ts[1].Is("INTO"):
-		c.hitMsg(r, 0, 1, "", "REPLACE INTO works on SQLite, MySQL and MariaDB, where it deletes the old row first; PostgreSQL refuses it.", "")
+		c.hitForm(r, 0, 1, "REPLACE INTO", "REPLACE INTO", "")
 	case c.ts[0].Is("INSERT") && c.ts[1].Is("OR") && c.at(2).Is("REPLACE"):
-		c.hitMsg(r, 0, 2, "", "INSERT OR REPLACE works on SQLite only.", "")
+		c.hitForm(r, 0, 2, "INSERT OR REPLACE", "INSERT OR REPLACE", "")
 	case c.ts[0].Is("MERGE"):
-		c.hitMsg(r, 0, 1, "", "MERGE works on PostgreSQL 15 and later only, of these four engines.", "")
+		c.hitForm(r, 0, 1, "MERGE", "MERGE", "")
 	}
 	for k, t := range c.ts {
 		if t.Is("CONFLICT") && c.at(k-1).Is("ON") {
 			for j := k; j < len(c.ts); j++ {
 				if c.ts[j].Is("DO") && c.at(j+1).Is("UPDATE") {
-					c.hitMsg(r, k-1, j+1, "", "ON CONFLICT ... DO UPDATE works on SQLite and PostgreSQL only.", "")
+					c.hitForm(r, k-1, j+1, "ON CONFLICT DO UPDATE", "ON CONFLICT ... DO UPDATE", "")
 				}
 			}
 		}
 		if t.Is("DUPLICATE") && c.at(k-1).Is("ON") && c.at(k+1).Is("KEY") {
-			c.hitMsg(r, k-1, k+2, "", "ON DUPLICATE KEY UPDATE works on MySQL and MariaDB only.", "")
+			c.hitForm(r, k-1, k+2, "ON DUPLICATE KEY UPDATE", "ON DUPLICATE KEY UPDATE", "")
 		}
 	}
 }
@@ -1211,13 +1280,24 @@ func ruleReturning(r *rule, c *lintCtx) {
 	if !(first.Is("INSERT") || first.Is("UPDATE") || first.Is("DELETE") || first.Is("WITH") || first.Is("REPLACE")) {
 		return
 	}
+	// The statement's own verb: after WITH, the first one outside the CTEs.
+	verb := first.Upper()
+	if first.Is("WITH") {
+		verb = "INSERT"
+		for k, t := range c.ts {
+			if c.depth[k] == 0 && (t.Is("INSERT") || t.Is("UPDATE") || t.Is("DELETE")) {
+				verb = t.Upper()
+				break
+			}
+		}
+	}
+	if verb == "REPLACE" {
+		verb = "INSERT"
+	}
 	for k, t := range c.ts {
 		if t.Is("RETURNING") && c.depth[k] == 0 {
-			msg := ""
-			if first.Is("UPDATE") {
-				msg = "UPDATE ... RETURNING works on SQLite and PostgreSQL; MySQL and MariaDB refuse it."
-			}
-			c.hitMsg(r, k, k, "", msg, "")
+			form := verb + " ... RETURNING"
+			c.hitForm(r, k, k, form, form, "")
 			return
 		}
 	}
@@ -1344,16 +1424,29 @@ func ruleTableOptions(r *rule, c *lintCtx) {
 		case mysqlTableOptions[t.Upper()] && t.Kind == sqltext.Word,
 			t.Is("DEFAULT") && (c.at(k+1).Is("CHARSET") || c.at(k+1).Is("CHARACTER") || c.at(k+1).Is("COLLATE")),
 			t.Is("CHARACTER") && c.at(k+1).Is("SET"):
-			c.hitMsg(r, k, k, "", t.Upper()+" is a MySQL and MariaDB table option; SQLite and PostgreSQL refuse it.", "")
+			what := t.Upper()
+			switch {
+			case t.Is("DEFAULT"):
+				what = "DEFAULT " + c.at(k+1).Upper()
+			case t.Is("CHARACTER"):
+				what = "CHARACTER SET"
+			}
+			c.hitForm(r, k, k, "ENGINE", "The table option "+what, "")
 			return
-		case t.Is("WITHOUT") && c.at(k+1).Is("ROWID"), t.Is("STRICT"):
-			c.hitMsg(r, k, k, "", t.Upper()+" is SQLite's own table option; the other engines refuse it.", "")
+		case t.Is("WITHOUT") && c.at(k+1).Is("ROWID"):
+			c.hitForm(r, k, k+1, "WITHOUT ROWID", "The table option WITHOUT ROWID", "")
 			return
-		case t.Is("INHERITS"), t.Is("TABLESPACE"), t.Is("WITH") && c.at(k+1).IsOp("("):
-			c.hitMsg(r, k, k, "", t.Upper()+" is PostgreSQL's own table option; the other engines refuse it.", "")
+		case t.Is("STRICT"):
+			c.hitForm(r, k, k, "STRICT", "The table option STRICT", "")
+			return
+		case t.Is("INHERITS"):
+			c.hitForm(r, k, k, "INHERITS", "INHERITS", "")
+			return
+		case t.Is("WITH") && c.at(k+1).IsOp("("):
+			c.hitForm(r, k, k, "WITH (...)", "The table option WITH (...)", "")
 			return
 		case t.Is("PARTITION") && c.at(k+1).Is("BY"):
-			c.hitMsg(r, k, k+1, "", "PARTITION BY has a different syntax on PostgreSQL and on MySQL and MariaDB, and SQLite has none.", "")
+			c.hitForm(r, k, k+1, "PARTITION BY", "", "")
 			return
 		}
 	}
@@ -1361,7 +1454,7 @@ func ruleTableOptions(r *rule, c *lintCtx) {
 	for _, d := range defs {
 		if d.constraint {
 			if t := c.ts[d.name]; t.Is("KEY") || t.Is("INDEX") || t.Is("FULLTEXT") || t.Is("SPATIAL") {
-				c.hitMsg(r, d.name, d.name, "", "An index inside CREATE TABLE works on MySQL and MariaDB only.", "Create the index with a separate CREATE INDEX statement.")
+				c.hitForm(r, d.name, d.name, "index inside CREATE TABLE", "An index inside CREATE TABLE", "")
 			}
 			continue
 		}
@@ -1369,13 +1462,13 @@ func ruleTableOptions(r *rule, c *lintCtx) {
 			t := c.ts[k]
 			switch {
 			case t.Is("CHARACTER") && c.at(k+1).Is("SET"), t.Is("CHARSET"):
-				c.hitMsg(r, k, k, "", "A character set on a column works on MySQL and MariaDB only.", "")
+				c.hitForm(r, k, k, "CHARACTER SET", "A character set on a column", "")
 			case t.Is("COMMENT") && c.at(k+1).Kind == sqltext.String:
-				c.hitMsg(r, k, k+1, "", "COMMENT on a column works on MySQL and MariaDB (and SQLite ignores nothing here: it refuses it as well as PostgreSQL does).", "")
+				c.hitForm(r, k, k+1, "COMMENT", "COMMENT on a column", "")
 			case t.Is("ON") && c.at(k+1).Is("UPDATE"):
-				c.hitMsg(r, k, k+1, "", "ON UPDATE for a column works on MySQL and MariaDB only.", "Set the column in the UPDATE statements, or with a trigger per engine.")
+				c.hitForm(r, k, k+1, "ON UPDATE", "ON UPDATE for a column", "")
 			case t.Is("COLLATE"):
-				c.hitMsg(r, k, k+1, "", "Collation names differ on every engine.", "")
+				c.hitForm(r, k, k+1, "COLLATE", "", "")
 			}
 		}
 	}
@@ -1482,14 +1575,16 @@ func ruleTruncate(r *rule, c *lintCtx) {
 func ruleCreateOrReplace(r *rule, c *lintCtx) {
 	if len(c.ts) > 3 && c.ts[0].Is("CREATE") && c.ts[1].Is("OR") && c.ts[2].Is("REPLACE") {
 		what := c.at(3).Upper()
-		msg := "SQLite has no CREATE OR REPLACE."
-		switch what {
-		case "TABLE":
-			msg = "CREATE OR REPLACE TABLE works on MariaDB only."
-		case "FUNCTION", "PROCEDURE", "TRIGGER":
-			msg = "CREATE OR REPLACE " + what + " has a different body syntax on every engine, and SQLite has none."
+		switch {
+		case what == "VIEW" || c.has(3, min(len(c.ts)-1, 10), "VIEW"):
+			c.hitForm(r, 0, 3, "VIEW", "CREATE OR REPLACE VIEW", "")
+		case what == "TABLE":
+			c.hitForm(r, 0, 3, "TABLE", "CREATE OR REPLACE TABLE", "")
+		case what == "FUNCTION", what == "PROCEDURE", what == "TRIGGER":
+			c.hitMsg(r, 0, 3, "", "CREATE OR REPLACE "+what+" has a different body syntax on every engine, and SQLite has none.", "")
+		default:
+			c.hitMsg(r, 0, 3, "", "SQLite has no CREATE OR REPLACE.", "")
 		}
-		c.hitMsg(r, 0, 3, "", msg, "")
 	}
 }
 
@@ -1528,7 +1623,11 @@ func ruleFunctionNotEverywhere(r *rule, c *lintCtx) {
 		}
 		for n := range e.Items {
 			it := &e.Items[n]
-			if !strings.EqualFold(it.Name, t.Text) {
+			name, what := it.Name, it.Name+"()"
+			if k := strings.IndexByte(name, '('); k > 0 {
+				name, what = name[:k], it.Name
+			}
+			if !strings.EqualFold(name, t.Text) || it.MinArgs > 0 && len(c.args(i+1)) < it.MinArgs {
 				continue
 			}
 			if types == nil {
@@ -1537,7 +1636,7 @@ func ruleFunctionNotEverywhere(r *rule, c *lintCtx) {
 			if types[i] {
 				break
 			}
-			c.hitItem(r, i, c.close(i+1), it, itemMessage(r.code, it, it.Name+"()"))
+			c.hitItem(r, i, c.close(i+1), it, itemMessage(r.code, it, what))
 			break
 		}
 	}

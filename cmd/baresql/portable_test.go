@@ -59,7 +59,7 @@ func TestCLILint(t *testing.T) {
 	if code != 1 || json.Unmarshal([]byte(out), &ps) != nil || len(ps) != 1 || ps[0].Code != "integer-division" || ps[0].Line != 1 {
 		t.Fatalf("json: exit %d:\n%s", code, out)
 	}
-	good := writeSQL(t, "SELECT 7 * 1.0 / 2;")
+	good := writeSQL(t, "SELECT ROUND(7 * 1.0 / 2, 2);")
 	if code, out, _ := runCLI(t, "lint", "--format", "json", good); code != 0 || strings.TrimSpace(out) != "[]" {
 		t.Fatalf("clean json: exit %d: %s", code, out)
 	}
