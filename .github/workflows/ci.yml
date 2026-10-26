@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Tests that need a database engine read its address from BARESQL_TEST_PG,
+# BARESQL_TEST_MYSQL or BARESQL_TEST_MARIADB and skip when it is unset.
+# BARESQL_REQUIRE_ENGINES turns that skip into a failure for the engines it
+# lists, so a job can't pass by quietly testing nothing.
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-version.sh
+
+  # Everything that runs without a server, on all three systems. SQLite tests
+  # run where the sqlite3 program is installed (Linux and macOS runners).
+  unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: gofmt
+        if: runner.os == 'Linux'
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "::error::not gofmt-formatted: $out"; exit 1; fi
+      - run: go vet ./...
+      - name: Tests
+        env:
+          BARESQL_REQUIRE_ENGINES: ${{ runner.os != 'Windows' && 'sqlite' || '' }}
+        run: |
+          race=-race
+          if [ "$RUNNER_OS" = Windows ]; then race=; fi  # the race detector needs cgo there
+          scripts/ci-test.sh -count=1 $race -timeout 20m ./...
+
+  # BareSQL Audit across the supported PostgreSQL versions: role membership,
+  # predefined roles and view options changed in 14, 15 and 16.
+  postgres:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["13", "14", "15", "16", "17", "18"]
+    runs-on: ubuntu-latest
+    env:
+      BARESQL_REQUIRE_ENGINES: pg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: scripts/ci-engine.sh postgres ${{ matrix.version }}
+      - run: scripts/ci-test.sh -count=1 -race -timeout 30m ./...
+
+  # The MySQL client and the Portable catalog on each MySQL and MariaDB line.
+  mysql:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { engine: mysql, version: "8.0" }
+          - { engine: mysql, version: "8.4" }
+          - { engine: mysql, version: "9.7" }
+          - { engine: mariadb, version: "10.11" }
+          - { engine: mariadb, version: "11.4" }
+          - { engine: mariadb, version: "11.8" }
+          - { engine: mariadb, version: "12.3" }
+    runs-on: ubuntu-latest
+    env:
+      BARESQL_REQUIRE_ENGINES: ${{ matrix.engine }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: scripts/ci-engine.sh ${{ matrix.engine }} ${{ matrix.version }}
+      - run: scripts/ci-test.sh -count=1 -race -timeout 30m ./...
+
+  # All four engines at once, for `baresql compare` and the end-to-end CLI
+  # tests that need several engines side by side.
+  all-engines:
+    runs-on: ubuntu-latest
+    env:
+      BARESQL_REQUIRE_ENGINES: all
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: command -v sqlite3 || { sudo apt-get update -qq && sudo apt-get install -y -qq sqlite3; }
+      - run: scripts/ci-engine.sh postgres 18
+      - run: scripts/ci-engine.sh mysql 8.4
+      - run: scripts/ci-engine.sh mariadb 11.8
+      - run: scripts/ci-test.sh -count=1 -race -timeout 30m ./...
+
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: scripts/fuzz.sh 20s

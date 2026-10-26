@@ -1,0 +1,9 @@
+dist/
+/*.test
+/baresql
+/baresql.exe
+/baresql-report/
+/out/
+test.log
+fuzz.log
+.ci-certs/

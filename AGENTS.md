@@ -1,0 +1,25 @@
+# Instructions for coding agents (OpenAI Codex, ChatGPT and others)
+
+Read CLAUDE.md first. It is the single source of truth for this repo's
+workflow, state and to-do list, and the same rules apply to every agent.
+
+The rules that matter most:
+
+- `git pull` before you start: other agents push to main too.
+- Work on main. No side branches, no pull requests to yourself.
+- Never create or move release tags by hand. A release happens when
+  VERSION and `const Version` in version.go drop their `-dev` suffix
+  together, CHANGELOG.md has the finished section for that version, and CI
+  goes green on main.
+- Run `gofmt -l .`, `go vet ./...` and `go test -race ./...` before pushing.
+  Tests that need a database read BARESQL_TEST_PG, BARESQL_TEST_MYSQL or
+  BARESQL_TEST_MARIADB and the sqlite3 program; set
+  BARESQL_REQUIRE_ENGINES=all to make a missing engine fail instead of
+  skip. Without Docker, scripts/dev-engines.sh sets up local servers.
+- Numbers on baresql.com come from test/results, written by
+  scripts/record-results.sh. Don't type numbers by hand.
+- Finding codes and rule codes are a public interface: never rename one.
+- BareSQL Audit never writes to the audited database and never calls a
+  user-defined function. Keep it that way.
+- When you finish, update the State and Gaps sections of CLAUDE.md with
+  what you did and what is still open.

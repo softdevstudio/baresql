@@ -1,0 +1,162 @@
+name: Release
+
+# Runs after CI finishes on main. If VERSION names a version that has no tag
+# yet (and doesn't end in -dev), it builds baresql for Linux, macOS and
+# Windows, smoke-tests the builds (on Linux against real PostgreSQL, MySQL
+# and MariaDB servers), and only then tags the commit and publishes.
+# Archive names carry no version, so releases/latest/download links never
+# change.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Rebuild the assets of an existing tag (for example v0.1.0)"
+        required: false
+
+permissions:
+  contents: write
+
+# One release run at a time, so two quick pushes cannot race to publish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - id: v
+        env:
+          REBUILD_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          v=$(tr -d '[:space:]' < VERSION)
+          sha=$(git rev-parse HEAD)
+          case $v in
+          *-dev)
+            echo "$v is a development version; nothing to release"
+            v="" ;;
+          *)
+            if [ -z "$REBUILD_TAG" ] && git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then
+              echo "v$v is already released; nothing to do"
+              v=""
+            fi ;;
+          esac
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.version != ''
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-latest,    goos: linux,   goarch: amd64, ext: "",     archive: tar.gz, smoke: full }
+          - { os: ubuntu-24.04-arm, goos: linux,   goarch: arm64, ext: "",     archive: tar.gz, smoke: basic }
+          - { os: macos-latest,     goos: darwin,  goarch: arm64, ext: "",     archive: tar.gz, smoke: basic }
+          - { os: macos-latest,     goos: darwin,  goarch: amd64, ext: "",     archive: tar.gz, smoke: none }
+          - { os: windows-latest,   goos: windows, goarch: amd64, ext: ".exe", archive: zip,    smoke: basic }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build
+        run: |
+          set -eux
+          mkdir -p stage
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -trimpath -ldflags "-s -w" -o stage/baresql${{ matrix.ext }} ./cmd/baresql
+          cp LICENSE NOTICE THIRD_PARTY_LICENSES.md README.md CHANGELOG.md stage/
+      - name: Smoke test (no servers)
+        if: matrix.smoke != 'none'
+        run: scripts/smoke.sh stage/baresql${{ matrix.ext }} ${{ needs.plan.outputs.version }} basic
+      - name: Start PostgreSQL, MySQL and MariaDB
+        if: matrix.smoke == 'full'
+        run: |
+          scripts/ci-engine.sh postgres 18
+          scripts/ci-engine.sh mysql 8.4
+          scripts/ci-engine.sh mariadb 11.8
+      - name: Smoke test (real servers)
+        if: matrix.smoke == 'full'
+        run: scripts/smoke.sh stage/baresql${{ matrix.ext }} ${{ needs.plan.outputs.version }} full
+      - name: Package
+        run: |
+          set -eux
+          mkdir -p dist
+          name=baresql_${{ matrix.goos }}_${{ matrix.goarch }}
+          if [ "${{ matrix.archive }}" = zip ]; then
+            (cd stage && 7z a -tzip ../dist/$name.zip * >/dev/null)
+          else
+            tar -czf dist/$name.tar.gz -C stage .
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: baresql_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: dist/*
+
+  publish:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Check the archives
+        run: |
+          set -eu
+          n=$(ls dist | wc -l)
+          [ "$n" = 5 ] || { echo "::error::expected 5 archives, found $n: $(ls dist | tr '\n' ' ')"; exit 1; }
+          for f in dist/*.tar.gz; do tar -tzf "$f" | grep -q '^./baresql$' || { echo "::error::$f has no baresql binary"; exit 1; }; done
+          unzip -l dist/baresql_windows_amd64.zip | grep -q 'baresql.exe' || { echo "::error::zip has no baresql.exe"; exit 1; }
+      - name: Checksums
+        run: |
+          set -eux
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          v=${{ needs.plan.outputs.version }}
+          awk "/^## $v\$/{f=1;next} /^## /{f=0} f" CHANGELOG.md > notes.md
+          # Job logs can't be read from the maintainer's sessions, so any
+          # failure is repeated as annotations.
+          fail() { echo "::error::$1"; sed 's/^/::error::/' out.txt | head -20; exit 1; }
+          if gh release view "v$v" > out.txt 2>&1; then
+            gh release upload "v$v" dist/* --clobber > out.txt 2>&1 || fail "gh release upload failed"
+          else
+            git tag "v$v" "${{ needs.plan.outputs.sha }}"
+            git push origin "refs/tags/v$v" > out.txt 2>&1 || fail "git push of tag v$v failed"
+            gh release create "v$v" dist/* --verify-tag \
+              --title "BareSQL v$v" --notes-file notes.md > out.txt 2>&1 || fail "gh release create failed"
+          fi
+          cat out.txt
