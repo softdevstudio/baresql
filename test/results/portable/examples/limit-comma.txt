@@ -1,8 +1,8 @@
 example.sql:3:26: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
     x
     Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
-example.sql:3:28: error: LIMIT 1, 2 works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [limit-comma]
+example.sql:3:28: error: LIMIT offset, count works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [limit-comma]
     LIMIT 1, 2
-    Write LIMIT 2 OFFSET 1, which all four accept.
+    Write LIMIT count OFFSET offset, which all four accept: LIMIT 1, 2 becomes LIMIT 2 OFFSET 1.
 
 2 problems: 1 error, 1 note.

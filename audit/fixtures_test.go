@@ -40,18 +40,7 @@ func TestFixtureClean(t *testing.T) {
 // TestFixtureEdge holds the setups the independent review of 0.1.0 found
 // the audit getting wrong; expected.txt has the server's own answers.
 func TestFixtureEdge(t *testing.T) {
-	// A real role named "PUBLIC" isn't one of the fixture's own (edge_...),
-	// so it is dropped here, after the fixture's database.
-	t.Cleanup(func() {
-		base, err := pgwire.ParseDSN(testenv.DSN(t, testenv.PG))
-		if err != nil {
-			return
-		}
-		if c, err := pgwire.Connect(context.Background(), base); err == nil {
-			c.Exec(context.Background(), `DROP ROLE IF EXISTS "PUBLIC"`)
-			c.Close()
-		}
-	})
+	dropPublicRoleAfter(t)
 	f := loadFixture(t, "edge")
 	res := auditFixture(t, f, true)
 	checkLines(t, f, res, "expected.txt")
@@ -165,4 +154,21 @@ func TestAuditorWithoutSuperuser(t *testing.T) {
 	if key(res) != key(super) {
 		t.Error("the analyst's audit lists different reach than the superuser's")
 	}
+}
+
+// dropPublicRoleAfter drops the edge fixture's real role named "PUBLIC"
+// when the test ends. It isn't one of the fixture's own roles (edge_...),
+// so the fixture's cleanup leaves it, and it is dropped after the
+// fixture's database.
+func dropPublicRoleAfter(t *testing.T) {
+	t.Cleanup(func() {
+		base, err := pgwire.ParseDSN(testenv.DSN(t, testenv.PG))
+		if err != nil {
+			return
+		}
+		if c, err := pgwire.Connect(context.Background(), base); err == nil {
+			c.Exec(context.Background(), `DROP ROLE IF EXISTS "PUBLIC"`)
+			c.Close()
+		}
+	})
 }

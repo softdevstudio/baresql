@@ -1,6 +1,6 @@
 limit-comma (error): LIMIT offset, count
 
-LIMIT 1, 2 works on SQLite, MySQL and MariaDB; PostgreSQL refuses it.
+LIMIT offset, count works on SQLite, MySQL and MariaDB; PostgreSQL refuses it.
 
 In LIMIT a, b the first number is the offset and the second the count, the
 reverse of the order in which LIMIT ... OFFSET reads.
@@ -25,4 +25,5 @@ The same on every engine:
     MySQL 8.0.46         2; 3
     MariaDB 10.11.14     2; 3
 
-Write LIMIT 2 OFFSET 1, which all four accept.
+Write LIMIT count OFFSET offset, which all four accept: LIMIT 1, 2 becomes
+LIMIT 2 OFFSET 1.

@@ -7,7 +7,7 @@ queries.sql:4  INSERT OR IGNORE INTO users (id, email, name, created_at) VALUES 
   lint: insert-ignore
 
 queries.sql:8  SELECT id, email FROM users WHERE email LIKE 'bob%'
-  1 rows on SQLite, 0 on PostgreSQL
+  1 row on SQLite, 0 on PostgreSQL
   SQLite: 2, 'Bob@Example.com'
   PostgreSQL: no rows
   lint: like-case

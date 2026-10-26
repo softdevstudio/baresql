@@ -30,11 +30,16 @@ func TestRecordResults(t *testing.T) {
 		t.Fatal(err)
 	}
 	var counts bytes.Buffer
-	for _, name := range []string{"shop", "saas", "clinic", "clean"} {
+	// edge, the corner cases, is counted and not recorded: the site shows
+	// the other four as sample reports.
+	dropPublicRoleAfter(t)
+	for _, name := range []string{"shop", "saas", "clinic", "clean", "edge"} {
 		f := loadFixture(t, name)
 		res := auditFixture(t, f, true)
 		checkLines(t, f, res, "expected.txt")
-		record(t, filepath.Join(out, name), res)
+		if name != "edge" {
+			record(t, filepath.Join(out, name), res)
+		}
 		countFixture(t, &counts, f, res)
 	}
 	writeFile(t, filepath.Join(out, "counts.txt"), counts.String())

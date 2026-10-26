@@ -430,10 +430,10 @@ func describe(answers map[string]*Answer, groups [][]string, sorted bool) []stri
 func whatDiffers(a, b *Answer, sorted bool, an, bn string) []string {
 	var out []string
 	if len(a.Rows) != len(b.Rows) {
-		return append(out, fmt.Sprintf("%d rows on %s, %d on %s", len(a.Rows), an, len(b.Rows), bn))
+		return append(out, fmt.Sprintf("%s on %s, %d on %s", count(len(a.Rows), "row"), an, len(b.Rows), bn))
 	}
 	if a.Columns != nil && b.Columns != nil && len(a.Columns) != len(b.Columns) {
-		return append(out, fmt.Sprintf("%d columns on %s, %d on %s", len(a.Columns), an, len(b.Columns), bn))
+		return append(out, fmt.Sprintf("%s on %s, %d on %s", count(len(a.Columns), "column"), an, len(b.Columns), bn))
 	}
 	if sorted && rowsEqual(sortedRows(a.Rows), sortedRows(b.Rows)) {
 		return append(out, "the same rows in a different order (NULL sorts differently, or rows that tie in ORDER BY came in another order)")

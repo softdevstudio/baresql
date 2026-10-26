@@ -34,9 +34,9 @@ queries.sql:17:12: warning: 80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333
 queries.sql:20:12: error: DATEDIFF() works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [function-not-everywhere]
     DATEDIFF('2026-06-01', issued_on)
     No form works on all four engines; julianday(a) - julianday(b) on SQLite, a - b on PostgreSQL.
-queries.sql:26:44: error: LIMIT 1, 2 works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [limit-comma]
+queries.sql:26:44: error: LIMIT offset, count works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [limit-comma]
     LIMIT 2, 2
-    Write LIMIT 2 OFFSET 1, which all four accept.
+    Write LIMIT count OFFSET offset, which all four accept: LIMIT 1, 2 becomes LIMIT 2 OFFSET 1.
 queries.sql:29:8: error: GROUP_CONCAT() works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [function-not-everywhere]
     GROUP_CONCAT(name ORDER BY name SEPARATOR ', ')
     No form works on all four engines; STRING_AGG(x, ',') on PostgreSQL.
