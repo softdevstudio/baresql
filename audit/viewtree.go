@@ -579,7 +579,8 @@ func viewNeeds(evAction string) ([]colRef, error) {
 		switch {
 		case n.typ == "RTEPERMISSIONINFO": // 16 and later
 			addNeeds(n, &out)
-		case n.typ == "RANGETBLENTRY" && n.field("requiredPerms") != nil && n.int("rtekind") == 0: // before 16
+		case (n.typ == "RANGETBLENTRY" || n.typ == "RTE") && n.field("requiredPerms") != nil && n.int("rtekind") == 0:
+			// Before 16; 13 and 14 call the node RTE.
 			addNeeds(n, &out)
 		}
 		for _, f := range n.fields {
