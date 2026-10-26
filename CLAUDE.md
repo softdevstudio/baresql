@@ -38,9 +38,16 @@ Layout:
 - `test/demo`: SQL of the demo projects the site uses (shop.sql, an app
   tested on SQLite, a MySQL app moving to PostgreSQL); `test/results`:
   what `scripts/record-results.sh` writes (never edit by hand).
+- `site`: the generator of baresql.com. `site/src` holds the hand-written
+  pages, posts and config with markers for values from `test/results`,
+  `site/rules_site.py` the title and opening of each rule post; `python3
+  site/build.py` writes a checkout of the site repo (default
+  `../baresql.com`, or BARESQL_SITE) and `python3 site/check.py` checks it
+  (site/README.md).
 
 Site repo: github.com/photozeitgeist/baresql.com (Hugo, Launch template,
-content and config values only; never touch the theme).
+content and config values only; never touch the theme). Its content is
+generated: edit `site/src`, never the site repo's content.
 
 ## Workflow (low maintenance)
 
@@ -88,8 +95,9 @@ content and config values only; never touch the theme).
   reaches end of life, change the lists in `.github/workflows/ci.yml`.
 - Every number on the site comes from `test/results/`, written by
   `scripts/dev-engines.sh run scripts/record-results.sh` (about a minute).
-  Re-record after any change that could move a number, and update the site
-  from the new files. The audits there are the fixture tests' own, run by
+  Re-record after any change that could move a number, then regenerate the
+  site (`python3 site/build.py`, `python3 site/check.py`) and push the site
+  repo. The audits there are the fixture tests' own, run by
   `TestRecordResults` in audit and portable. Re-record once more in the
   release commit, after dropping `-dev`, so the sample reports carry the
   released version.

@@ -1,0 +1,181 @@
+baseURL = "https://baresql.com/"
+languageCode = "en-us"
+title = "BareSQL.com"
+theme = "launch"
+
+[pagination]
+  pagerSize = 10
+
+[markup]
+  defaultMarkdownHandler = "goldmark"
+
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[taxonomies]
+  tag = "tags"
+
+[privacy]
+  [privacy.disqus]
+    disable = true
+  [privacy.googleAnalytics]
+    disable = true
+  [privacy.instagram]
+    disable = true
+  [privacy.x]
+    disable = true
+  [privacy.vimeo]
+    disable = true
+  [privacy.youtube]
+    disable = true
+
+[author]
+  name = ""
+
+[params]
+  description = "BareSQL Audit lists every column each PostgreSQL login can read, with the route that gets it there, and marks the personal data. BareSQL Portable finds the SQL that fails or answers differently on SQLite, PostgreSQL, MySQL and MariaDB. Free and open source."
+  author = ""
+  copyright = ""
+  logo = ""
+  recent_copy = "Case studies and SQL differences"
+  mainSections = ["posts"]
+
+[[params.media_partners]]
+  name = "A SoftDevStudio.com project"
+  url  = "https://softdevstudio.com"
+
+[[params.media_partners]]
+  name = "Technologies"
+  url  = "https://technologies.org"
+
+  [[params.media_partners]]
+  name = "Technology Conferences"
+  url  = "https://technologyconference.com"
+
+  [[params.media_partners]]
+  name = "Market Analysis"
+  url  = "https://marketanalysis.com"
+
+  [[params.media_partners]]
+  name = "App Coding"
+  url  = "https://appcoding.com"
+
+  [[params.media_partners]]
+  name = "API Coding"
+  url  = "https://apicoding.com"
+
+# Homepage sections for the launch theme. Delete a block to hide that section.
+[params.hero]
+  badge     = "Version FIG_VERSION, free and open source"
+  badge_url = "/download/"
+  title     = "See who can read your data and where your SQL breaks"
+  subtitle  = "BareSQL Audit lists every column each PostgreSQL login can read, with the route that gets it there, and marks the personal data. BareSQL Portable finds the SQL that answers differently on SQLite, PostgreSQL, MySQL and MariaDB and says what to write instead. Both come in one small program."
+  image      = "/images/hero-report.png"
+  image_alt  = "The top of the BareSQL Audit report for the sample shop database: two high, four medium and no low findings, seven logins that read personal data and ten columns that hold it, a note on how the audit logged in and read the catalogs, then the first findings, led by a newsletter table that every role can read."
+  image_link = "/sample-reports/"
+
+  [[params.hero.buttons]]
+    name = "Quick start"
+    url  = "/quick-start/"
+
+  [[params.hero.buttons]]
+    name = "BareSQL Audit"
+    url  = "/audit/"
+
+  [[params.hero.buttons]]
+    name = "BareSQL Portable"
+    url  = "/portable/"
+
+[params.figures]
+  note = "FIGURES_NOTE"
+
+  [[params.figures.items]]
+    value = "FIG_RULES"
+    label = "SQL differences BareSQL Portable checks, each run on all four engines"
+
+  [[params.figures.items]]
+    value = "FIG_ANSWERS"
+    label = "Answers recorded from the real SQLite, PostgreSQL, MySQL and MariaDB engines"
+
+  [[params.figures.items]]
+    value = "FIG_SCALE"
+    label = "To audit FIG_TABLES tables and FIG_LOGINS logins, sampling values, on FIG_CPUS CPUs"
+
+  [[params.figures.items]]
+    value = "FIG_VERSIONS"
+    label = "Database server versions every change is tested on, PostgreSQL 13 to 18 among them"
+
+[params.cta]
+  title  = "Questions or ideas?"
+  text   = "If BareSQL nearly fits your database or your project, or you'd like a check it doesn't do yet, write in."
+  button = "Contact"
+  url    = "/contact/"
+
+[permalinks]
+  posts = "/:title"
+  pages = "/:title"
+
+[menu]
+  [[menu.main]]
+    identifier = "audit"
+    name       = "Audit"
+    url        = "/audit/"
+    weight     = 1
+  [[menu.main]]
+    identifier = "portable"
+    name       = "Portable"
+    url        = "/portable/"
+    weight     = 2
+  [[menu.main]]
+    identifier = "quick-start"
+    name       = "Quick Start"
+    url        = "/quick-start/"
+    weight     = 3
+  [[menu.main]]
+    identifier = "sample-reports"
+    name       = "Sample Reports"
+    url        = "/sample-reports/"
+    weight     = 4
+  [[menu.main]]
+    identifier = "reference"
+    name       = "Reference"
+    url        = "/reference/"
+    weight     = 5
+  [[menu.main]]
+    identifier = "github"
+    name       = "GitHub"
+    url        = "https://github.com/softdevstudio/baresql"
+    weight     = 6
+  [[menu.main]]
+    identifier = "about"
+    name       = "About"
+    url        = "/about/"
+    weight     = 7
+  [[menu.main]]
+    identifier = "contact"
+    name       = "Contact"
+    url        = "/contact/"
+    weight     = 8
+  [[menu.main]]
+    identifier = "download"
+    name       = "Download"
+    url        = "/download/"
+    weight     = 9
+    [menu.main.params]
+      button = true
+  [[menu.footer]]
+    identifier = "rss"
+    name       = "RSS"
+    url        = "/index.xml"
+    weight     = 8
+  [[menu.footer]]
+    identifier = "sitemap"
+    name       = "Sitemap"
+    url        = "/sitemap.xml"
+    weight     = 9
+  [[menu.footer]]
+    identifier = "archive"
+    name       = "Archive"
+    url        = "/archive/"
+    weight     = 10

@@ -8,3 +8,4 @@ test.log
 fuzz.log
 .ci-certs/
 *.got
+__pycache__/
