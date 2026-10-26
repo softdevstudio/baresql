@@ -1,0 +1,4 @@
+shop: 7 logins; 126 readable login-columns, 34 of them personal data; findings 2 high, 4 medium, 0 low; facts checked exactly: 114 on 13, 162 on 14, 162 on 15, 162 on 16, 162 on 17, 162 on 18
+saas: 4 logins; 51 readable login-columns, 10 of them personal data; findings 1 high, 1 medium, 1 low; facts checked exactly: 64 on 13, 64 on 14, 76 on 15, 76 on 16, 76 on 17, 76 on 18
+clinic: 9 logins; 84 readable login-columns, 38 of them personal data; findings 1 high, 3 medium, 1 low; facts checked exactly: 73 on 13, 73 on 14, 73 on 15, 97 on 16, 97 on 17, 97 on 18
+clean: 2 logins; 13 readable login-columns, 2 of them personal data; findings 0 high, 0 medium, 0 low; facts checked exactly: 17 on 13, 17 on 14, 17 on 15, 17 on 16, 17 on 17, 17 on 18

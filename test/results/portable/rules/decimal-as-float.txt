@@ -1,0 +1,32 @@
+decimal-as-float (info): DECIMAL on SQLite
+
+SQLite stores DECIMAL and NUMERIC values as floating point numbers, so sums of
+prices pick up rounding errors the other engines do not have.
+
+PostgreSQL, MySQL and MariaDB keep DECIMAL values exact, so the sum of 0.1 and
+0.2 equals 0.3 there. SQLite has no exact decimal type: it stores 0.1 as the
+nearest binary fraction, the sum is 0.30000000000000004, and the comparison is
+false.
+
+Given:
+    CREATE TABLE prices (price DECIMAL(10, 2));
+    INSERT INTO prices VALUES (0.1), (0.2)
+
+Example:
+    SELECT SUM(price) = 0.3 FROM prices
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT ROUND(SUM(price), 2) = 0.3 FROM prices
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Compare rounded values, ROUND(x, 2) = 0.3, or keep amounts as integers in the
+smallest unit, such as cents.

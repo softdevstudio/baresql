@@ -1,0 +1,414 @@
+{
+  "tool": "baresql",
+  "version": "0.1.0-dev",
+  "generated": "2026-10-26T12:00:00Z",
+  "server": {
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "version_num": 160015,
+    "database": "baresql_fx_clean",
+    "target": "postgres://postgres@127.0.0.1:5432/baresql_fx_clean",
+    "tls": false,
+    "auth": "md5",
+    "auditor": "postgres",
+    "auditor_is_superuser": true
+  },
+  "settings": {
+    "sampled": true,
+    "sample_rows": 200,
+    "schemas": [
+      "app",
+      "public",
+      "reports"
+    ],
+    "logins": [
+      "clean_app",
+      "clean_reports"
+    ]
+  },
+  "relations": [
+    {
+      "name": "app.customers",
+      "kind": "table",
+      "owner": "clean_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        }
+      ]
+    },
+    {
+      "name": "app.orders",
+      "kind": "table",
+      "owner": "clean_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer"
+        },
+        {
+          "name": "total",
+          "type": "numeric(10,2)"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        }
+      ]
+    },
+    {
+      "name": "reports.daily_sales",
+      "kind": "view",
+      "owner": "clean_owner",
+      "sampled": false,
+      "columns": [
+        {
+          "name": "day",
+          "type": "date",
+          "sources": [
+            "app.orders.created_at"
+          ]
+        },
+        {
+          "name": "orders",
+          "type": "bigint"
+        },
+        {
+          "name": "revenue",
+          "type": "numeric",
+          "sources": [
+            "app.orders.total"
+          ]
+        }
+      ]
+    }
+  ],
+  "logins": [
+    {
+      "name": "clean_app",
+      "attributes": [],
+      "member_of": null,
+      "password": "scram-sha-256",
+      "read": [
+        {
+          "relation": "app.customers",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.customers",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.customers",
+          "kind": "table",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.customers",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "column": "customer_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "column": "total",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        }
+      ],
+      "write": [
+        {
+          "relation": "app.customers",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.customers",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_app"
+            }
+          ]
+        }
+      ],
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 2,
+        "columns": 8,
+        "personal_columns": 2,
+        "personal_tables": 1,
+        "categories": [
+          "email",
+          "name"
+        ],
+        "writable_tables": 2,
+        "personal_writable": 1
+      }
+    },
+    {
+      "name": "clean_reports",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "column": "total",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "reports.daily_sales",
+                  "owner": "clean_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "app.orders",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "reports.daily_sales",
+                  "owner": "clean_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "reports.daily_sales",
+          "kind": "view",
+          "column": "day",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_reports"
+            }
+          ]
+        },
+        {
+          "relation": "reports.daily_sales",
+          "kind": "view",
+          "column": "orders",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_reports"
+            }
+          ]
+        },
+        {
+          "relation": "reports.daily_sales",
+          "kind": "view",
+          "column": "revenue",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_reports"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "reports.order_count()",
+          "owner": "clean_counter",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clean_reports"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 2,
+        "columns": 5,
+        "personal_columns": 0,
+        "personal_tables": 0,
+        "categories": [],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    }
+  ],
+  "public": {
+    "name": "PUBLIC",
+    "attributes": [],
+    "member_of": null,
+    "read": [],
+    "write": null,
+    "functions": null,
+    "server": null,
+    "foreign_servers": null,
+    "summary": {
+      "relations": 0,
+      "columns": 0,
+      "personal_columns": 0,
+      "personal_tables": 0,
+      "categories": [],
+      "writable_tables": 0,
+      "personal_writable": 0
+    }
+  },
+  "default_privileges": [],
+  "findings": [],
+  "not_seen": [],
+  "mismatches": []
+}

@@ -1,0 +1,64 @@
+Compared on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14.
+
+shop.sql:5  SELECT name FROM products WHERE name = 'mug'
+  0 rows on SQLite and PostgreSQL, 1 on MySQL and MariaDB
+  SQLite and PostgreSQL: no rows
+  MySQL and MariaDB: 'Mug'
+  lint: text-compare-case
+
+shop.sql:6  SELECT name || ' (' || stock || ')' FROM products ORDER BY id
+  SQLite and PostgreSQL: 3 rows
+      'Mug (10)'
+      'mug lid (0)'
+      NULL
+  MySQL and MariaDB: 3 rows
+      1
+      0
+      NULL
+  MySQL warned: '|| as a synonym for OR' is deprecated and will be removed in a future release. Please use OR ins...; Truncated incorrect DOUBLE value: 'Mug'; Truncated incorrect DOUBLE value: ' (' (and 3 more)
+  MariaDB warned: Truncated incorrect DECIMAL value: 'Mug'; Truncated incorrect DOUBLE value: ' ('; Truncated incorrect DECIMAL value: 'mug lid' (and 2 more)
+  lint: pipes-concat
+
+shop.sql:7  SELECT SUM(stock) / COUNT(*) FROM products
+  SQLite and PostgreSQL: 3
+  MySQL and MariaDB: 3.3333
+  lint: integer-division, division-by-zero
+
+shop.sql:8  SELECT name FROM products ORDER BY stock
+  the same rows in a different order
+  SQLite, MySQL and MariaDB: 3 rows
+      'Teapot'
+      'mug lid'
+      'Mug'
+  PostgreSQL: 3 rows
+      'mug lid'
+      'Mug'
+      'Teapot'
+  lint: null-order
+
+shop.sql:9  SELECT COUNT(*) FROM products WHERE active = 1
+  refused by PostgreSQL, answered by SQLite, MySQL and MariaDB
+  SQLite, MySQL and MariaDB: 2
+  PostgreSQL: error: operator does not exist: boolean = integer
+  lint: boolean-as-number
+
+shop.sql:10  SELECT name, price FROM products GROUP BY active
+  refused by PostgreSQL and MySQL, answered by SQLite and MariaDB
+  SQLite and MariaDB: 2 rows
+      'mug lid', 2.25
+      'Mug', 7.5
+  PostgreSQL: error: column "products.name" must appear in the GROUP BY clause or be used in an aggregate function
+  MySQL: error: Expression #1 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'baresql_compare.products.name' which is not functionally dependent ...
+  lint: ungrouped-column
+
+shop.sql:12  SELECT IFNULL(stock, 0) FROM products ORDER BY id
+  refused by PostgreSQL, answered by SQLite, MySQL and MariaDB
+  SQLite, MySQL and MariaDB: 3 rows
+      10
+      0
+      0
+  PostgreSQL: error: function ifnull(integer, integer) does not exist
+  lint: function-not-everywhere
+
+11 statements: 2 answered alike, 7 differ, 2 skipped.
+baresql rules <code> explains each lint code above.

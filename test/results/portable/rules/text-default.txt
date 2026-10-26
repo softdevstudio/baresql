@@ -1,0 +1,29 @@
+text-default (error): DEFAULT on TEXT columns
+
+MySQL refuses a plain DEFAULT value on TEXT, BLOB and JSON columns; SQLite,
+PostgreSQL and MariaDB accept it.
+
+MySQL 8.0.13 and later accept a default written as an expression in
+parentheses, DEFAULT ('a'), which the other three engines accept as well.
+
+Example:
+    CREATE TABLE t (id INTEGER, x TEXT DEFAULT 'a');
+    INSERT INTO t (id) VALUES (1);
+    SELECT x FROM t
+
+    SQLite 3.45.1        'a'
+    PostgreSQL 16.15     'a'
+    MySQL 8.0.46         error: BLOB, TEXT, GEOMETRY or JSON column 'x' can't have a default value
+    MariaDB 10.11.14     'a'
+
+The same on every engine:
+    CREATE TABLE t (id INTEGER, x TEXT DEFAULT ('a'));
+    INSERT INTO t (id) VALUES (1);
+    SELECT x FROM t
+
+    SQLite 3.45.1        'a'
+    PostgreSQL 16.15     'a'
+    MySQL 8.0.46         'a'
+    MariaDB 10.11.14     'a'
+
+Put the default in parentheses, DEFAULT ('a'), or use VARCHAR(n).

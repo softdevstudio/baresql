@@ -1,0 +1,37 @@
+returning (error): RETURNING
+
+INSERT ... RETURNING works on SQLite, PostgreSQL and MariaDB; MySQL refuses
+it.
+
+SQLite added RETURNING in version 3.35, and MariaDB in 10.5 for INSERT and
+DELETE (MariaDB refuses it on UPDATE). Each engine also has its own function
+for the last generated id: LAST_INSERT_ID() on MySQL and MariaDB,
+last_insert_rowid() on SQLite and lastval() on PostgreSQL.
+
+Given:
+    CREATE TABLE t (id INTEGER, x INTEGER)
+
+Example:
+    INSERT INTO t VALUES (1, 5) RETURNING id
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    INSERT INTO t VALUES (1, 5);
+    SELECT id FROM t WHERE x = 5
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Read the new id through the driver, which has a call for it on every engine,
+or select the row again by a unique key after the insert.
+
+                     SQLite PostgreSQL MySQL MariaDB
+INSERT ... RETURNING yes    yes        no    yes
+UPDATE ... RETURNING yes    yes        no    no
+DELETE ... RETURNING yes    yes        no    yes

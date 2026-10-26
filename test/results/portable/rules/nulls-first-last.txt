@@ -1,0 +1,30 @@
+nulls-first-last (error): NULLS FIRST and NULLS LAST
+
+NULLS FIRST and NULLS LAST work on SQLite and PostgreSQL; MySQL and MariaDB
+refuse them.
+
+SQLite added them in version 3.30. MySQL and MariaDB have no syntax for
+choosing where NULL sorts.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1), (NULL), (2)
+
+Example:
+    SELECT x FROM t ORDER BY x NULLS LAST
+
+    SQLite 3.45.1        1; 2; NULL
+    PostgreSQL 16.15     1; 2; NULL
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the...
+
+The same on every engine:
+    SELECT x FROM t ORDER BY x IS NULL, x
+
+    SQLite 3.45.1        1; 2; NULL
+    PostgreSQL 16.15     1; 2; NULL
+    MySQL 8.0.46         1; 2; NULL
+    MariaDB 10.11.14     1; 2; NULL
+
+Sort on x IS NULL first: ORDER BY x IS NULL, x for NULLS LAST and ORDER BY x
+IS NOT NULL, x for NULLS FIRST.

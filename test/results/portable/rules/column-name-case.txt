@@ -1,0 +1,26 @@
+column-name-case (warning): Upper-case column names
+
+PostgreSQL lowers the case of unquoted names, so SELECT 1 AS Total returns a
+column named total there and Total elsewhere.
+
+SQLite, MySQL and MariaDB return names as written. PostgreSQL folds unquoted
+names to lower case, in aliases and in CREATE TABLE alike, so code that reads
+columns by name (row["Total"]) finds nothing on PostgreSQL.
+
+Example:
+    SELECT 1 AS Total
+
+    SQLite 3.45.1        columns Total: 1
+    PostgreSQL 16.15     columns total: 1
+    MySQL 8.0.46         columns Total: 1
+    MariaDB 10.11.14     columns Total: 1
+
+The same on every engine:
+    SELECT 1 AS total
+
+    SQLite 3.45.1        columns total: 1
+    PostgreSQL 16.15     columns total: 1
+    MySQL 8.0.46         columns total: 1
+    MariaDB 10.11.14     columns total: 1
+
+Use lower-case names for columns and aliases.

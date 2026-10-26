@@ -1,0 +1,20 @@
+queries.sql:4:1: error: INSERT OR IGNORE works on SQLite only; PostgreSQL, MySQL and MariaDB refuse it. [insert-ignore]
+    INSERT OR IGNORE
+    Insert from a SELECT that checks first: INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). When two sessions insert the same row at once, the unique key still stops the second one, with an error instead of a skip.
+queries.sql:11:31: error: PostgreSQL has no = between a boolean and a number. [boolean-as-number]
+    is_admin = 1
+    Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All four engines accept them.
+queries.sql:20:23: error: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
+    b.starts_at
+    Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).
+queries.sql:24:12: error: DATE(x, modifier) works on SQLite only; PostgreSQL, MySQL and MariaDB refuse it. [function-not-everywhere]
+    date(starts_at, '+' || nights || ' days')
+    No form works on all four engines; d + INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB.
+queries.sql:27:8: error: STRFTIME() works on SQLite only; PostgreSQL, MySQL and MariaDB refuse it. [function-not-everywhere]
+    strftime('%Y-%m', starts_at)
+    No form works on all four engines; TO_CHAR() on PostgreSQL and DATE_FORMAT() on MySQL and MariaDB.
+queries.sql:34:62: error: PostgreSQL refuses the text '240.00' for the INTEGER column price_cents; MySQL and MariaDB round it to a whole number, and SQLite keeps a fraction as it is. [type-not-enforced]
+    '240.00'
+    Run the tests on the production engine as well, or check values in the application before they reach the database.
+
+6 problems: 6 errors. 3 notes not shown (differences that depend on the data); --all shows them.

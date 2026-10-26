@@ -1,0 +1,30 @@
+count-distinct-columns (error): COUNT(DISTINCT a, b)
+
+COUNT(DISTINCT a, b) counts pairs on MySQL and MariaDB; SQLite and PostgreSQL
+take one expression only.
+
+SQLite reports the wrong number of arguments and PostgreSQL a missing
+function.
+
+Given:
+    CREATE TABLE t (a INTEGER, b INTEGER);
+    INSERT INTO t VALUES (1, 1), (1, 1), (1, 2)
+
+Example:
+    SELECT COUNT(DISTINCT a, b) FROM t
+
+    SQLite 3.45.1        error: wrong number of arguments to function COUNT()
+    PostgreSQL 16.15     error: function count(integer, integer) does not exist
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+The same on every engine:
+    SELECT COUNT(*) FROM (SELECT DISTINCT a, b FROM t) AS s
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+Count the rows of a DISTINCT subquery: SELECT COUNT(*) FROM (SELECT DISTINCT
+a, b FROM t) AS s.

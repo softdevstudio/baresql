@@ -1,0 +1,22 @@
+lower-non-ascii (info): LOWER and UPPER outside A to Z
+
+SQLite's LOWER and UPPER change only the letters A to Z, so LOWER('ÉCOLE') is
+'École' there and 'école' elsewhere.
+
+SQLite folds case for ASCII letters only, and so do its LIKE and COLLATE
+NOCASE, unless it is built with the ICU extension, as some systems ship it.
+Comparisons that use LOWER() to ignore case work on the other engines and fail
+on SQLite for names like Émile or Ødegaard.
+
+Example:
+    SELECT LOWER('ÉCOLE')
+
+    SQLite 3.45.1        'École'
+    PostgreSQL 16.15     'école'
+    MySQL 8.0.46         'école'
+    MariaDB 10.11.14     'école'
+
+Fold case in the application before storing or comparing, or keep a lower-case
+copy of the column.
+
+The SQLite answers assume a build with ASCII-only case folding.

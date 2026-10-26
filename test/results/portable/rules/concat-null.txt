@@ -1,0 +1,32 @@
+concat-null (warning): CONCAT with a NULL argument
+
+CONCAT skips NULL arguments on SQLite and PostgreSQL. On MySQL and MariaDB one
+NULL makes the whole result NULL.
+
+A person without a last name comes out as 'Ann ' on SQLite and PostgreSQL and
+as NULL on MySQL and MariaDB, so a list of names quietly loses entries there.
+CONCAT_WS skips NULL arguments on all four engines.
+
+Given:
+    CREATE TABLE people (first_name VARCHAR(20), last_name VARCHAR(20));
+    INSERT INTO people VALUES ('Ann', NULL)
+
+Example:
+    SELECT CONCAT(first_name, ' ', last_name) FROM people
+
+    SQLite 3.45.1        'Ann '
+    PostgreSQL 16.15     'Ann '
+    MySQL 8.0.46         NULL
+    MariaDB 10.11.14     NULL
+
+The same on every engine:
+    SELECT CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) FROM people
+
+    SQLite 3.45.1        'Ann '
+    PostgreSQL 16.15     'Ann '
+    MySQL 8.0.46         'Ann '
+    MariaDB 10.11.14     'Ann '
+
+Wrap every argument that can be NULL in COALESCE(x, '').
+
+These answers need SQLite 3.44 or later.

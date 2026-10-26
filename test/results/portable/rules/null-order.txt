@@ -1,0 +1,33 @@
+null-order (info): Where NULL sorts
+
+SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts
+it last.
+
+The standard leaves the place of NULL in ORDER BY to the engine. PostgreSQL
+treats NULL as larger than every value, the others as smaller, and descending
+order turns both around. Pages of results, top-ten lists and window functions
+such as ROW_NUMBER() OVER (ORDER BY x) all change when the column holds NULL.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1), (NULL), (2)
+
+Example:
+    SELECT x FROM t ORDER BY x
+
+    SQLite 3.45.1        NULL; 1; 2
+    PostgreSQL 16.15     1; 2; NULL
+    MySQL 8.0.46         NULL; 1; 2
+    MariaDB 10.11.14     NULL; 1; 2
+
+The same on every engine:
+    SELECT x FROM t ORDER BY x IS NULL, x
+
+    SQLite 3.45.1        1; 2; NULL
+    PostgreSQL 16.15     1; 2; NULL
+    MySQL 8.0.46         1; 2; NULL
+    MariaDB 10.11.14     1; 2; NULL
+
+Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine,
+and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not
+work on MySQL and MariaDB.

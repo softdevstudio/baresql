@@ -1,0 +1,27 @@
+like-case (info): LIKE and letter case
+
+LIKE ignores letter case on SQLite, MySQL and MariaDB and respects it on
+PostgreSQL.
+
+SQLite's LIKE ignores case for the letters A to Z only. MySQL and MariaDB
+follow the collation, which ignores case by default. PostgreSQL's LIKE is
+exact; its ILIKE ignores case, and exists on PostgreSQL only.
+
+Example:
+    SELECT 'abc' LIKE 'ABC'
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     false
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT LOWER('abc') LIKE LOWER('ABC')
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Write LOWER(x) LIKE LOWER(pattern), or a pattern that is already in lower
+case, to ignore case on all four.

@@ -1,0 +1,26 @@
+dash-comment (warning): -- comments need a space on MySQL
+
+On MySQL and MariaDB, -- starts a comment only when a space follows it, so
+SELECT 1 --1 is 2 there and 1 elsewhere.
+
+SQLite and PostgreSQL treat every -- as the start of a comment. MySQL and
+MariaDB need a space, a tab or a line break after the dashes; otherwise they
+are two minus signs.
+
+Example:
+    SELECT 1 --1
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+The same on every engine:
+    SELECT 1 -- 1
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Put a space after --.

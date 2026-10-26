@@ -1,0 +1,31 @@
+truncate (error): TRUNCATE
+
+SQLite has no TRUNCATE; PostgreSQL, MySQL and MariaDB have it.
+
+SQLite empties a table quickly with a DELETE FROM t that has no WHERE clause.
+On MySQL and MariaDB, TRUNCATE also resets the AUTO_INCREMENT counter, which
+DELETE leaves alone.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1)
+
+Example:
+    TRUNCATE TABLE t;
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        error: near "TRUNCATE": syntax error
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+The same on every engine:
+    DELETE FROM t;
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Use DELETE FROM t.

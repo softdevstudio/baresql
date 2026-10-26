@@ -1,0 +1,30 @@
+pipes-concat (warning): || joins text on some engines only
+
+|| joins text on SQLite and PostgreSQL. On MySQL and MariaDB it means OR, so
+'a' || 'b' is 0.
+
+The SQL standard joins strings with ||, and SQLite and PostgreSQL follow it.
+MySQL and MariaDB read || as a logical OR unless the server runs in the
+PIPES_AS_CONCAT mode, so both strings are turned into numbers and the answer
+is 0. The warnings they give for it seldom reach the application.
+
+Example:
+    SELECT 'a' || 'b'
+
+    SQLite 3.45.1        'ab'
+    PostgreSQL 16.15     'ab'
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+The same on every engine:
+    SELECT CONCAT('a', 'b')
+
+    SQLite 3.45.1        'ab'
+    PostgreSQL 16.15     'ab'
+    MySQL 8.0.46         'ab'
+    MariaDB 10.11.14     'ab'
+
+Use CONCAT(a, b), which all four engines have (SQLite from version 3.44).
+CONCAT treats NULL differently on different engines; see concat-null.
+
+These answers need SQLite 3.44 or later.

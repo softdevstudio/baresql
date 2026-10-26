@@ -1,0 +1,29 @@
+alias-in-having (error): Select-list names in HAVING
+
+SQLite, MySQL and MariaDB let HAVING use a name given in the select list;
+PostgreSQL refuses it.
+
+PostgreSQL looks up names in HAVING among the table's columns only, so HAVING
+n > 1 fails when n is the name of COUNT(*).
+
+Given:
+    CREATE TABLE t (a INTEGER);
+    INSERT INTO t VALUES (1), (1), (2)
+
+Example:
+    SELECT a, COUNT(*) AS n FROM t GROUP BY a HAVING n > 1
+
+    SQLite 3.45.1        1, 2
+    PostgreSQL 16.15     error: column "n" does not exist
+    MySQL 8.0.46         1, 2
+    MariaDB 10.11.14     1, 2
+
+The same on every engine:
+    SELECT a, COUNT(*) AS n FROM t GROUP BY a HAVING COUNT(*) > 1
+
+    SQLite 3.45.1        1, 2
+    PostgreSQL 16.15     1, 2
+    MySQL 8.0.46         1, 2
+    MariaDB 10.11.14     1, 2
+
+Repeat the aggregate: HAVING COUNT(*) > 1.

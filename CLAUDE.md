@@ -30,10 +30,14 @@ Layout:
 - `audit`: BareSQL Audit; `audit/testdata`: fixture databases with exact
   expectations per PostgreSQL version.
 - `portable`: BareSQL Portable. `catalog.json` (written by hand: every
-  rule's text, example and rewrite), `answers.json` (written by
-  `BARESQL_RECORD=1 go test ./portable -run 'TestCatalog$'` with all four
-  engines), `rules.go` (one check per rule, in catalog order).
+  rule's text, example and rewrite, and a row with a probe for each form
+  a rule flags), `answers.json` (written by `BARESQL_RECORD=1 go test
+  ./portable -run 'TestCatalog$'` with all four engines), `rules.go` (one
+  check per rule, in catalog order).
 - `cmd/baresql`: CLI.
+- `test/demo`: SQL of the demo projects the site uses (shop.sql, an app
+  tested on SQLite, a MySQL app moving to PostgreSQL); `test/results`:
+  what `scripts/record-results.sh` writes (never edit by hand).
 
 Site repo: github.com/photozeitgeist/baresql.com (Hugo, Launch template,
 content and config values only; never touch the theme).
@@ -66,7 +70,11 @@ content and config values only; never touch the theme).
   check in `portable/rules.go` at the same place in the order. Record its
   answers with `scripts/dev-engines.sh run env BARESQL_RECORD=1 go test
   ./portable -run 'TestCatalog$'`. `TestCatalogRules` checks that lint
-  flags each example and not its rewrite. When a CI engine version answers
+  flags each example and not its rewrite, flags each row's probe as that
+  row (rules with several forms call `hitForm` with the row's name, so
+  `--engines` and the message use the row's answers), and that severities
+  match the answers: error when an engine refuses, otherwise not. A rule's
+  severity is its catalog entry's. When a CI engine version answers
   differently, its annotation prints the key to add to answers.json by hand
   (recording keeps such keys): `"mysql 8.4"` for one release line,
   `"mysql >=9.6"` from a version on (find the version that changed it in
@@ -79,8 +87,12 @@ content and config values only; never touch the theme).
   MariaDB 10.11, 11.4, 11.8 and 12.3. When a version is released or
   reaches end of life, change the lists in `.github/workflows/ci.yml`.
 - Every number on the site comes from `test/results/`, written by
-  `scripts/record-results.sh`. Re-record after any change that could move
-  a number, and update the site from the new files.
+  `scripts/dev-engines.sh run scripts/record-results.sh` (about a minute).
+  Re-record after any change that could move a number, and update the site
+  from the new files. The audits there are the fixture tests' own, run by
+  `TestRecordResults` in audit and portable. Re-record once more in the
+  release commit, after dropping `-dev`, so the sample reports carry the
+  released version.
 - An independent review agent looks at code and site before a release is
   called done.
 - main is the default branch. No side branches.
@@ -101,10 +113,13 @@ content and config values only; never touch the theme).
 
 0.1.0 in development (started 2026-10-26). Done: repo setup, CI with one
 job per engine version, release workflow; pgwire and mysqlwire; BareSQL
-Audit (audit, diff, --baseline, report.html, audit.json, four fixtures);
-BareSQL Portable (lint with 58 rules, compare, rules, the catalog recorded
-on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14);
-README as the manual; smoke.sh exercises every command.
+Audit (audit, diff, --baseline, report.html, audit.json, four fixtures;
+views checked the way PostgreSQL checks them, including views that fail);
+BareSQL Portable (lint with 58 rules and 191 catalog rows, compare, rules,
+the catalog recorded on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46,
+MariaDB 10.11.14 and green on every CI version); README as the manual;
+smoke.sh exercises every command; test/results recorded (step 5: the
+independent review is next).
 
 ## Gaps and to-do
 

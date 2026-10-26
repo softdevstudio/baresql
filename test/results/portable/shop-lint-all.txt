@@ -1,0 +1,32 @@
+shop.sql:2:72: info: SQLite stores DECIMAL values as floating point numbers, so sums and comparisons can be off in the last digits. [decimal-as-float]
+    DECIMAL(10, 2)
+    Compare rounded values, ROUND(x, 2) = 0.3, or keep amounts as integers in the smallest unit, such as cents.
+shop.sql:5:33: info: MySQL and MariaDB compare text without regard to letter case or accents by default; SQLite and PostgreSQL compare it exactly. [text-compare-case]
+    name = 'mug'
+    Compare LOWER(a) = LOWER(b) where case should not matter, and store values in one case. No form makes MySQL compare exactly without naming a collation, and collation names differ on every engine.
+shop.sql:6:8: warning: || joins text on SQLite and PostgreSQL. On MySQL and MariaDB it means OR, so 'a' || 'b' is 0. [pipes-concat]
+    name || ' (' || stock || ')'
+    Use CONCAT(a, b), which all four engines have (SQLite from version 3.44). CONCAT treats NULL differently on different engines; see concat-null.
+shop.sql:7:8: warning: Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL; MySQL and MariaDB keep it. [integer-division]
+    SUM(stock) / COUNT(*)
+    Multiply one side by 1.0 for the fraction and round it to the places you need (see decimal-division): ROUND(7 * 1.0 / 2, 2) is 3.5 on every engine. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.
+shop.sql:7:8: info: 1 / 0 is NULL on SQLite, MySQL and MariaDB and an error on PostgreSQL. [division-by-zero]
+    SUM(stock) / COUNT(*)
+    Divide by NULLIF(d, 0): every engine then answers NULL when d is 0.
+shop.sql:8:36: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    stock
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+shop.sql:9:37: error: PostgreSQL has no = between a boolean and a number. [boolean-as-number]
+    active = 1
+    Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All four engines accept them.
+shop.sql:10:8: error: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
+    name
+    Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).
+shop.sql:10:14: error: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
+    price
+    Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).
+shop.sql:12:8: error: IFNULL() works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [function-not-everywhere]
+    IFNULL(stock, 0)
+    Use COALESCE(a, b).
+
+10 problems: 4 errors, 2 warnings, 4 notes.

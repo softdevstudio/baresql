@@ -1,0 +1,106 @@
+function-not-everywhere (error): Functions that exist on some engines only
+
+Many everyday functions are missing on at least one engine: IFNULL on
+PostgreSQL, LEFT and NOW on SQLite, STRING_AGG on MySQL and MariaDB.
+
+Each function in the table was called on all four engines, and the table shows
+where the call ran and what to write instead.
+
+Example:
+    SELECT IFNULL(NULL, 'x')
+
+    SQLite 3.45.1        'x'
+    PostgreSQL 16.15     error: function ifnull(unknown, unknown) does not exist
+    MySQL 8.0.46         'x'
+    MariaDB 10.11.14     'x'
+
+The same on every engine:
+    SELECT COALESCE(NULL, 'x')
+
+    SQLite 3.45.1        'x'
+    PostgreSQL 16.15     'x'
+    MySQL 8.0.46         'x'
+    MariaDB 10.11.14     'x'
+
+Prefer the functions all four engines have: COALESCE, NULLIF, CASE, SUBSTR,
+REPLACE, TRIM, UPPER, LOWER, ABS, ROUND, and CONCAT (SQLite from 3.44).
+
+                  SQLite PostgreSQL MySQL MariaDB
+IFNULL            yes    no         yes   yes     Use COALESCE(a, b).
+NVL               no     no         no    yes     Use COALESCE(a, b).
+IF                no     no         yes   yes     Use CASE WHEN c THEN a ELSE b END. The SQLite answer holds before 3.48.
+IIF               yes    no         no    no      Use CASE WHEN c THEN a ELSE b END.
+ISNULL            no     no         yes   yes     Use x IS NULL.
+NOW               no     yes        yes   yes     Use CURRENT_TIMESTAMP.
+CURDATE           no     no         yes   yes     Use CURRENT_DATE.
+CURTIME           no     no         yes   yes     Use CURRENT_TIME.
+SYSDATE           no     no         yes   yes     Use CURRENT_TIMESTAMP.
+LEFT              no     yes        yes   yes     Use SUBSTR(x, 1, n).
+RIGHT             no     yes        yes   yes     No form works on all four engines; SUBSTR(x, LENGTH(x) - n + 1) works for ASCII text.
+CHAR_LENGTH       no     yes        yes   yes     No form works on all four engines; LENGTH counts characters on SQLite (see length-bytes).
+CHARACTER_LENGTH  no     yes        yes   yes     No form works on all four engines; LENGTH counts characters on SQLite (see length-bytes).
+POSITION          no     yes        yes   yes     No form works on all four engines; INSTR(s, x) on SQLite, MySQL and MariaDB.
+STRPOS            no     yes        no    no      No form works on all four engines; INSTR(s, x) on SQLite, MySQL and MariaDB.
+LOCATE            no     no         yes   yes     No form works on all four engines; INSTR(s, x) on SQLite, MySQL and MariaDB, POSITION(x IN s) on PostgreSQL.
+INSTR             yes    no         yes   yes     No form works on all four engines; POSITION(x IN s) on PostgreSQL.
+LPAD              no     yes        yes   yes     No form works on all four engines; pad in the application, or with printf() on SQLite.
+RPAD              no     yes        yes   yes     No form works on all four engines; pad in the application, or with printf() on SQLite.
+REPEAT            no     yes        yes   yes     No form works on all four engines; build the text in the application.
+REVERSE           no     yes        yes   yes     No form works on all four engines; reverse the text in the application.
+SPACE             no     no         yes   yes     Write the spaces as a literal.
+SUBSTRING_INDEX   no     no         yes   yes     No form works on all four engines; split the text in the application.
+SPLIT_PART        no     yes        no    no      No form works on all four engines; split the text in the application.
+INITCAP           no     yes        no    no      Change the case in the application.
+TRANSLATE         no     yes        no    no      Use one REPLACE per character.
+STRING_AGG        yes    yes        no    no      No form works on all four engines; GROUP_CONCAT(x) on SQLite, MySQL and MariaDB. The SQLite answer holds from 3.44.
+GROUP_CONCAT      yes    no         yes   yes     No form works on all four engines; STRING_AGG(x, ',') on PostgreSQL.
+ARRAY_AGG         no     yes        no    no      No form works on all four engines; GROUP_CONCAT on SQLite, MySQL and MariaDB.
+RAND              no     no         yes   yes     No form works on all four engines; RANDOM() on SQLite and PostgreSQL.
+RANDOM            yes    yes        no    no      No form works on all four engines; RAND() on MySQL and MariaDB.
+TRUNC             yes    yes        no    no      No form works on all four engines; TRUNCATE(x, 0) on MySQL and MariaDB. MariaDB's own TRUNC, from 12.2, truncates dates and answers NULL for a number. The SQLite answer holds with math functions. The MariaDB answer holds before 12.2.
+TRUNCATE          no     no         yes   yes     No form works on all four engines; TRUNC(x, d) on PostgreSQL; ROUND(x, d) rounds on all four.
+DATE_FORMAT       no     no         yes   yes     No form works on all four engines; strftime() on SQLite and TO_CHAR() on PostgreSQL, or format dates in the application.
+TO_CHAR           no     yes        no    yes     No form works on all four engines; strftime() on SQLite and DATE_FORMAT() on MySQL, or format dates in the application.
+STRFTIME          yes    no         no    no      No form works on all four engines; TO_CHAR() on PostgreSQL and DATE_FORMAT() on MySQL and MariaDB.
+DATE_ADD          no     no         yes   yes     No form works on all four engines; d + INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB, date(d, '+1 day') on SQLite.
+DATE_SUB          no     no         yes   yes     No form works on all four engines; d - INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB, date(d, '-1 day') on SQLite.
+DATEDIFF          no     no         yes   yes     No form works on all four engines; julianday(a) - julianday(b) on SQLite, a - b on PostgreSQL.
+TIMESTAMPDIFF     no     no         yes   yes     No form works on all four engines; julianday() on SQLite, date subtraction on PostgreSQL.
+EXTRACT           no     yes        yes   yes     No form works on all four engines; strftime('%Y', d) on SQLite.
+DATE_PART         no     yes        no    no      Use EXTRACT on PostgreSQL, MySQL and MariaDB.
+DATE_TRUNC        no     yes        no    no      No form works on all four engines; truncate dates in the application.
+JULIANDAY         yes    no         no    no      No form works on all four engines; it exists on SQLite only.
+DATE(x, modifier) yes    no         no    no      No form works on all four engines; d + INTERVAL '1' DAY on PostgreSQL, MySQL and MariaDB.
+DATETIME          yes    no         no    no      No form works on all four engines; CAST(x AS TIMESTAMP) on PostgreSQL and CAST(x AS DATETIME) on MySQL and MariaDB.
+UNIX_TIMESTAMP    no     no         yes   yes     No form works on all four engines; unixepoch() on SQLite, EXTRACT(EPOCH FROM t) on PostgreSQL.
+UNIXEPOCH         yes    no         no    no      No form works on all four engines; UNIX_TIMESTAMP() on MySQL and MariaDB, EXTRACT(EPOCH FROM t) on PostgreSQL.
+FROM_UNIXTIME     no     no         yes   yes     No form works on all four engines; TO_TIMESTAMP() on PostgreSQL, datetime(n, 'unixepoch') on SQLite.
+TO_TIMESTAMP      no     yes        no    no      No form works on all four engines; FROM_UNIXTIME() on MySQL and MariaDB, datetime(n, 'unixepoch') on SQLite.
+STR_TO_DATE       no     no         yes   yes     Keep dates as ISO text (YYYY-MM-DD) and use DATE(x).
+TO_DATE           no     yes        no    no      Keep dates as ISO text (YYYY-MM-DD) and use DATE(x). The MariaDB answer holds before 12.3.
+YEAR              no     no         yes   yes     No form works on all four engines; EXTRACT(YEAR FROM d) on PostgreSQL, MySQL and MariaDB, strftime('%Y', d) on SQLite.
+MONTH             no     no         yes   yes     No form works on all four engines; EXTRACT(MONTH FROM d) on PostgreSQL, MySQL and MariaDB, strftime('%m', d) on SQLite.
+DAY               no     no         yes   yes     No form works on all four engines; EXTRACT(DAY FROM d) on PostgreSQL, MySQL and MariaDB, strftime('%d', d) on SQLite.
+DAYOFWEEK         no     no         yes   yes     No form works on all four engines; EXTRACT(DOW FROM d) on PostgreSQL, strftime('%w', d) on SQLite.
+LAST_INSERT_ID    no     no         yes   yes     Read the new id through the driver.
+LAST_INSERT_ROWID yes    no         no    no      Read the new id through the driver.
+REGEXP_REPLACE    no     yes        yes   yes     No form works on all four engines; SQLite has no regular expression replace.
+REGEXP_LIKE       no     yes        yes   no      No form works on all four engines; REGEXP on SQLite's shell, MySQL and MariaDB, ~ on PostgreSQL. The PostgreSQL answer holds from 15.
+MD5               no     yes        yes   yes     Hash in the application. MySQL 9.6 moved MD5 into its optional legacy hashing component. The MySQL answer holds before 9.6.
+SHA2              no     no         yes   yes     Hash in the application.
+UUID              no     no         yes   yes     Generate ids in the application.
+GEN_RANDOM_UUID   no     yes        no    no      Generate ids in the application.
+HEX               yes    no         yes   yes     No form works on all four engines; encode(x, 'hex') on PostgreSQL.
+UNHEX             yes    no         yes   yes     No form works on all four engines; decode(x, 'hex') on PostgreSQL.
+CHR               no     yes        no    yes     No form works on all four engines; CHAR(n) on SQLite and MySQL, where MySQL returns bytes.
+ASCII             no     yes        yes   yes     No form works on all four engines; unicode() on SQLite.
+UNICODE           yes    no         no    no      No form works on all four engines; ASCII() on PostgreSQL, MySQL and MariaDB.
+TYPEOF            yes    no         no    no      No form works on all four engines; it exists on SQLite only.
+JSON_EXTRACT      yes    no         yes   yes     No form works on all four engines; the -> and ->> operators on PostgreSQL.
+STDDEV            no     yes        yes   yes     No form works on all four engines; compute it from SUM and COUNT, or in the application.
+VARIANCE          no     yes        yes   yes     No form works on all four engines; compute it from SUM and COUNT, or in the application.
+BOOL_AND          no     yes        no    no      Use MIN(CASE WHEN x THEN 1 ELSE 0 END) = 1.
+EVERY             no     yes        no    no      Use MIN(CASE WHEN x THEN 1 ELSE 0 END) = 1.
+BIT_AND           no     yes        yes   yes     No form works on all four engines; SQLite has no bitwise aggregates.
+CONVERT           no     no         yes   yes     Use CAST (see cast-to-number and cast-to-text).
+TOTAL             yes    no         no    no      Use COALESCE(SUM(x), 0).

@@ -1,0 +1,7 @@
+BareSQL Audit of baresql_fx_shop (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)) as postgres
+2 logins, 2 of them can read personal data; 10 columns hold personal data.
+Findings: 1 high, 2 medium, 0 low
+  high   public-reads-personal        shop.newsletter
+  medium default-grants-to-public     shop_owner
+  medium secdef-executable            shop.count_orders()
+Wrote baresql-report/report.html and baresql-report/audit.json

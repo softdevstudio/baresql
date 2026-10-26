@@ -1,0 +1,26 @@
+division-by-zero (info): Division by zero
+
+1 / 0 is NULL on SQLite, MySQL and MariaDB and an error on PostgreSQL.
+
+PostgreSQL stops the whole statement. SQLite, MySQL and MariaDB answer NULL,
+MySQL and MariaDB with a warning, and in INSERT and UPDATE with an error when
+the strict mode includes ERROR_FOR_DIVISION_BY_ZERO (the default). The
+remainder operator % behaves the same way.
+
+Example:
+    SELECT 1 / 0
+
+    SQLite 3.45.1        NULL
+    PostgreSQL 16.15     error: division by zero
+    MySQL 8.0.46         NULL
+    MariaDB 10.11.14     NULL
+
+The same on every engine:
+    SELECT 1 / NULLIF(0, 0)
+
+    SQLite 3.45.1        NULL
+    PostgreSQL 16.15     NULL
+    MySQL 8.0.46         NULL
+    MariaDB 10.11.14     NULL
+
+Divide by NULLIF(d, 0): every engine then answers NULL when d is 0.

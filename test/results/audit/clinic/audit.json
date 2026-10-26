@@ -1,0 +1,2046 @@
+{
+  "tool": "baresql",
+  "version": "0.1.0-dev",
+  "generated": "2026-10-26T12:00:00Z",
+  "server": {
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "version_num": 160015,
+    "database": "baresql_fx_clinic",
+    "target": "postgres://postgres@127.0.0.1:5432/baresql_fx_clinic",
+    "tls": false,
+    "auth": "md5",
+    "auditor": "postgres",
+    "auditor_is_superuser": true
+  },
+  "settings": {
+    "sampled": true,
+    "sample_rows": 200,
+    "schemas": [
+      "clinic",
+      "public"
+    ],
+    "logins": [
+      "clinic_auditor",
+      "clinic_billing",
+      "clinic_drsmith",
+      "clinic_frontdesk",
+      "clinic_hr",
+      "clinic_it",
+      "clinic_lab",
+      "clinic_locum",
+      "clinic_research"
+    ]
+  },
+  "relations": [
+    {
+      "name": "clinic.appointments",
+      "kind": "table",
+      "owner": "clinic_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "patient_id",
+          "type": "integer"
+        },
+        {
+          "name": "starts_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "room",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "clinic.diagnosis_stats",
+      "kind": "materialized view",
+      "owner": "clinic_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "diagnosis",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data",
+              "comes from clinic.visits.diagnosis"
+            ]
+          },
+          "sources": [
+            "clinic.visits.diagnosis"
+          ]
+        },
+        {
+          "name": "visits",
+          "type": "bigint"
+        }
+      ]
+    },
+    {
+      "name": "clinic.lab_results",
+      "kind": "table",
+      "owner": "clinic_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "patient_id",
+          "type": "integer"
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "personal": {
+            "categories": [
+              "email",
+              "name"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "JSON key patient.email holds email address in 20 of 20 sampled values",
+              "JSON key patient.email (in 20 of 20 sampled values) is named like email address",
+              "JSON key patient.name (in 20 of 20 sampled values) is named like person's name"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clinic.patients",
+      "kind": "table",
+      "owner": "clinic_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "first_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        },
+        {
+          "name": "last_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        },
+        {
+          "name": "date_of_birth",
+          "type": "date",
+          "personal": {
+            "categories": [
+              "birth-date"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are plausible dates of birth"
+            ]
+          }
+        },
+        {
+          "name": "national_id",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "national-id"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are national ID numbers (es-dni)"
+            ]
+          }
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          }
+        },
+        {
+          "name": "home_address",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "address"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests postal address"
+            ]
+          }
+        },
+        {
+          "name": "insurance_number",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "insurance-id"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests insurance number"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clinic.visits",
+      "kind": "partitioned table",
+      "owner": "clinic_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "patient_id",
+          "type": "integer"
+        },
+        {
+          "name": "visit_date",
+          "type": "date"
+        },
+        {
+          "name": "diagnosis",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "clinic.visits_2025",
+      "kind": "partition",
+      "owner": "clinic_owner",
+      "sampled": false,
+      "partition_of": "clinic.visits",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "patient_id",
+          "type": "integer"
+        },
+        {
+          "name": "visit_date",
+          "type": "date"
+        },
+        {
+          "name": "diagnosis",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "clinic.visits_2026",
+      "kind": "partition",
+      "owner": "clinic_owner",
+      "sampled": false,
+      "partition_of": "clinic.visits",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "patient_id",
+          "type": "integer"
+        },
+        {
+          "name": "visit_date",
+          "type": "date"
+        },
+        {
+          "name": "diagnosis",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "logins": [
+    {
+      "name": "clinic_auditor",
+      "attributes": [],
+      "member_of": [
+        "clinic_doctor (no set)"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "starts_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "room",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "payload",
+          "personal": {
+            "categories": [
+              "email",
+              "name"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "JSON key patient.email holds email address in 20 of 20 sampled values",
+              "JSON key patient.email (in 20 of 20 sampled values) is named like email address",
+              "JSON key patient.name (in 20 of 20 sampled values) is named like person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "date_of_birth",
+          "personal": {
+            "categories": [
+              "birth-date"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are plausible dates of birth"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "national_id",
+          "personal": {
+            "categories": [
+              "national-id"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are national ID numbers (es-dni)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "home_address",
+          "personal": {
+            "categories": [
+              "address"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests postal address"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "insurance_number",
+          "personal": {
+            "categories": [
+              "insurance-id"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests insurance number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "visit_date",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "diagnosis",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "notes",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 4,
+        "columns": 21,
+        "personal_columns": 10,
+        "personal_tables": 3,
+        "categories": [
+          "address",
+          "birth-date",
+          "email",
+          "health",
+          "insurance-id",
+          "name",
+          "national-id",
+          "phone"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_billing",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_billing",
+              "grantable": true
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_billing",
+              "grantable": true
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "insurance_number",
+          "personal": {
+            "categories": [
+              "insurance-id"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests insurance number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_billing",
+              "grantable": true
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 1,
+        "columns": 3,
+        "personal_columns": 2,
+        "personal_tables": 1,
+        "categories": [
+          "email",
+          "insurance-id"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_drsmith",
+      "attributes": [],
+      "member_of": [
+        "clinic_doctor"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "starts_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "room",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "via": [
+                "clinic_doctor"
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "payload",
+          "personal": {
+            "categories": [
+              "email",
+              "name"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "JSON key patient.email holds email address in 20 of 20 sampled values",
+              "JSON key patient.email (in 20 of 20 sampled values) is named like email address",
+              "JSON key patient.name (in 20 of 20 sampled values) is named like person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "date_of_birth",
+          "personal": {
+            "categories": [
+              "birth-date"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are plausible dates of birth"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "national_id",
+          "personal": {
+            "categories": [
+              "national-id"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are national ID numbers (es-dni)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "home_address",
+          "personal": {
+            "categories": [
+              "address"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests postal address"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "insurance_number",
+          "personal": {
+            "categories": [
+              "insurance-id"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests insurance number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "visit_date",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "diagnosis",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "notes",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 4,
+        "columns": 21,
+        "personal_columns": 10,
+        "personal_tables": 3,
+        "categories": [
+          "address",
+          "birth-date",
+          "email",
+          "health",
+          "insurance-id",
+          "name",
+          "national-id",
+          "phone"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_frontdesk",
+      "attributes": [],
+      "member_of": [
+        "clinic_staff"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "starts_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "room",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_frontdesk"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_frontdesk"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_frontdesk"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "clinic_frontdesk"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 2,
+        "columns": 8,
+        "personal_columns": 3,
+        "personal_tables": 1,
+        "categories": [
+          "name",
+          "phone"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_hr",
+      "attributes": [],
+      "member_of": [
+        "clinic_doctor (no inherit, no set, admin)"
+      ],
+      "password": "none",
+      "read": [],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 0,
+        "columns": 0,
+        "personal_columns": 0,
+        "personal_tables": 0,
+        "categories": [],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_it",
+      "attributes": [
+        "createrole"
+      ],
+      "member_of": [
+        "pg_read_server_files"
+      ],
+      "password": "none",
+      "read": [],
+      "write": null,
+      "functions": [
+        {
+          "function": "pg_read_file(text)",
+          "owner": "postgres",
+          "security_definer": false,
+          "search_path_set": false,
+          "server_access": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_it"
+            }
+          ]
+        }
+      ],
+      "server": [
+        {
+          "capability": "read-server-files",
+          "routes": [
+            {
+              "kind": "function",
+              "role": "pg_read_file(text)"
+            },
+            {
+              "kind": "predefined",
+              "role": "pg_read_server_files"
+            }
+          ]
+        }
+      ],
+      "foreign_servers": null,
+      "summary": {
+        "relations": 0,
+        "columns": 0,
+        "personal_columns": 0,
+        "personal_tables": 0,
+        "categories": [],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_lab",
+      "attributes": [],
+      "member_of": null,
+      "password": "md5",
+      "read": [
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_lab"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_lab"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "payload",
+          "personal": {
+            "categories": [
+              "email",
+              "name"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "JSON key patient.email holds email address in 20 of 20 sampled values",
+              "JSON key patient.email (in 20 of 20 sampled values) is named like email address",
+              "JSON key patient.name (in 20 of 20 sampled values) is named like person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_lab"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": [
+        {
+          "server": "clinic_lab_server",
+          "fdw": "clinic_fdw",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_lab"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "relations": 1,
+        "columns": 3,
+        "personal_columns": 1,
+        "personal_tables": 1,
+        "categories": [
+          "email",
+          "name"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_locum",
+      "attributes": [],
+      "member_of": [
+        "clinic_doctor (no inherit)"
+      ],
+      "can_set_role": [
+        "clinic_doctor",
+        "clinic_staff"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_doctor"
+            },
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_doctor"
+            },
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "starts_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_doctor"
+            },
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.appointments",
+          "kind": "table",
+          "column": "room",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_doctor"
+            },
+            {
+              "kind": "grant",
+              "role": "clinic_staff",
+              "set_role": "clinic_staff"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.lab_results",
+          "kind": "table",
+          "column": "payload",
+          "personal": {
+            "categories": [
+              "email",
+              "name"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "JSON key patient.email holds email address in 20 of 20 sampled values",
+              "JSON key patient.email (in 20 of 20 sampled values) is named like email address",
+              "JSON key patient.name (in 20 of 20 sampled values) is named like person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "date_of_birth",
+          "personal": {
+            "categories": [
+              "birth-date"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are plausible dates of birth"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "national_id",
+          "personal": {
+            "categories": [
+              "national-id"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are national ID numbers (es-dni)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "home_address",
+          "personal": {
+            "categories": [
+              "address"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests postal address"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.patients",
+          "kind": "table",
+          "column": "insurance_number",
+          "personal": {
+            "categories": [
+              "insurance-id"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests insurance number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "visit_date",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "diagnosis",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits",
+          "kind": "partitioned table",
+          "column": "notes",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_doctor",
+              "set_role": "clinic_doctor"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 4,
+        "columns": 21,
+        "personal_columns": 10,
+        "personal_tables": 3,
+        "categories": [
+          "address",
+          "birth-date",
+          "email",
+          "health",
+          "insurance-id",
+          "name",
+          "national-id",
+          "phone"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "clinic_research",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "clinic.diagnosis_stats",
+          "kind": "materialized view",
+          "column": "diagnosis",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data",
+              "comes from clinic.visits.diagnosis"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.diagnosis_stats",
+          "kind": "materialized view",
+          "column": "visits",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits_2025",
+          "kind": "partition",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits_2025",
+          "kind": "partition",
+          "column": "patient_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits_2025",
+          "kind": "partition",
+          "column": "visit_date",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits_2025",
+          "kind": "partition",
+          "column": "diagnosis",
+          "personal": {
+            "categories": [
+              "health"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests health data"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        },
+        {
+          "relation": "clinic.visits_2025",
+          "kind": "partition",
+          "column": "notes",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "clinic_research"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 2,
+        "columns": 7,
+        "personal_columns": 2,
+        "personal_tables": 2,
+        "categories": [
+          "health"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    }
+  ],
+  "public": {
+    "name": "PUBLIC",
+    "attributes": [],
+    "member_of": null,
+    "read": [],
+    "write": null,
+    "functions": null,
+    "server": null,
+    "foreign_servers": null,
+    "summary": {
+      "relations": 0,
+      "columns": 0,
+      "personal_columns": 0,
+      "personal_tables": 0,
+      "categories": [],
+      "writable_tables": 0,
+      "personal_writable": 0
+    }
+  },
+  "default_privileges": [],
+  "findings": [
+    {
+      "code": "server-file-access",
+      "severity": "high",
+      "subject": "clinic_it",
+      "message": "clinic_it can read files on the database server.",
+      "details": [
+        "may run pg_read_file(text)",
+        "member of pg_read_server_files"
+      ]
+    },
+    {
+      "code": "admin-option",
+      "severity": "medium",
+      "subject": "clinic_hr",
+      "message": "clinic_hr can make any role a member of clinic_doctor, which reads personal data."
+    },
+    {
+      "code": "grant-option-personal",
+      "severity": "medium",
+      "subject": "clinic_billing",
+      "message": "clinic_billing may grant read access to personal data to other roles.",
+      "details": [
+        "clinic.patients.email",
+        "clinic.patients.insurance_number"
+      ]
+    },
+    {
+      "code": "md5-passwords",
+      "severity": "medium",
+      "subject": "logins",
+      "message": "1 logins have MD5 password hashes, which are weak and deprecated.",
+      "details": [
+        "clinic_lab"
+      ]
+    },
+    {
+      "code": "foreign-server-mapping",
+      "severity": "low",
+      "subject": "clinic_lab",
+      "message": "clinic_lab can use foreign server clinic_lab_server (clinic_fdw) through a user mapping."
+    }
+  ],
+  "not_seen": [],
+  "mismatches": []
+}

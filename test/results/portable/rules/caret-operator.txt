@@ -1,0 +1,28 @@
+caret-operator (error): The ^ operator
+
+2 ^ 3 is 8 on PostgreSQL, where ^ is a power, 1 on MySQL and MariaDB, where it
+is a bitwise exclusive or, and an error on SQLite.
+
+PostgreSQL raises the left side to the power of the right one. MySQL and
+MariaDB combine the bits of both numbers. SQLite has no ^ operator.
+
+Example:
+    SELECT 2 ^ 3
+
+    SQLite 3.45.1        error: unrecognized token: "^"
+    PostgreSQL 16.15     8
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT POWER(2, 3)
+
+    SQLite 3.45.1        8.0
+    PostgreSQL 16.15     8
+    MySQL 8.0.46         8
+    MariaDB 10.11.14     8
+
+Use POWER(a, b), which all four engines have (SQLite when it is built with its
+math functions).
+
+The SQLite answers assume a build with math functions.

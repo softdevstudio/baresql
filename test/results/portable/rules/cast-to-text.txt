@@ -1,0 +1,35 @@
+cast-to-text (warning): CAST to text
+
+CAST(123 AS CHAR) is '1' on PostgreSQL, where CHAR means CHAR(1), and '123'
+elsewhere; no text type works in CAST on all four engines.
+
+PostgreSQL reads CHAR without a length as CHAR(1) and cuts the value to fit.
+With a length, CHAR(10), it pads the value with spaces. MySQL accepts CHAR in
+CAST but neither VARCHAR nor TEXT, and MariaDB accepts VARCHAR but not TEXT.
+
+Example:
+    SELECT CAST(123 AS CHAR)
+
+    SQLite 3.45.1        '123'
+    PostgreSQL 16.15     '1'
+    MySQL 8.0.46         '123'
+    MariaDB 10.11.14     '123'
+
+The same on every engine:
+    SELECT CONCAT(123)
+
+    SQLite 3.45.1        '123'
+    PostgreSQL 16.15     '123'
+    MySQL 8.0.46         '123'
+    MariaDB 10.11.14     '123'
+
+CONCAT(x) with one argument turns a value into text on all four engines
+(SQLite from version 3.44).
+
+        SQLite PostgreSQL MySQL MariaDB
+CHAR    '123'  '1'        '123' '123'
+CHAR(n) '123'  '123 '     '123' '123'
+VARCHAR yes    yes        no    yes
+TEXT    yes    yes        no    no
+
+These answers need SQLite 3.44 or later.

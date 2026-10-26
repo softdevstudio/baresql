@@ -1,0 +1,40 @@
+cast-to-number (error): CAST to an integer or a decimal
+
+CAST(5.7 AS INTEGER) is 5 on SQLite, 6 on PostgreSQL and MariaDB, and an error
+on MySQL, which wants SIGNED.
+
+SQLite drops the fraction and PostgreSQL and MariaDB round it. MySQL takes
+only SIGNED and UNSIGNED as integer types in CAST, and PostgreSQL refuses
+both. Decimals differ as well: SQLite ignores the scale of CAST(x AS
+DECIMAL(10, 1)) and keeps every digit, and MySQL and MariaDB read DECIMAL
+without a precision as DECIMAL(10, 0), a whole number.
+
+Example:
+    SELECT CAST(5.7 AS INTEGER)
+
+    SQLite 3.45.1        5
+    PostgreSQL 16.15     6
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     6
+
+The same on every engine:
+    SELECT ROUND(5.7)
+
+    SQLite 3.45.1        6.0
+    PostgreSQL 16.15     6
+    MySQL 8.0.46         6
+    MariaDB 10.11.14     6
+
+Round on purpose with ROUND(x) or ROUND(x, digits), which every engine has.
+
+              SQLite PostgreSQL MySQL MariaDB
+INTEGER       5      6          no    6
+INT           5      6          no    6
+BIGINT        yes    yes        no    no
+SMALLINT      yes    yes        no    no
+TINYINT       yes    no         no    no
+SIGNED        5.7    no         6     6
+UNSIGNED      5.7    no         6     6
+NUMERIC       yes    yes        no    no
+DECIMAL       5.75   5.75       6     6
+DECIMAL(p, s) 5.75   5.8        5.8   5.8

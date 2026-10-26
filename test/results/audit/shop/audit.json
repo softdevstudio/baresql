@@ -1,0 +1,2909 @@
+{
+  "tool": "baresql",
+  "version": "0.1.0-dev",
+  "generated": "2026-10-26T12:00:00Z",
+  "server": {
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "version_num": 160015,
+    "database": "baresql_fx_shop",
+    "target": "postgres://postgres@127.0.0.1:5432/baresql_fx_shop",
+    "tls": false,
+    "auth": "md5",
+    "auditor": "postgres",
+    "auditor_is_superuser": true
+  },
+  "settings": {
+    "sampled": true,
+    "sample_rows": 200,
+    "schemas": [
+      "public",
+      "shop",
+      "support"
+    ],
+    "logins": [
+      "shop_alice",
+      "shop_analyst",
+      "shop_app",
+      "shop_bob",
+      "shop_etl",
+      "shop_intern",
+      "shop_reporting"
+    ]
+  },
+  "relations": [
+    {
+      "name": "shop.api_credentials",
+      "kind": "table",
+      "owner": "shop_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "service",
+          "type": "text"
+        },
+        {
+          "name": "credential",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "secret"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "4 of 4 sampled values look like random tokens",
+              "4 of 4 sampled values contain a key or token"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "shop.customers",
+      "kind": "table",
+      "owner": "shop_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "first_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        },
+        {
+          "name": "last_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are phone numbers"
+            ]
+          }
+        },
+        {
+          "name": "city",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        },
+        {
+          "name": "card_number",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are payment card numbers (valid check digit)"
+            ]
+          }
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "1 of 40 sampled values contain an email address"
+            ]
+          }
+        },
+        {
+          "name": "marketing_opt_in",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "shop.newsletter",
+      "kind": "table",
+      "owner": "shop_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "subscribed_at",
+          "type": "date"
+        }
+      ]
+    },
+    {
+      "name": "shop.orders",
+      "kind": "table",
+      "owner": "shop_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "customer_id",
+          "type": "integer"
+        },
+        {
+          "name": "total",
+          "type": "numeric(10,2)"
+        },
+        {
+          "name": "tracking_number",
+          "type": "text"
+        },
+        {
+          "name": "shipped_at",
+          "type": "date"
+        }
+      ]
+    },
+    {
+      "name": "shop.products",
+      "kind": "table",
+      "owner": "shop_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "name",
+          "type": "text"
+        },
+        {
+          "name": "sku",
+          "type": "text"
+        },
+        {
+          "name": "price",
+          "type": "numeric(10,2)"
+        }
+      ]
+    },
+    {
+      "name": "shop.users",
+      "kind": "table",
+      "owner": "shop_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "username",
+          "type": "text"
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "password"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are password hashes"
+            ]
+          }
+        },
+        {
+          "name": "last_login_ip",
+          "type": "inet",
+          "personal": {
+            "categories": [
+              "ip-address"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are IP addresses"
+            ]
+          }
+        },
+        {
+          "name": "email_verified",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "support.customer_lookup",
+      "kind": "view",
+      "owner": "shop_owner",
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "shop.customers.id"
+          ]
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from shop.customers.first_name",
+              "comes from shop.customers.last_name"
+            ],
+            "derived": true
+          },
+          "sources": [
+            "shop.customers.first_name",
+            "shop.customers.last_name"
+          ]
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.email"
+            ]
+          },
+          "sources": [
+            "shop.customers.email"
+          ]
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.phone"
+            ]
+          },
+          "sources": [
+            "shop.customers.phone"
+          ]
+        },
+        {
+          "name": "card_number",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.card_number"
+            ]
+          },
+          "sources": [
+            "shop.customers.card_number"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "support.order_status",
+      "kind": "view",
+      "owner": "shop_owner",
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "shop.orders.id"
+          ]
+        },
+        {
+          "name": "shipped_at",
+          "type": "date",
+          "sources": [
+            "shop.orders.shipped_at"
+          ]
+        },
+        {
+          "name": "tracking_number",
+          "type": "text",
+          "sources": [
+            "shop.orders.tracking_number"
+          ]
+        }
+      ]
+    }
+  ],
+  "logins": [
+    {
+      "name": "shop_alice",
+      "attributes": [],
+      "member_of": [
+        "shop_support_team"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are payment card numbers (valid check digit)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "customer_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from shop.customers.first_name",
+              "comes from shop.customers.last_name"
+            ],
+            "derived": true
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.email"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.phone"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.card_number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 5,
+        "columns": 20,
+        "personal_columns": 6,
+        "personal_tables": 2,
+        "categories": [
+          "card",
+          "email",
+          "name",
+          "phone"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "shop_analyst",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "city",
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "customer_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "total",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "name",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "sku",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "price",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_analyst"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 4,
+        "columns": 15,
+        "personal_columns": 1,
+        "personal_tables": 1,
+        "categories": [
+          "email"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "shop_app",
+      "attributes": [],
+      "member_of": null,
+      "password": "scram-sha-256",
+      "read": [
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "city",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are payment card numbers (valid check digit)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "notes",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "1 of 40 sampled values contain an email address"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "marketing_opt_in",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "customer_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "total",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "name",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "sku",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "price",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "username",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "password_hash",
+          "personal": {
+            "categories": [
+              "password"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are password hashes"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "last_login_ip",
+          "personal": {
+            "categories": [
+              "ip-address"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are IP addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "email_verified",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        }
+      ],
+      "write": [
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_app"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "columns": [
+            "password_hash",
+            "last_login_ip"
+          ],
+          "personal": true,
+          "routes": [
+            {
+              "kind": "column-grant",
+              "role": "shop_app"
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 5,
+        "columns": 27,
+        "personal_columns": 9,
+        "personal_tables": 3,
+        "categories": [
+          "card",
+          "email",
+          "ip-address",
+          "name",
+          "password",
+          "phone"
+        ],
+        "writable_tables": 3,
+        "personal_writable": 2
+      }
+    },
+    {
+      "name": "shop_bob",
+      "attributes": [
+        "noinherit"
+      ],
+      "member_of": [
+        "shop_support_team (no inherit)"
+      ],
+      "can_set_role": [
+        "shop_support_team"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are payment card numbers (valid check digit)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "view",
+              "set_role": "shop_support_team",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "customer_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from shop.customers.first_name",
+              "comes from shop.customers.last_name"
+            ],
+            "derived": true
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.email"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.phone"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.card_number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_support_team",
+              "set_role": "shop_support_team"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 5,
+        "columns": 20,
+        "personal_columns": 6,
+        "personal_tables": 2,
+        "categories": [
+          "card",
+          "email",
+          "name",
+          "phone"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "shop_etl",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "function": "shop.export_customers()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": false,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "shop_etl"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 1,
+        "columns": 3,
+        "personal_columns": 1,
+        "personal_tables": 1,
+        "categories": [
+          "email"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "shop_intern",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 1,
+        "columns": 3,
+        "personal_columns": 1,
+        "personal_tables": 1,
+        "categories": [
+          "email"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "shop_reporting",
+      "attributes": [],
+      "member_of": [
+        "pg_read_all_data"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "shop.api_credentials",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.api_credentials",
+          "kind": "table",
+          "column": "service",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.api_credentials",
+          "kind": "table",
+          "column": "credential",
+          "personal": {
+            "categories": [
+              "secret"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "4 of 4 sampled values look like random tokens",
+              "4 of 4 sampled values contain a key or token"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "first_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "last_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "city",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "40 of 40 sampled values are payment card numbers (valid check digit)"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.customer_lookup",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "notes",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "1 of 40 sampled values contain an email address"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.customers",
+          "kind": "table",
+          "column": "marketing_opt_in",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            },
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "25 of 25 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            },
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.newsletter",
+          "kind": "table",
+          "column": "subscribed_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            },
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "customer_id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "total",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.orders",
+          "kind": "table",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.order_status",
+                  "owner": "shop_owner"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "name",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "sku",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.products",
+          "kind": "table",
+          "column": "price",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "username",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "password_hash",
+          "personal": {
+            "categories": [
+              "password"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are password hashes"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "last_login_ip",
+          "personal": {
+            "categories": [
+              "ip-address"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are IP addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "shop.users",
+          "kind": "table",
+          "column": "email_verified",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "customer_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from shop.customers.first_name",
+              "comes from shop.customers.last_name"
+            ],
+            "derived": true
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.email"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.phone"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.customer_lookup",
+          "kind": "view",
+          "column": "card_number",
+          "personal": {
+            "categories": [
+              "card"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from shop.customers.card_number"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "shipped_at",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        },
+        {
+          "relation": "support.order_status",
+          "kind": "view",
+          "column": "tracking_number",
+          "routes": [
+            {
+              "kind": "predefined",
+              "role": "pg_read_all_data"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": [
+        {
+          "function": "shop.count_orders()",
+          "owner": "shop_owner",
+          "security_definer": true,
+          "search_path_set": true,
+          "server_access": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "PUBLIC"
+            }
+          ]
+        }
+      ],
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 8,
+        "columns": 38,
+        "personal_columns": 10,
+        "personal_tables": 4,
+        "categories": [
+          "card",
+          "email",
+          "ip-address",
+          "name",
+          "password",
+          "phone",
+          "secret"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    }
+  ],
+  "public": {
+    "name": "PUBLIC",
+    "attributes": [],
+    "member_of": null,
+    "read": [
+      {
+        "relation": "shop.newsletter",
+        "kind": "table",
+        "column": "id",
+        "routes": [
+          {
+            "kind": "grant",
+            "role": "PUBLIC"
+          }
+        ]
+      },
+      {
+        "relation": "shop.newsletter",
+        "kind": "table",
+        "column": "email",
+        "personal": {
+          "categories": [
+            "email"
+          ],
+          "confidence": "high",
+          "evidence": [
+            "25 of 25 sampled values are email addresses"
+          ]
+        },
+        "routes": [
+          {
+            "kind": "grant",
+            "role": "PUBLIC"
+          }
+        ]
+      },
+      {
+        "relation": "shop.newsletter",
+        "kind": "table",
+        "column": "subscribed_at",
+        "routes": [
+          {
+            "kind": "grant",
+            "role": "PUBLIC"
+          }
+        ]
+      }
+    ],
+    "write": null,
+    "functions": [
+      {
+        "function": "shop.count_orders()",
+        "owner": "shop_owner",
+        "security_definer": true,
+        "search_path_set": true,
+        "server_access": false,
+        "routes": [
+          {
+            "kind": "grant",
+            "role": "PUBLIC"
+          }
+        ]
+      }
+    ],
+    "server": null,
+    "foreign_servers": null,
+    "summary": {
+      "relations": 1,
+      "columns": 3,
+      "personal_columns": 1,
+      "personal_tables": 1,
+      "categories": [
+        "email"
+      ],
+      "writable_tables": 0,
+      "personal_writable": 0
+    }
+  },
+  "default_privileges": [
+    {
+      "creator": "shop_owner",
+      "schema": "shop",
+      "objects": "tables",
+      "privilege": "SELECT",
+      "grantee": "PUBLIC"
+    }
+  ],
+  "findings": [
+    {
+      "code": "public-reads-personal",
+      "severity": "high",
+      "subject": "shop.newsletter",
+      "message": "Every role, including roles created later, can read personal data in shop.newsletter.",
+      "details": [
+        "email (email)"
+      ]
+    },
+    {
+      "code": "secdef-no-search-path",
+      "severity": "high",
+      "subject": "shop.export_customers()",
+      "message": "shop.export_customers() runs with the rights of shop_owner and doesn't set search_path: whoever can run it may be able to make it run their own code."
+    },
+    {
+      "code": "default-grants-to-public",
+      "severity": "medium",
+      "subject": "shop_owner",
+      "message": "New tables that shop_owner creates in schema shop are granted SELECT to PUBLIC."
+    },
+    {
+      "code": "read-all-data",
+      "severity": "medium",
+      "subject": "shop_reporting",
+      "message": "shop_reporting is a member of pg_read_all_data: it reaches every table."
+    },
+    {
+      "code": "secdef-executable",
+      "severity": "medium",
+      "subject": "shop.count_orders()",
+      "message": "shop.count_orders() runs with the rights of shop_owner, who can read 10 personal data columns; it can be run by every role (PUBLIC)."
+    },
+    {
+      "code": "secdef-executable",
+      "severity": "medium",
+      "subject": "shop.export_customers()",
+      "message": "shop.export_customers() runs with the rights of shop_owner, who can read 10 personal data columns; it can be run by shop_etl."
+    }
+  ],
+  "not_seen": [],
+  "mismatches": []
+}

@@ -1,0 +1,28 @@
+index-on-text (error): Keys on TEXT columns
+
+MySQL refuses an index, unique key or primary key on a TEXT or BLOB column
+without a prefix length, and MariaDB refuses the primary key.
+
+SQLite and PostgreSQL index TEXT columns as they are. MySQL wants a prefix
+length, INDEX (x(100)), which the others reject. MariaDB 10.4 and later accept
+plain indexes and unique keys on TEXT columns.
+
+Example:
+    CREATE TABLE t (x TEXT PRIMARY KEY);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         error: BLOB/TEXT column 'x' used in key specification without a key length
+    MariaDB 10.11.14     error: BLOB/TEXT column 'x' used in key specification without a key length
+
+The same on every engine:
+    CREATE TABLE t (x VARCHAR(255) PRIMARY KEY);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Use VARCHAR(n) for columns you index.

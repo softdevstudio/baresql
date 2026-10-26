@@ -1,0 +1,31 @@
+char-padding (info): CHAR(n) and trailing spaces
+
+PostgreSQL pads CHAR(n) values with spaces up to n characters; SQLite, MySQL
+and MariaDB give them back as stored.
+
+A CHAR(5) column holding 'a' returns 'a ' on PostgreSQL. Comparisons there
+ignore the padding, so WHERE c = 'a' still matches, but the spaces reach the
+application and CONCAT. MySQL and MariaDB strip trailing spaces when they read
+CHAR values, and SQLite does not apply the length at all.
+
+Example:
+    CREATE TABLE t (c CHAR(5));
+    INSERT INTO t VALUES ('a');
+    SELECT c FROM t
+
+    SQLite 3.45.1        'a'
+    PostgreSQL 16.15     'a '
+    MySQL 8.0.46         'a'
+    MariaDB 10.11.14     'a'
+
+The same on every engine:
+    CREATE TABLE t (c VARCHAR(5));
+    INSERT INTO t VALUES ('a');
+    SELECT c FROM t
+
+    SQLite 3.45.1        'a'
+    PostgreSQL 16.15     'a'
+    MySQL 8.0.46         'a'
+    MariaDB 10.11.14     'a'
+
+Use VARCHAR(n) unless every value has exactly n characters.

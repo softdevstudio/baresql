@@ -1,0 +1,8 @@
+Compared the audit of 2026-10-12T09:00:00Z with the audit of 2026-10-13T09:00:00Z.
+Reach that grew: 0
+Reach that is gone: 4
+  - read shop_alice shop.customers.card_number (payment card number; through view support.customer_lookup (rights of shop_owner))
+  - read shop_alice support.customer_lookup.card_number (payment card number; granted to shop_support_team)
+  - read shop_bob shop.customers.card_number (payment card number; after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner))
+  - read shop_bob support.customer_lookup.card_number (payment card number; after SET ROLE shop_support_team: granted to shop_support_team)
+Other changes: 0

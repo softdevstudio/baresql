@@ -1,0 +1,28 @@
+type-not-enforced (error): SQLite keeps values that do not fit the column
+
+SQLite stores 'abc' in an INTEGER column and 'abcdef' in a VARCHAR(3) column;
+PostgreSQL, MySQL and MariaDB refuse both.
+
+Column types on SQLite are preferences: a value that does not fit is stored as
+it is, and lengths are never checked. Tests that run on SQLite then pass with
+data the production engine rejects. SQLite's STRICT tables (version 3.37 and
+later) check types but not lengths, and the other engines do not accept the
+STRICT keyword.
+
+Example:
+    CREATE TABLE t (n INTEGER);
+    INSERT INTO t VALUES ('abc');
+    SELECT n FROM t
+
+    SQLite 3.45.1        'abc'
+    PostgreSQL 16.15     error: invalid input syntax for type integer: "abc"
+    MySQL 8.0.46         error: Incorrect integer value: 'abc' for column 'n' at row 1
+    MariaDB 10.11.14     error: Incorrect integer value: 'abc' for column `baresql_compare`.`t`.`n` at row 1
+
+Run the tests on the production engine as well, or check values in the
+application before they reach the database.
+
+                                SQLite PostgreSQL MySQL MariaDB
+text in a number column         yes    no         no    no
+a fraction in an integer column 12.5   no         13    13
+too long for VARCHAR(n)         yes    no         no    no

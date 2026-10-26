@@ -1,0 +1,9 @@
+BareSQL Audit of baresql_fx_clinic (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)) as postgres
+9 logins, 7 of them can read personal data; 13 columns hold personal data.
+Findings: 1 high, 3 medium, 1 low
+  high   server-file-access           clinic_it
+  medium admin-option                 clinic_hr
+  medium grant-option-personal        clinic_billing
+  medium md5-passwords                logins
+  low    foreign-server-mapping       clinic_lab
+Wrote baresql-report/report.html and baresql-report/audit.json

@@ -1,0 +1,50 @@
+default shop_owner shop tables SELECT to PUBLIC
+finding high public-reads-personal shop.newsletter
+finding medium default-grants-to-public shop_owner
+finding medium secdef-executable shop.count_orders()
+function PUBLIC shop.count_orders() granted to PUBLIC
+function shop_alice shop.count_orders() granted to PUBLIC
+function shop_bob shop.count_orders() granted to PUBLIC
+read PUBLIC shop.newsletter.email [email] granted to PUBLIC
+read PUBLIC shop.newsletter.id [-] granted to PUBLIC
+read PUBLIC shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_alice shop.customers.card_number [card] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.email [email] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.first_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.id [-] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.last_name [name] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.customers.phone [phone] through view support.customer_lookup (rights of shop_owner)
+read shop_alice shop.newsletter.email [email] granted to PUBLIC
+read shop_alice shop.newsletter.id [-] granted to PUBLIC
+read shop_alice shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_alice shop.orders.id [-] through view support.order_status (rights of shop_owner)
+read shop_alice shop.orders.shipped_at [-] through view support.order_status (rights of shop_owner)
+read shop_alice shop.orders.tracking_number [-] through view support.order_status (rights of shop_owner)
+read shop_alice support.customer_lookup.card_number [card] granted to shop_support_team
+read shop_alice support.customer_lookup.customer_name [name~] granted to shop_support_team
+read shop_alice support.customer_lookup.email [email] granted to shop_support_team
+read shop_alice support.customer_lookup.id [-] granted to shop_support_team
+read shop_alice support.customer_lookup.phone [phone] granted to shop_support_team
+read shop_alice support.order_status.id [-] granted to shop_support_team
+read shop_alice support.order_status.shipped_at [-] granted to shop_support_team
+read shop_alice support.order_status.tracking_number [-] granted to shop_support_team
+read shop_bob shop.customers.card_number [card] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.email [email] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.first_name [name] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.id [-] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.last_name [name] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.customers.phone [phone] after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)
+read shop_bob shop.newsletter.email [email] granted to PUBLIC
+read shop_bob shop.newsletter.id [-] granted to PUBLIC
+read shop_bob shop.newsletter.subscribed_at [-] granted to PUBLIC
+read shop_bob shop.orders.id [-] after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)
+read shop_bob shop.orders.shipped_at [-] after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)
+read shop_bob shop.orders.tracking_number [-] after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)
+read shop_bob support.customer_lookup.card_number [card] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.customer_name [name~] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.email [email] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.id [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.customer_lookup.phone [phone] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.order_status.id [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.order_status.shipped_at [-] after SET ROLE shop_support_team: granted to shop_support_team
+read shop_bob support.order_status.tracking_number [-] after SET ROLE shop_support_team: granted to shop_support_team

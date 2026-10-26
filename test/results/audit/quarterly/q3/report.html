@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BareSQL Audit: baresql_fx_shop</title>
+<style>
+:root{--ink:#16202b;--muted:#5b6774;--line:#dfe4ea;--bg:#fff;--soft:#f5f7f9;--high:#b3261e;--medium:#b25e09;--low:#4a6a8a;--accent:#0e7c86;--mark:#fff1c2}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:1080px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 10px;padding-top:10px;border-top:2px solid var(--ink)}h3{font-size:16px;margin:24px 0 6px}
+.sub{color:var(--muted);margin:0 0 18px}.mono,code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
+.tile{border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tile b{display:block;font-size:24px}.tile span{color:var(--muted);font-size:13px}
+.tile.sev-high b{color:var(--high)}.tile.sev-medium b{color:var(--medium)}.tile.sev-low b{color:var(--low)}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:10px 14px;border-radius:4px;margin:14px 0}
+.finding{border:1px solid var(--line);border-left:5px solid var(--low);border-radius:6px;padding:12px 14px;margin:10px 0;break-inside:avoid}
+.finding.sev-high{border-left-color:var(--high)}.finding.sev-medium{border-left-color:var(--medium)}
+.finding p{margin:0 0 6px;font-size:15.5px}.meta{color:var(--muted);font-size:13px}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;color:#fff;background:var(--low);margin-right:6px;vertical-align:1px}
+.badge.sev-high{background:var(--high)}.badge.sev-medium{background:var(--medium)}
+.cat{display:inline-block;font-size:12px;padding:0 7px;border-radius:9px;background:var(--mark);margin:1px 3px 1px 0;white-space:nowrap}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:6px 8px}
+th{background:var(--soft);font-weight:600}td.n{text-align:right;white-space:nowrap}
+.wrap{overflow-x:auto}.bad{color:var(--high);font-weight:600}.ok{color:#1d7a3a;font-weight:600}
+ul.routes{margin:0;padding-left:16px}ul.routes li{margin:0}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px}
+@media print{details{display:block}details>*{display:block}summary{display:none}main{padding:0}}
+</style>
+</head>
+<body>
+<main>
+<h1>Access audit of baresql_fx_shop</h1>
+<p class="sub">1 July 2026, 09:00 UTC · PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) · 7 logins · BareSQL 0.1.0-dev</p>
+
+<div class="tiles">
+<div class="tile sev-high"><b>2</b><span>high</span></div>
+<div class="tile sev-medium"><b>4</b><span>medium</span></div>
+<div class="tile sev-low"><b>0</b><span>low</span></div>
+<div class="tile"><b>7</b><span>logins that read personal data</span></div>
+<div class="tile"><b>10</b><span>columns with personal data</span></div>
+</div>
+
+<div class="note">
+BareSQL logged in as <b>postgres</b> (a superuser) over an unencrypted connection and read the system catalogs inside one read-only transaction.
+It read up to 200 rows of each table to see what the columns hold; the values were looked at in memory and are not in this report.
+For every login, the server's own privilege checks were asked about every table and column, and each answer below comes with the grant, membership, ownership or view that gives it.
+</div>
+
+<h2>Findings</h2>
+
+
+<div class="finding sev-high">
+<p><span class="badge sev-high">HIGH</span>Every role, including roles created later, can read personal data in shop.newsletter.</p>
+<div class="meta"><code>public-reads-personal</code> · shop.newsletter</div>
+<details><summary>Details</summary><ul class="routes"><li class="mono">email (email)</li></ul></details>
+</div>
+
+<div class="finding sev-high">
+<p><span class="badge sev-high">HIGH</span>shop.export_customers() runs with the rights of shop_owner and doesn&#39;t set search_path: whoever can run it may be able to make it run their own code.</p>
+<div class="meta"><code>secdef-no-search-path</code> · shop.export_customers()</div>
+
+</div>
+
+<div class="finding sev-medium">
+<p><span class="badge sev-medium">MEDIUM</span>New tables that shop_owner creates in schema shop are granted SELECT to PUBLIC.</p>
+<div class="meta"><code>default-grants-to-public</code> · shop_owner</div>
+
+</div>
+
+<div class="finding sev-medium">
+<p><span class="badge sev-medium">MEDIUM</span>shop_reporting is a member of pg_read_all_data: it reaches every table.</p>
+<div class="meta"><code>read-all-data</code> · shop_reporting</div>
+
+</div>
+
+<div class="finding sev-medium">
+<p><span class="badge sev-medium">MEDIUM</span>shop.count_orders() runs with the rights of shop_owner, who can read 10 personal data columns; it can be run by every role (PUBLIC).</p>
+<div class="meta"><code>secdef-executable</code> · shop.count_orders()</div>
+
+</div>
+
+<div class="finding sev-medium">
+<p><span class="badge sev-medium">MEDIUM</span>shop.export_customers() runs with the rights of shop_owner, who can read 10 personal data columns; it can be run by shop_etl.</p>
+<div class="meta"><code>secdef-executable</code> · shop.export_customers()</div>
+
+</div>
+
+
+<h2>Who can read personal data</h2>
+
+<div class="wrap"><table>
+<tr><th>Login</th><th>Personal data</th><th class="n">Columns</th><th class="n">Tables</th><th class="n">Changes</th><th>Notes</th></tr>
+<tr><td><a href="#login-shop_reporting">shop_reporting</a></td><td><span class="cat">payment card number</span><span class="cat">email address</span><span class="cat">IP address</span><span class="cat">person&#39;s name</span><span class="cat">password or password hash</span><span class="cat">phone number</span><span class="cat">key, token or secret</span></td><td class="n">10</td><td class="n">4</td><td class="n">0</td><td></td></tr><tr><td><a href="#login-shop_app">shop_app</a></td><td><span class="cat">payment card number</span><span class="cat">email address</span><span class="cat">IP address</span><span class="cat">person&#39;s name</span><span class="cat">password or password hash</span><span class="cat">phone number</span></td><td class="n">9</td><td class="n">3</td><td class="n">2</td><td></td></tr><tr><td><a href="#login-shop_alice">shop_alice</a></td><td><span class="cat">payment card number</span><span class="cat">email address</span><span class="cat">person&#39;s name</span><span class="cat">phone number</span></td><td class="n">6</td><td class="n">2</td><td class="n">0</td><td></td></tr><tr><td><a href="#login-shop_bob">shop_bob</a></td><td><span class="cat">payment card number</span><span class="cat">email address</span><span class="cat">person&#39;s name</span><span class="cat">phone number</span></td><td class="n">6</td><td class="n">2</td><td class="n">0</td><td>some only after SET ROLE</td></tr><tr><td><a href="#login-shop_analyst">shop_analyst</a></td><td><span class="cat">email address</span></td><td class="n">1</td><td class="n">1</td><td class="n">0</td><td></td></tr><tr><td><a href="#login-shop_etl">shop_etl</a></td><td><span class="cat">email address</span></td><td class="n">1</td><td class="n">1</td><td class="n">0</td><td></td></tr><tr><td><a href="#login-shop_intern">shop_intern</a></td><td><span class="cat">email address</span></td><td class="n">1</td><td class="n">1</td><td class="n">0</td><td></td></tr>
+</table></div>
+<p class="meta">Columns and tables count base tables, partitions and materialized views, reached in any way listed below. Changes counts tables with personal data the login can insert into, update, delete from or empty.</p>
+
+
+<h2>Personal data in this database</h2>
+
+<div class="wrap"><table>
+<tr><th>Column</th><th>Holds</th><th>How BareSQL knows</th><th>Read by</th></tr>
+<tr><td class="mono">shop.api_credentials.credential<div class="meta">table · text</div></td><td><span class="cat">key, token or secret</span><div class="meta">high confidence</div></td><td class="meta">4 of 4 sampled values look like random tokens; 4 of 4 sampled values contain a key or token</td><td>shop_reporting</td></tr><tr><td class="mono">shop.customers.first_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>shop_alice, shop_app, shop_bob, shop_reporting</td></tr><tr><td class="mono">shop.customers.last_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>shop_alice, shop_app, shop_bob, shop_reporting</td></tr><tr><td class="mono">shop.customers.email<div class="meta">table · text</div></td><td><span class="cat">email address</span><div class="meta">high confidence</div></td><td class="meta">40 of 40 sampled values are email addresses</td><td>shop_alice, shop_app, shop_bob, shop_reporting</td></tr><tr><td class="mono">shop.customers.phone<div class="meta">table · text</div></td><td><span class="cat">phone number</span><div class="meta">high confidence</div></td><td class="meta">40 of 40 sampled values are phone numbers</td><td>shop_alice, shop_app, shop_bob, shop_reporting</td></tr><tr><td class="mono">shop.customers.card_number<div class="meta">table · text</div></td><td><span class="cat">payment card number</span><div class="meta">high confidence</div></td><td class="meta">40 of 40 sampled values are payment card numbers (valid check digit)</td><td>shop_alice, shop_app, shop_bob, shop_reporting</td></tr><tr><td class="mono">shop.customers.notes<div class="meta">table · text</div></td><td><span class="cat">email address</span><div class="meta">medium confidence</div></td><td class="meta">1 of 40 sampled values contain an email address</td><td>shop_app, shop_reporting</td></tr><tr><td class="mono">shop.newsletter.email<div class="meta">table · text</div></td><td><span class="cat">email address</span><div class="meta">high confidence</div></td><td class="meta">25 of 25 sampled values are email addresses</td><td>shop_alice, shop_analyst, shop_app, shop_bob, shop_etl, shop_intern, shop_reporting</td></tr><tr><td class="mono">shop.users.password_hash<div class="meta">table · text</div></td><td><span class="cat">password or password hash</span><div class="meta">high confidence</div></td><td class="meta">20 of 20 sampled values are password hashes</td><td>shop_app, shop_reporting</td></tr><tr><td class="mono">shop.users.last_login_ip<div class="meta">table · inet</div></td><td><span class="cat">IP address</span><div class="meta">high confidence</div></td><td class="meta">20 of 20 sampled values are IP addresses</td><td>shop_app, shop_reporting</td></tr><tr><td class="mono">support.customer_lookup.customer_name<div class="meta">view · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence, computed</div></td><td class="meta">comes from shop.customers.first_name; comes from shop.customers.last_name</td><td>shop_alice, shop_bob, shop_reporting</td></tr><tr><td class="mono">support.customer_lookup.email<div class="meta">view · text</div></td><td><span class="cat">email address</span><div class="meta">high confidence</div></td><td class="meta">comes from shop.customers.email</td><td>shop_alice, shop_bob, shop_reporting</td></tr><tr><td class="mono">support.customer_lookup.phone<div class="meta">view · text</div></td><td><span class="cat">phone number</span><div class="meta">high confidence</div></td><td class="meta">comes from shop.customers.phone</td><td>shop_alice, shop_bob, shop_reporting</td></tr><tr><td class="mono">support.customer_lookup.card_number<div class="meta">view · text</div></td><td><span class="cat">payment card number</span><div class="meta">high confidence</div></td><td class="meta">comes from shop.customers.card_number</td><td>shop_alice, shop_bob, shop_reporting</td></tr>
+</table></div>
+
+
+<h2>Logins</h2>
+
+<h3 id="login-shop_alice">shop_alice</h3>
+<p class="meta">member of shop_support_team · no password set</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.card_number<div class="meta">table</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">support.customer_lookup.customer_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.phone<div class="meta">view</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.card_number<div class="meta">view</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr>
+</table></div>
+
+<details><summary>10 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.id</td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.orders.id</td><td><ul class="routes"><li>through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.orders.tracking_number</td><td><ul class="routes"><li>through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.orders.shipped_at</td><td><ul class="routes"><li>through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">support.customer_lookup.id</td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.order_status.id</td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.order_status.shipped_at</td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.order_status.tracking_number</td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+
+<h3 id="login-shop_analyst">shop_analyst</h3>
+<p class="meta">member of no role · no password set</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div>
+
+<details><summary>14 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.id</td><td><ul class="routes"><li>column granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.customers.city</td><td><ul class="routes"><li>column granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.customers.created_at</td><td><ul class="routes"><li>column granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.orders.id</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.orders.customer_id</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.orders.total</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.orders.tracking_number</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.orders.shipped_at</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.products.id</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.products.name</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.products.sku</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr><tr><td class="mono">shop.products.price</td><td><ul class="routes"><li>granted to shop_analyst</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+
+<h3 id="login-shop_app">shop_app</h3>
+<p class="meta">member of no role · password stored as a SCRAM hash</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.card_number<div class="meta">table</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.notes<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.users.password_hash<div class="meta">table</div></td><td><span class="cat">password or password hash</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.users.last_login_ip<div class="meta">table</div></td><td><span class="cat">IP address</span></td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr>
+</table></div>
+
+<details><summary>18 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.id</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.city</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.created_at</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers.marketing_opt_in</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.orders.id</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.orders.customer_id</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.orders.total</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.orders.tracking_number</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.orders.shipped_at</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.products.id</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.products.name</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.products.sku</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.products.price</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.users.id</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.users.username</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.users.email_verified</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr>
+</table></div></details>
+
+<details><summary>What it can change (5)</summary>
+<div class="wrap"><table><tr><th>Table</th><th>Privilege</th><th>How</th></tr>
+<tr><td class="mono">shop.customers <span class="cat">personal data</span></td><td>INSERT</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.customers <span class="cat">personal data</span></td><td>UPDATE</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.orders</td><td>INSERT</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.orders</td><td>UPDATE</td><td><ul class="routes"><li>granted to shop_app</li></ul></td></tr><tr><td class="mono">shop.users <span class="cat">personal data</span></td><td>UPDATE (password_hash, last_login_ip)</td><td><ul class="routes"><li>column granted to shop_app</li></ul></td></tr>
+</table></div></details>
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+
+<h3 id="login-shop_bob">shop_bob</h3>
+<p class="meta">noinherit · member of shop_support_team (no inherit) · can SET ROLE shop_support_team · no password set</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.card_number<div class="meta">table</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">support.customer_lookup.customer_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.phone<div class="meta">view</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.card_number<div class="meta">view</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr>
+</table></div>
+
+<details><summary>10 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.customers.id</td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.orders.id</td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.orders.tracking_number</td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.orders.shipped_at</td><td><ul class="routes"><li>after SET ROLE shop_support_team: through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">support.customer_lookup.id</td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.order_status.id</td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.order_status.shipped_at</td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.order_status.tracking_number</td><td><ul class="routes"><li>after SET ROLE shop_support_team: granted to shop_support_team</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+
+<h3 id="login-shop_etl">shop_etl</h3>
+<p class="meta">member of no role · no password set</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div>
+
+<details><summary>2 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (2)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.export_customers()</td><td>shop_owner <span class="bad">no search_path</span></td><td><ul class="routes"><li>granted to shop_etl</li></ul></td></tr>
+</table></div></details>
+
+
+
+<h3 id="login-shop_intern">shop_intern</h3>
+<p class="meta">member of no role · no password set</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div>
+
+<details><summary>2 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+
+<h3 id="login-shop_reporting">shop_reporting</h3>
+<p class="meta">member of pg_read_all_data · no password set</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.api_credentials.credential<div class="meta">table</div></td><td><span class="cat">key, token or secret</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.customers.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.card_number<div class="meta">table</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.notes<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.users.password_hash<div class="meta">table</div></td><td><span class="cat">password or password hash</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.users.last_login_ip<div class="meta">table</div></td><td><span class="cat">IP address</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.customer_lookup.customer_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.customer_lookup.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.customer_lookup.phone<div class="meta">view</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.customer_lookup.card_number<div class="meta">view</div></td><td><span class="cat">payment card number</span></td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr>
+</table></div>
+
+<details><summary>24 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.api_credentials.id</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.api_credentials.service</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.customers.id</td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.city</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.customers.created_at</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.customers.marketing_opt_in</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.orders.id</td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.orders.customer_id</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.orders.total</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.orders.tracking_number</td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.orders.shipped_at</td><td><ul class="routes"><li>member of pg_read_all_data</li><li>through view support.order_status (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.products.id</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.products.name</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.products.sku</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.products.price</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.users.id</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.users.username</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">shop.users.email_verified</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.customer_lookup.id</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.order_status.id</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.order_status.shipped_at</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr><tr><td class="mono">support.order_status.tracking_number</td><td><ul class="routes"><li>member of pg_read_all_data</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">shop.count_orders()</td><td>shop_owner</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+
+
+<h2>Everyone (PUBLIC)</h2>
+<p>What every role can read, including roles created after this audit.</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.email</td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div>
+
+<details><summary>2 other columns every role can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">shop.newsletter.id</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">shop.newsletter.subscribed_at</td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr>
+</table></div></details>
+
+
+<h2>Tables created later</h2>
+<p>Default privileges hand these rights out on objects that don't exist yet.</p>
+<div class="wrap"><table><tr><th>When</th><th>creates</th><th>in</th><th>it grants</th><th>to</th></tr>
+<tr><td>shop_owner</td><td>tables</td><td>shop</td><td>SELECT</td><td>PUBLIC</td></tr>
+</table></div>
+
+
+<h2>Method</h2>
+<p>Schemas audited: <code>public</code>, <code>shop</code>, <code>support</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_shop</code>, login method md5.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+
+
+<p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>
+<footer>Made with BareSQL 0.1.0-dev · baresql.com · 2026-07-01T09:00:00Z</footer>
+</main>
+</body>
+</html>

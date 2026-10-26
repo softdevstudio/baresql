@@ -1,0 +1,42 @@
+update-join (error): UPDATE and DELETE with a join
+
+UPDATE ... FROM works on SQLite and PostgreSQL and UPDATE ... JOIN on MySQL
+and MariaDB; neither works on all four.
+
+The engines use different syntax for changing rows based on another table.
+DELETE differs the same way: DELETE ... USING on PostgreSQL, DELETE t FROM t
+JOIN ... on MySQL and MariaDB.
+
+Given:
+    CREATE TABLE t (id INTEGER, x INTEGER);
+    CREATE TABLE u (id INTEGER, x INTEGER);
+    INSERT INTO t VALUES (1, 0), (2, 0);
+    INSERT INTO u VALUES (1, 7)
+
+Example:
+    UPDATE t SET x = u.x FROM u WHERE u.id = t.id;
+    SELECT x FROM t ORDER BY id
+
+    SQLite 3.45.1        7; 0
+    PostgreSQL 16.15     7; 0
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the...
+
+The same on every engine:
+    UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id);
+    SELECT x FROM t ORDER BY id
+
+    SQLite 3.45.1        7; 0
+    PostgreSQL 16.15     7; 0
+    MySQL 8.0.46         7; 0
+    MariaDB 10.11.14     7; 0
+
+Use subqueries, which all four accept: UPDATE t SET x = (SELECT u.x FROM u
+WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id), and
+DELETE FROM t WHERE id IN (SELECT id FROM u).
+
+                 SQLite PostgreSQL MySQL MariaDB
+UPDATE ... FROM  yes    yes        no    no
+UPDATE ... JOIN  no     no         yes   yes
+DELETE ... JOIN  no     no         yes   yes
+DELETE ... USING no     yes        no    no

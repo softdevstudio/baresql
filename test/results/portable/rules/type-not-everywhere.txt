@@ -1,0 +1,60 @@
+type-not-everywhere (error): Column types that exist on some engines only
+
+Many column types belong to one or two engines: DATETIME and TINYINT are
+missing on PostgreSQL, BYTEA and TIMESTAMPTZ on MySQL and MariaDB.
+
+SQLite accepts nearly any type name, so a schema that works there can still
+fail elsewhere. Each type in the table was used in a CREATE TABLE on all four
+engines.
+
+Example:
+    CREATE TABLE t (d DATETIME);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     error: type "datetime" does not exist
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+The same on every engine:
+    CREATE TABLE t (d TIMESTAMP);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Use types that all four accept: INTEGER, BIGINT, SMALLINT, DECIMAL(p, s),
+DOUBLE PRECISION, VARCHAR(n), TEXT, DATE, TIME, TIMESTAMP and BOOLEAN. There
+is no binary type they share: BLOB on SQLite, MySQL and MariaDB, BYTEA on
+PostgreSQL.
+
+                         SQLite PostgreSQL MySQL MariaDB
+DATETIME                 yes    no         yes   yes     Use TIMESTAMP.
+TINYINT                  yes    no         yes   yes     Use SMALLINT.
+MEDIUMINT                yes    no         yes   yes     Use INTEGER.
+DOUBLE                   yes    no         yes   yes     Use DOUBLE PRECISION.
+UNSIGNED                 yes    no         yes   yes     Use INTEGER, or BIGINT for large values, with CHECK (x >= 0).
+TINYTEXT                 yes    no         yes   yes     Use VARCHAR(255).
+MEDIUMTEXT               yes    no         yes   yes     Use TEXT. On MySQL and MariaDB TEXT holds up to 64 KB.
+LONGTEXT                 yes    no         yes   yes     Use TEXT. On MySQL and MariaDB TEXT holds up to 64 KB.
+BLOB                     yes    no         yes   yes     No binary type works on all four: BYTEA on PostgreSQL.
+LONGBLOB                 yes    no         yes   yes     No binary type works on all four: BYTEA on PostgreSQL, BLOB on SQLite.
+ENUM                     no     no         yes   yes     Use VARCHAR(n) with CHECK (x IN ('a', 'b')).
+SET                      no     no         yes   yes     Use a separate table with one row per value.
+YEAR                     yes    no         yes   yes     Use SMALLINT.
+BYTEA                    yes    yes        no    no      No binary type works on all four: BLOB on SQLite, MySQL and MariaDB.
+TIMESTAMPTZ              yes    yes        no    no      Use TIMESTAMP and keep times in UTC.
+TIMESTAMP WITH TIME ZONE yes    yes        no    no      Use TIMESTAMP and keep times in UTC.
+JSONB                    yes    yes        no    no      Use JSON on PostgreSQL, MySQL and MariaDB, and TEXT on SQLite.
+UUID                     yes    yes        no    yes     Use CHAR(36) or VARCHAR(36).
+INET                     yes    yes        no    no      Use VARCHAR(45).
+MONEY                    yes    yes        no    no      Use DECIMAL(19, 4).
+INTERVAL                 yes    yes        no    no      Store the length as a number of seconds or days.
+ARRAY                    yes    yes        no    no      Use a separate table with one row per element.
+NUMBER                   yes    no         no    no      Use DECIMAL(p, s) or INTEGER.
+VARCHAR2                 yes    no         no    no      Use VARCHAR(n).
+NVARCHAR                 yes    no         yes   yes     Use VARCHAR(n); all four store Unicode in VARCHAR.
+CLOB                     yes    no         no    no      Use TEXT.
+DATETIME2                yes    no         no    no      Use TIMESTAMP.

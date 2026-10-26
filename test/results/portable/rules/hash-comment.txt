@@ -1,0 +1,26 @@
+hash-comment (error): # comments
+
+# starts a comment on MySQL and MariaDB only; SQLite refuses it, and
+PostgreSQL reads it as the XOR operator.
+
+Scripts written for the mysql client often use # comments. SQLite stops with a
+syntax error. On PostgreSQL # is a bitwise exclusive or, so the rest of the
+line becomes part of the expression.
+
+Example:
+    SELECT 1 # one
+
+    SQLite 3.45.1        error: unrecognized token: "#"
+    PostgreSQL 16.15     error: column "one" does not exist
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT 1 -- one
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Use -- comments, with a space after the dashes, or /* ... */.

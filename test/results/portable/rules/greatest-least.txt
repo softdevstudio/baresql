@@ -1,0 +1,32 @@
+greatest-least (error): GREATEST and LEAST
+
+GREATEST and LEAST are missing on SQLite, skip NULL on PostgreSQL and return
+NULL on MySQL and MariaDB.
+
+GREATEST(1, NULL) is 1 on PostgreSQL and NULL on MySQL and MariaDB. SQLite has
+the same idea under the names MAX(a, b) and MIN(a, b) with two or more
+arguments; they return NULL when any argument is NULL, and the other engines
+read MAX and MIN as aggregates.
+
+Given:
+    CREATE TABLE t (a INTEGER, b INTEGER);
+    INSERT INTO t VALUES (1, NULL)
+
+Example:
+    SELECT GREATEST(a, b) FROM t
+
+    SQLite 3.45.1        error: no such function: GREATEST
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         NULL
+    MariaDB 10.11.14     NULL
+
+The same on every engine:
+    SELECT CASE WHEN a >= b THEN a ELSE b END FROM t
+
+    SQLite 3.45.1        NULL
+    PostgreSQL 16.15     NULL
+    MySQL 8.0.46         NULL
+    MariaDB 10.11.14     NULL
+
+Use CASE WHEN a >= b THEN a ELSE b END, which is NULL when either side is NULL
+on all four. Wrap the arguments in COALESCE to skip NULL instead.

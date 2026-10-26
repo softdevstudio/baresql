@@ -1,0 +1,40 @@
+insert-ignore (error): Inserting only new rows
+
+INSERT IGNORE belongs to MySQL and MariaDB, INSERT OR IGNORE to SQLite, and ON
+CONFLICT DO NOTHING to PostgreSQL and SQLite.
+
+Each form skips rows that would break a unique key, and each fails on the
+engines that use another one. INSERT IGNORE also hides other errors on MySQL
+and MariaDB, such as values that do not fit the column.
+
+Given:
+    CREATE TABLE t (id INTEGER PRIMARY KEY);
+    INSERT INTO t VALUES (1)
+
+Example:
+    INSERT IGNORE INTO t VALUES (1);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        error: near "IGNORE": syntax error
+    PostgreSQL 16.15     error: syntax error at or near "IGNORE"
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    INSERT INTO t (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Insert from a SELECT that checks first: INSERT INTO t (id) SELECT 1 WHERE NOT
+EXISTS (SELECT 1 FROM t WHERE id = 1). When two sessions insert the same row
+at once, the unique key still stops the second one, with an error instead of a
+skip.
+
+                       SQLite PostgreSQL MySQL MariaDB
+INSERT IGNORE          no     no         yes   yes
+INSERT OR IGNORE       yes    no         no    no
+ON CONFLICT DO NOTHING yes    yes        no    no

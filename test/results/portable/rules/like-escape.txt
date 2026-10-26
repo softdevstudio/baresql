@@ -1,0 +1,26 @@
+like-escape (warning): Escaping % and _ in LIKE
+
+Without an ESCAPE clause, a backslash escapes % and _ in LIKE on PostgreSQL,
+MySQL and MariaDB; on SQLite it is an ordinary character.
+
+'a_b' LIKE 'a\_b' is true on PostgreSQL, MySQL and MariaDB, where \_ matches
+an underscore, and false on SQLite, where the pattern asks for a backslash
+followed by any one character.
+
+Example:
+    SELECT 'a_b' LIKE 'a\_b'
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT 'a_b' LIKE 'a!_b' ESCAPE '!'
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Name the escape character: LIKE 'a!_b' ESCAPE '!' means the same on all four.

@@ -1,0 +1,29 @@
+table-name-case (error): Table names in a different case
+
+On Linux, MySQL and MariaDB treat table names as case-sensitive, so a table
+created as Users is not found as users.
+
+MySQL and MariaDB keep each table in files named after it, and file names on
+Linux are case-sensitive (lower_case_table_names = 0, the default there). On
+Windows and macOS the default makes names case-insensitive. SQLite and
+PostgreSQL ignore case in unquoted names.
+
+Example:
+    CREATE TABLE Users (id INTEGER);
+    SELECT COUNT(*) FROM users
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         error: Table 'baresql_compare.users' doesn't exist
+    MariaDB 10.11.14     error: Table 'baresql_compare.users' doesn't exist
+
+The same on every engine:
+    CREATE TABLE users (id INTEGER);
+    SELECT COUNT(*) FROM users
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Use lower-case table names and spell each one the same way everywhere.

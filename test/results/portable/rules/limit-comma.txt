@@ -1,0 +1,28 @@
+limit-comma (error): LIMIT offset, count
+
+LIMIT 1, 2 works on SQLite, MySQL and MariaDB; PostgreSQL refuses it.
+
+In LIMIT a, b the first number is the offset and the second the count, the
+reverse of the order in which LIMIT ... OFFSET reads.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1), (2), (3)
+
+Example:
+    SELECT x FROM t ORDER BY x LIMIT 1, 2
+
+    SQLite 3.45.1        2; 3
+    PostgreSQL 16.15     error: LIMIT #,# syntax is not supported
+    MySQL 8.0.46         2; 3
+    MariaDB 10.11.14     2; 3
+
+The same on every engine:
+    SELECT x FROM t ORDER BY x LIMIT 2 OFFSET 1
+
+    SQLite 3.45.1        2; 3
+    PostgreSQL 16.15     2; 3
+    MySQL 8.0.46         2; 3
+    MariaDB 10.11.14     2; 3
+
+Write LIMIT 2 OFFSET 1, which all four accept.

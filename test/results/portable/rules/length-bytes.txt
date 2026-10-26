@@ -1,0 +1,19 @@
+length-bytes (info): LENGTH counts bytes on MySQL
+
+LENGTH counts characters on SQLite and PostgreSQL and bytes on MySQL and
+MariaDB, so LENGTH('é') is 1 or 2.
+
+In UTF-8 a letter outside A to Z takes two to four bytes. MySQL and MariaDB
+count characters with CHAR_LENGTH, which SQLite lacks. Length checks, cut-offs
+and padding drift apart on names and addresses with accents.
+
+Example:
+    SELECT LENGTH('é')
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+No function counts characters on all four engines: use CHAR_LENGTH on
+PostgreSQL, MySQL and MariaDB and LENGTH on SQLite.

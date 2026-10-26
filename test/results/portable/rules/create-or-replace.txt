@@ -1,0 +1,34 @@
+create-or-replace (error): CREATE OR REPLACE VIEW
+
+SQLite has no CREATE OR REPLACE; PostgreSQL, MySQL and MariaDB accept it for
+views.
+
+SQLite can only drop a view and create it again.
+
+Given:
+    CREATE TABLE t (x INTEGER)
+
+Example:
+    CREATE OR REPLACE VIEW v AS SELECT x FROM t;
+    SELECT COUNT(*) FROM v
+
+    SQLite 3.45.1        error: near "OR": syntax error
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+The same on every engine:
+    DROP VIEW IF EXISTS v;
+    CREATE VIEW v AS SELECT x FROM t;
+    SELECT COUNT(*) FROM v
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Drop and create: DROP VIEW IF EXISTS v, then CREATE VIEW v AS ...
+
+      SQLite PostgreSQL MySQL MariaDB
+VIEW  no     yes        yes   yes
+TABLE no     no         no    yes

@@ -1,0 +1,29 @@
+backticks (error): Backticks around names
+
+Backticks quote names on SQLite, MySQL and MariaDB; PostgreSQL refuses them.
+
+`name` is MySQL's way of quoting a name, and SQLite and MariaDB accept it too.
+PostgreSQL reads the backtick as a syntax error.
+
+Given:
+    CREATE TABLE people (name VARCHAR(20));
+    INSERT INTO people VALUES ('Ann')
+
+Example:
+    SELECT `name` FROM people
+
+    SQLite 3.45.1        'Ann'
+    PostgreSQL 16.15     error: syntax error at or near "FROM"
+    MySQL 8.0.46         'Ann'
+    MariaDB 10.11.14     'Ann'
+
+The same on every engine:
+    SELECT name FROM people
+
+    SQLite 3.45.1        'Ann'
+    PostgreSQL 16.15     'Ann'
+    MySQL 8.0.46         'Ann'
+    MariaDB 10.11.14     'Ann'
+
+Use plain lower-case names that are not keywords; they need no quotes on any
+engine.

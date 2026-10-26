@@ -1,0 +1,33 @@
+update-same-table (error): UPDATE or DELETE that reads its own table
+
+MySQL refuses an UPDATE or DELETE whose subquery reads the table being
+changed; SQLite, PostgreSQL and MariaDB accept it.
+
+MySQL says you can't specify target table 't' for update in FROM clause.
+MariaDB lifted the limit in version 10.3.2. A subquery used as a table works
+on MySQL too, because MySQL then computes its rows before it changes anything.
+
+Given:
+    CREATE TABLE t (id INTEGER, x INTEGER);
+    INSERT INTO t VALUES (1, 0), (2, 5)
+
+Example:
+    UPDATE t SET x = 1 WHERE id IN (SELECT id FROM t WHERE x = 0);
+    SELECT x FROM t ORDER BY id
+
+    SQLite 3.45.1        1; 5
+    PostgreSQL 16.15     1; 5
+    MySQL 8.0.46         error: You can't specify target table 't' for update in FROM clause
+    MariaDB 10.11.14     1; 5
+
+The same on every engine:
+    UPDATE t SET x = 1 WHERE id IN (SELECT id FROM (SELECT id FROM t WHERE x = 0) AS s);
+    SELECT x FROM t ORDER BY id
+
+    SQLite 3.45.1        1; 5
+    PostgreSQL 16.15     1; 5
+    MySQL 8.0.46         1; 5
+    MariaDB 10.11.14     1; 5
+
+Wrap the subquery in one more SELECT used as a table: WHERE id IN (SELECT id
+FROM (SELECT id FROM t WHERE x = 0) AS s).

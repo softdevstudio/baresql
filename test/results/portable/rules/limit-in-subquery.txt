@@ -1,0 +1,31 @@
+limit-in-subquery (error): LIMIT inside IN (...)
+
+MySQL and MariaDB refuse LIMIT in a subquery under IN, ANY, ALL or SOME;
+SQLite and PostgreSQL accept it.
+
+Both report that this version doesn't yet support 'LIMIT & IN/ALL/ANY/SOME
+subquery'. LIMIT is fine in a subquery used as a table and in one that returns
+a single value.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1), (2)
+
+Example:
+    SELECT x FROM t WHERE x IN (SELECT x FROM t ORDER BY x LIMIT 1)
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         error: This version of MySQL doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
+    MariaDB 10.11.14     error: This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
+
+The same on every engine:
+    SELECT x FROM t WHERE x IN (SELECT x FROM (SELECT x FROM t ORDER BY x LIMIT 1) AS s)
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Wrap the limited query in a subquery used as a table: IN (SELECT x FROM
+(SELECT x FROM t ORDER BY x LIMIT 1) AS s).

@@ -1,0 +1,30 @@
+integer-division (warning): Integer division
+
+Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL;
+MySQL and MariaDB keep it.
+
+SQLite and PostgreSQL give an integer result when both sides of / are
+integers, so 7 / 2 is 3. MySQL and MariaDB always divide as decimals and
+answer 3.5000. Averages written as SUM(x) / COUNT(*) are where this usually
+bites: the sum of an integer column is an integer on SQLite and PostgreSQL, so
+the average loses its fraction there.
+
+Example:
+    SELECT 7 / 2
+
+    SQLite 3.45.1        3
+    PostgreSQL 16.15     3
+    MySQL 8.0.46         3.5000
+    MariaDB 10.11.14     3.5000
+
+The same on every engine:
+    SELECT ROUND(7 * 1.0 / 2, 2)
+
+    SQLite 3.45.1        3.5
+    PostgreSQL 16.15     3.50
+    MySQL 8.0.46         3.50
+    MariaDB 10.11.14     3.50
+
+Multiply one side by 1.0 for the fraction and round it to the places you need
+(see decimal-division): ROUND(7 * 1.0 / 2, 2) is 3.5 on every engine. For a
+whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.

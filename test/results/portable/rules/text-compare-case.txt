@@ -1,0 +1,30 @@
+text-compare-case (info): Text comparisons and letter case
+
+MySQL and MariaDB compare text without regard to letter case or accents by
+default; SQLite and PostgreSQL compare it exactly.
+
+The default collations of MySQL and MariaDB ignore case and accents, so 'abc'
+= 'ABC' and 'e' = 'é' are true there and false on SQLite and PostgreSQL. The
+same goes for joins, GROUP BY, DISTINCT and unique keys: two e-mail addresses
+that differ only in case are one value on MySQL and two elsewhere. Whether an
+answer changes depends on the data, so lint reports this as information.
+
+Example:
+    SELECT 'abc' = 'ABC'
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     false
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT LOWER('abc') = LOWER('ABC')
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Compare LOWER(a) = LOWER(b) where case should not matter, and store values in
+one case. No form makes MySQL compare exactly without naming a collation, and
+collation names differ on every engine.

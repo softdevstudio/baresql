@@ -1,0 +1,44 @@
+operator-not-everywhere (error): Operators that exist on some engines only
+
+Operators such as ::, ILIKE, DIV and <=> belong to one or two engines and are
+syntax errors on the others.
+
+Each operator in the table was used on all four engines, and the table shows
+where it ran and what to write instead.
+
+Example:
+    SELECT 'abc' ILIKE 'ABC'
+
+    SQLite 3.45.1        error: near "'ABC'": syntax error
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the...
+
+The same on every engine:
+    SELECT LOWER('abc') LIKE LOWER('ABC')
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     true
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Prefer the operators all four share: = <> < > <= >= + - * / % || (see
+pipes-concat), LIKE, IN, BETWEEN, IS NULL.
+
+                 SQLite PostgreSQL MySQL MariaDB
+::               no     yes        no    no      Use CAST(x AS type) (see cast-to-number for integers).
+ILIKE            no     yes        no    no      Use LOWER(x) LIKE LOWER(pattern).
+DIV              no     no         yes   yes     Use (a - a % b) / b for a whole-number result.
+MOD              no     no         yes   yes     Use a % b.
+<=>              no     no         yes   yes     Use (a = b OR (a IS NULL AND b IS NULL)).
+REGEXP           yes    no         yes   yes     No form works on all four engines; ~ on PostgreSQL; REGEXP works in SQLite's shell, not in every SQLite build.
+RLIKE            no     no         yes   yes     No form works on all four engines; ~ on PostgreSQL.
+~                no     yes        no    no      No form works on all four engines; REGEXP on MySQL and MariaDB.
+SIMILAR TO       no     yes        no    no      Use LIKE where the pattern allows it.
+IS DISTINCT FROM yes    yes        no    no      Use (a <> b OR (a IS NULL) <> (b IS NULL)), or <=> on MySQL and MariaDB.
+XOR              no     no         yes   yes     Use (a OR b) AND NOT (a AND b).
+&&               no     no         yes   yes     Use AND.
+GLOB             yes    no         no    no      Use LIKE, with % for * and _ for ?.
+==               yes    no         no    no      Use =.
+!                no     no         yes   yes     Use NOT.
+->>              yes    no         no    no      No form works on all four engines; JSON paths and types differ on every engine.

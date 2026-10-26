@@ -1,0 +1,34 @@
+float-precision (warning): REAL and FLOAT precision
+
+REAL keeps about 6 significant digits on PostgreSQL, and FLOAT keeps about 6
+on MySQL and MariaDB; elsewhere both keep 15.
+
+PostgreSQL's REAL is a 4-byte float, and so is FLOAT on MySQL and MariaDB,
+while the other engines store 8 bytes for the same name. 1.23456789 comes back
+as 1.2345679 or 1.23457.
+
+Example:
+    CREATE TABLE t (r REAL, f FLOAT);
+    INSERT INTO t VALUES (1.23456789, 1.23456789);
+    SELECT r, f FROM t
+
+    SQLite 3.45.1        1.23456789, 1.23456789
+    PostgreSQL 16.15     1.2345679, 1.23456789
+    MySQL 8.0.46         1.23456789, 1.23457
+    MariaDB 10.11.14     1.23456789, 1.23457
+
+The same on every engine:
+    CREATE TABLE t (r DOUBLE PRECISION, f DOUBLE PRECISION);
+    INSERT INTO t VALUES (1.23456789, 1.23456789);
+    SELECT r, f FROM t
+
+    SQLite 3.45.1        1.23456789, 1.23456789
+    PostgreSQL 16.15     1.23456789, 1.23456789
+    MySQL 8.0.46         1.23456789, 1.23456789
+    MariaDB 10.11.14     1.23456789, 1.23456789
+
+Use DOUBLE PRECISION, an 8-byte float on all four engines.
+
+      SQLite     PostgreSQL MySQL      MariaDB
+REAL  1.23456789 1.2345679  1.23456789 1.23456789
+FLOAT 1.23456789 1.23456789 1.23457    1.23457

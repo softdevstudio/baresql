@@ -1,0 +1,90 @@
+Compared on PostgreSQL 16.15, MySQL 8.0.46.
+
+queries.sql:4  SELECT id, email FROM customers WHERE name = 'Bob Stone'
+  0 rows on PostgreSQL, 1 on MySQL
+  PostgreSQL: no rows
+  MySQL: 2, 'bob@example.com'
+  lint: text-compare-case
+
+queries.sql:5  SELECT id, email FROM customers WHERE name LIKE 'émile%'
+  0 rows on PostgreSQL, 1 on MySQL
+  PostgreSQL: no rows
+  MySQL: 3, 'emile@example.com'
+  lint: like-case
+
+queries.sql:8  SELECT COUNT(*) FROM invoices WHERE status = 'paid'
+  PostgreSQL: 1
+  MySQL: 2
+  lint: text-compare-case
+
+queries.sql:11  SELECT CONCAT(name, ' (', country, ')') FROM customers ORDER BY id
+  PostgreSQL: 3 rows
+      'Ann Lee (DE)'
+      'bob stone ()'
+      'Émile Roux (FR)'
+  MySQL: 3 rows
+      'Ann Lee (DE)'
+      NULL
+      'Émile Roux (FR)'
+  lint: concat-null
+
+queries.sql:14  SELECT COUNT(*) / COUNT(DISTINCT customer_id) FROM invoices
+  PostgreSQL: 1
+  MySQL: 1.3333
+  lint: integer-division, division-by-zero
+
+queries.sql:17  SELECT id, amount / 3 FROM invoices ORDER BY id
+  PostgreSQL: 4 rows
+      1, 40.0000000000000000
+      2, 26.8333333333333333
+      3, 100.0000000000000000
+      4, 15.0833333333333333
+  MySQL: 4 rows
+      1, 40.000000
+      2, 26.833333
+      3, 100.000000
+      4, 15.083333
+  lint: decimal-division
+
+queries.sql:20  SELECT id, DATEDIFF('2026-06-01', issued_on) FROM invoices ORDER BY id
+  refused by PostgreSQL, answered by MySQL
+  PostgreSQL: error: function datediff(unknown, date) does not exist
+  MySQL: 4 rows
+      1, 61
+      2, 31
+      3, 29
+      4, 12
+  lint: function-not-everywhere
+
+queries.sql:23  SELECT country, COUNT(*) FROM customers GROUP BY country ORDER BY country
+  the same rows in a different order
+  PostgreSQL: 3 rows
+      'DE', 1
+      'FR', 1
+      NULL, 1
+  MySQL: 3 rows
+      NULL, 1
+      'DE', 1
+      'FR', 1
+  lint: null-order
+
+queries.sql:26  SELECT id, name FROM customers ORDER BY id LIMIT 2, 2
+  refused by PostgreSQL, answered by MySQL
+  PostgreSQL: error: LIMIT #,# syntax is not supported
+  MySQL: 3, 'Émile Roux'
+  lint: limit-comma
+
+queries.sql:29  SELECT GROUP_CONCAT(name ORDER BY name SEPARATOR ', ') FROM customers
+  refused by PostgreSQL, answered by MySQL
+  PostgreSQL: error: syntax error at or near "SEPARATOR"
+  MySQL: 'Ann Lee, bob stone, Émile Roux'
+  lint: function-not-everywhere
+
+queries.sql:32  INSERT INTO invoices (id, customer_id, amount, status, issued_on) VALUES (2, 1, 80.50, 'paid', '2...
+  refused by PostgreSQL, answered by MySQL
+  PostgreSQL: error: syntax error at or near "DUPLICATE"
+  MySQL: done
+  lint: upsert
+
+15 statements: 4 answered alike, 11 differ.
+baresql rules <code> explains each lint code above.

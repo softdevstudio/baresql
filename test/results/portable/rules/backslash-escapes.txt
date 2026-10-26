@@ -1,0 +1,25 @@
+backslash-escapes (warning): Backslashes in strings
+
+MySQL and MariaDB read a backslash in a string as an escape character; SQLite
+and PostgreSQL keep it as a backslash.
+
+'C:\\temp' is C:\\temp, two backslashes, on SQLite and PostgreSQL and C:\temp
+on MySQL and MariaDB. '\t' is a tab and '\'' a quote there, while PostgreSQL
+needs its E'...' strings for escapes, which no other engine reads. MySQL's
+NO_BACKSLASH_ESCAPES mode makes it read backslashes like the others.
+
+Example:
+    SELECT 'C:\\temp'
+
+    SQLite 3.45.1        'C:\\temp'
+    PostgreSQL 16.15     'C:\\temp'
+    MySQL 8.0.46         'C:\temp'
+    MariaDB 10.11.14     'C:\temp'
+
+Keep backslashes out of SQL string literals: pass such values as query
+parameters, which every driver sends without escaping.
+
+          SQLite     PostgreSQL MySQL     MariaDB
+backslash 'C:\\temp' 'C:\\temp' 'C:\temp' 'C:\temp'
+E'...'    no         yes        no        no
+\'        no         no         yes       yes       Write a quote inside a string as two quotes: 'it''s'.

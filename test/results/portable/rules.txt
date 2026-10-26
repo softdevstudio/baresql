@@ -1,0 +1,63 @@
+BareSQL Portable knows 58 differences between SQLite, PostgreSQL, MySQL and MariaDB.
+Answers recorded on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46 and MariaDB 10.11.14.
+
+  integer-division         warning  Integer division
+  decimal-division         warning  Dividing decimals
+  pipes-concat             warning  || joins text on some engines only
+  concat-null              warning  CONCAT with a NULL argument
+  text-compare-case        info     Text comparisons and letter case
+  like-case                info     LIKE and letter case
+  text-number-compare      error    Comparing text with a number
+  double-quotes            warning  Double quotes
+  null-order               info     Where NULL sorts
+  ungrouped-column         error    Columns missing from GROUP BY
+  cast-to-text             warning  CAST to text
+  cast-to-number           error    CAST to an integer or a decimal
+  cast-to-date             warning  CAST to a date
+  date-arithmetic          warning  Adding numbers to dates
+  division-by-zero         info     Division by zero
+  decimal-as-float         info     DECIMAL on SQLite
+  float-precision          warning  REAL and FLOAT precision
+  char-padding             info     CHAR(n) and trailing spaces
+  length-bytes             info     LENGTH counts bytes on MySQL
+  lower-non-ascii          info     LOWER and UPPER outside A to Z
+  substring-start          warning  SUBSTR from position 0 or below
+  backslash-escapes        warning  Backslashes in strings
+  like-escape              warning  Escaping % and _ in LIKE
+  log-base                 warning  LOG with one argument
+  caret-operator           error    The ^ operator
+  dash-comment             warning  -- comments need a space on MySQL
+  column-name-case         warning  Upper-case column names
+  table-name-case          error    Table names in a different case
+  type-not-enforced        error    SQLite keeps values that do not fit the column
+  boolean-as-number        error    Booleans and numbers
+  auto-increment           error    Numbering new rows
+  backticks                error    Backticks around names
+  hash-comment             error    # comments
+  nulls-first-last         error    NULLS FIRST and NULLS LAST
+  limit-comma              error    LIMIT offset, count
+  fetch-first              error    FETCH FIRST n ROWS ONLY
+  alias-in-where           error    Select-list names in WHERE
+  alias-in-having          error    Select-list names in HAVING
+  limit-in-subquery        error    LIMIT inside IN (...)
+  update-same-table        error    UPDATE or DELETE that reads its own table
+  update-join              error    UPDATE and DELETE with a join
+  full-outer-join          error    FULL OUTER JOIN
+  distinct-on              error    DISTINCT ON
+  count-distinct-columns   error    COUNT(DISTINCT a, b)
+  greatest-least           error    GREATEST and LEAST
+  insert-ignore            error    Inserting only new rows
+  upsert                   error    Insert or update (upsert)
+  returning                error    RETURNING
+  varchar-length           error    VARCHAR without a length
+  type-not-everywhere      error    Column types that exist on some engines only
+  table-options            error    MySQL table options
+  text-default             error    DEFAULT on TEXT columns
+  index-on-text            error    Keys on TEXT columns
+  index-if-not-exists      error    CREATE INDEX IF NOT EXISTS
+  truncate                 error    TRUNCATE
+  create-or-replace        error    CREATE OR REPLACE VIEW
+  function-not-everywhere  error    Functions that exist on some engines only
+  operator-not-everywhere  error    Operators that exist on some engines only
+
+baresql rules <code> shows the example, each engine's answer and what to write instead.

@@ -1,0 +1,38 @@
+text-number-compare (error): Comparing text with a number
+
+Comparing a text column with a number matches text like 'abc' to 0 on MySQL
+and MariaDB, matches nothing on SQLite and fails on PostgreSQL.
+
+MySQL and MariaDB turn the text into a number, and text that does not start
+with digits becomes 0, so WHERE code = 0 finds every code like 'abc'. SQLite
+compares the number as text and finds nothing. PostgreSQL refuses to compare
+character varying with integer. '1' = 1 trips over the same thing in another
+way: false on SQLite, true on the other three.
+
+Given:
+    CREATE TABLE items (code VARCHAR(10));
+    INSERT INTO items VALUES ('abc')
+
+Example:
+    SELECT COUNT(*) FROM items WHERE code = 0
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     error: operator does not exist: character varying = integer
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT COUNT(*) FROM items WHERE code = '0'
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Compare like with like: quote the number when the column holds text (code =
+'0'), or convert one side with CAST.
+
+                      SQLite PostgreSQL MySQL MariaDB
+text column = number  0      no         1     1
+'1' = 1               0      true       1     1
+'abc' = number column no     no         no    no

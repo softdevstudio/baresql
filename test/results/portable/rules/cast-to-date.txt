@@ -1,0 +1,34 @@
+cast-to-date (warning): CAST to a date
+
+SQLite has no date type: CAST('2024-05-06' AS DATE) is the number 2024 there
+and a date on the other engines.
+
+SQLite keeps dates as text or numbers and reads a CAST to DATE, DATETIME or
+TIMESTAMP as a conversion to a number, which keeps only the leading digits.
+MySQL and MariaDB also refuse CAST(x AS TIMESTAMP), and PostgreSQL refuses
+DATETIME.
+
+Example:
+    SELECT CAST('2024-05-06' AS DATE)
+
+    SQLite 3.45.1        2024
+    PostgreSQL 16.15     2024-05-06
+    MySQL 8.0.46         2024-05-06
+    MariaDB 10.11.14     2024-05-06
+
+The same on every engine:
+    SELECT DATE('2024-05-06')
+
+    SQLite 3.45.1        '2024-05-06'
+    PostgreSQL 16.15     2024-05-06
+    MySQL 8.0.46         2024-05-06
+    MariaDB 10.11.14     2024-05-06
+
+DATE(x) gives a date on PostgreSQL, MySQL and MariaDB and ISO text
+(2024-05-06) on SQLite, which sorts and compares the same way.
+
+          SQLite PostgreSQL         MySQL              MariaDB
+DATE      2024   2024-05-06         2024-05-06         2024-05-06
+TIME      10     10:30:00           10:30:00           10:30:00
+DATETIME  2024   no                 2024-05-06 10:3... 2024-05-06 10:3...
+TIMESTAMP 2024   2024-05-06 10:3... no                 no

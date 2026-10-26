@@ -1,0 +1,30 @@
+alias-in-where (error): Select-list names in WHERE
+
+SQLite lets WHERE use a name given in the select list; PostgreSQL, MySQL and
+MariaDB refuse it.
+
+WHERE is worked out before the select list, so in standard SQL the y of SELECT
+x * 2 AS y does not exist yet. SQLite looks it up anyway.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1), (2)
+
+Example:
+    SELECT x * 2 AS y FROM t WHERE y > 2
+
+    SQLite 3.45.1        4
+    PostgreSQL 16.15     error: column "y" does not exist
+    MySQL 8.0.46         error: Unknown column 'y' in 'where clause'
+    MariaDB 10.11.14     error: Unknown column 'y' in 'WHERE'
+
+The same on every engine:
+    SELECT x * 2 AS y FROM t WHERE x * 2 > 2
+
+    SQLite 3.45.1        4
+    PostgreSQL 16.15     4
+    MySQL 8.0.46         4
+    MariaDB 10.11.14     4
+
+Repeat the expression in WHERE (WHERE x * 2 > 2), or select from a subquery
+that defines the name.

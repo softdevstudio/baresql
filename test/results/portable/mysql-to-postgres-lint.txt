@@ -1,0 +1,47 @@
+schema-mysql.sql:2:14: error: Backticks quote names on SQLite, MySQL and MariaDB; PostgreSQL refuses them. [backticks]
+    `customers`
+    Use plain lower-case names that are not keywords; they need no quotes on any engine.
+schema-mysql.sql:3:21: error: AUTO_INCREMENT works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [auto-increment]
+    AUTO_INCREMENT
+    No column definition numbers rows on all four engines. Keep one schema file per engine for these tables, or let the application assign the ids.
+schema-mysql.sql:7:16: error: DATETIME works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [type-not-everywhere]
+    DATETIME
+    Use TIMESTAMP.
+schema-mysql.sql:9:3: error: The table option ENGINE works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [table-options]
+    ENGINE
+    Leave the options out of schemas meant for every engine, and create indexes with separate CREATE INDEX statements.
+schema-mysql.sql:11:14: error: Backticks quote names on SQLite, MySQL and MariaDB; PostgreSQL refuses them. [backticks]
+    `invoices`
+    Use plain lower-case names that are not keywords; they need no quotes on any engine.
+schema-mysql.sql:12:21: error: AUTO_INCREMENT works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [auto-increment]
+    AUTO_INCREMENT
+    No column definition numbers rows on all four engines. Keep one schema file per engine for these tables, or let the application assign the ids.
+schema-mysql.sql:15:12: error: ENUM works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [type-not-everywhere]
+    ENUM('open', 'paid', 'void')
+    Use VARCHAR(n) with CHECK (x IN ('a', 'b')).
+schema-mysql.sql:18:3: error: The table option ENGINE works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [table-options]
+    ENGINE
+    Leave the options out of schemas meant for every engine, and create indexes with separate CREATE INDEX statements.
+queries.sql:11:8: warning: CONCAT skips NULL arguments on SQLite and PostgreSQL. On MySQL and MariaDB one NULL makes the whole result NULL. [concat-null]
+    CONCAT(name, ' (', country, ')')
+    Wrap every argument that can be NULL in COALESCE(x, '').
+queries.sql:14:8: warning: Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL; MySQL and MariaDB keep it. [integer-division]
+    COUNT(*) / COUNT(DISTINCT customer_id)
+    Multiply one side by 1.0 for the fraction and round it to the places you need (see decimal-division): ROUND(7 * 1.0 / 2, 2) is 3.5 on every engine. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.
+queries.sql:17:12: warning: 80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333333333333333 on PostgreSQL and a floating point number on SQLite. [decimal-division]
+    amount / 3
+    Round on purpose to the places you need: ROUND(80.50 / 3, 2) is 26.83 on all four engines.
+queries.sql:20:12: error: DATEDIFF() works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [function-not-everywhere]
+    DATEDIFF('2026-06-01', issued_on)
+    No form works on all four engines; julianday(a) - julianday(b) on SQLite, a - b on PostgreSQL.
+queries.sql:26:44: error: LIMIT 1, 2 works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [limit-comma]
+    LIMIT 2, 2
+    Write LIMIT 2 OFFSET 1, which all four accept.
+queries.sql:29:8: error: GROUP_CONCAT() works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [function-not-everywhere]
+    GROUP_CONCAT(name ORDER BY name SEPARATOR ', ')
+    No form works on all four engines; STRING_AGG(x, ',') on PostgreSQL.
+queries.sql:34:3: error: ON DUPLICATE KEY UPDATE works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [upsert]
+    ON DUPLICATE KEY UPDATE
+    Update first, then insert what is missing: UPDATE t SET n = 2 WHERE id = 1, then INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). Run both in one transaction.
+
+15 problems: 12 errors, 3 warnings. 6 notes not shown (differences that depend on the data); --all shows them.

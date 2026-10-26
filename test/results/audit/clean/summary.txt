@@ -1,0 +1,4 @@
+BareSQL Audit of baresql_fx_clean (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)) as postgres
+2 logins, 1 of them can read personal data; 2 columns hold personal data.
+Findings: 0 high, 0 medium, 0 low
+Wrote baresql-report/report.html and baresql-report/audit.json

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BareSQL Audit: baresql_fx_clean</title>
+<style>
+:root{--ink:#16202b;--muted:#5b6774;--line:#dfe4ea;--bg:#fff;--soft:#f5f7f9;--high:#b3261e;--medium:#b25e09;--low:#4a6a8a;--accent:#0e7c86;--mark:#fff1c2}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:1080px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:19px;margin:36px 0 10px;padding-top:10px;border-top:2px solid var(--ink)}h3{font-size:16px;margin:24px 0 6px}
+.sub{color:var(--muted);margin:0 0 18px}.mono,code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
+.tile{border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tile b{display:block;font-size:24px}.tile span{color:var(--muted);font-size:13px}
+.tile.sev-high b{color:var(--high)}.tile.sev-medium b{color:var(--medium)}.tile.sev-low b{color:var(--low)}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:10px 14px;border-radius:4px;margin:14px 0}
+.finding{border:1px solid var(--line);border-left:5px solid var(--low);border-radius:6px;padding:12px 14px;margin:10px 0;break-inside:avoid}
+.finding.sev-high{border-left-color:var(--high)}.finding.sev-medium{border-left-color:var(--medium)}
+.finding p{margin:0 0 6px;font-size:15.5px}.meta{color:var(--muted);font-size:13px}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:10px;color:#fff;background:var(--low);margin-right:6px;vertical-align:1px}
+.badge.sev-high{background:var(--high)}.badge.sev-medium{background:var(--medium)}
+.cat{display:inline-block;font-size:12px;padding:0 7px;border-radius:9px;background:var(--mark);margin:1px 3px 1px 0;white-space:nowrap}
+details{margin-top:8px}summary{cursor:pointer;color:var(--accent);font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:6px 8px}
+th{background:var(--soft);font-weight:600}td.n{text-align:right;white-space:nowrap}
+.wrap{overflow-x:auto}.bad{color:var(--high);font-weight:600}.ok{color:#1d7a3a;font-weight:600}
+ul.routes{margin:0;padding-left:16px}ul.routes li{margin:0}
+footer{margin-top:40px;color:var(--muted);font-size:12.5px}
+@media print{details{display:block}details>*{display:block}summary{display:none}main{padding:0}}
+</style>
+</head>
+<body>
+<main>
+<h1>Access audit of baresql_fx_clean</h1>
+<p class="sub">26 October 2026, 12:00 UTC · PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) · 2 logins · BareSQL 0.1.0-dev</p>
+
+<div class="tiles">
+<div class="tile sev-high"><b>0</b><span>high</span></div>
+<div class="tile sev-medium"><b>0</b><span>medium</span></div>
+<div class="tile sev-low"><b>0</b><span>low</span></div>
+<div class="tile"><b>1</b><span>logins that read personal data</span></div>
+<div class="tile"><b>2</b><span>columns with personal data</span></div>
+</div>
+
+<div class="note">
+BareSQL logged in as <b>postgres</b> (a superuser) over an unencrypted connection and read the system catalogs inside one read-only transaction.
+It read up to 200 rows of each table to see what the columns hold; the values were looked at in memory and are not in this report.
+For every login, the server's own privilege checks were asked about every table and column, and each answer below comes with the grant, membership, ownership or view that gives it.
+</div>
+
+<h2>Findings</h2>
+<p>Nothing to flag.</p>
+
+
+<h2>Who can read personal data</h2>
+
+<div class="wrap"><table>
+<tr><th>Login</th><th>Personal data</th><th class="n">Columns</th><th class="n">Tables</th><th class="n">Changes</th><th>Notes</th></tr>
+<tr><td><a href="#login-clean_app">clean_app</a></td><td><span class="cat">email address</span><span class="cat">person&#39;s name</span></td><td class="n">2</td><td class="n">1</td><td class="n">1</td><td></td></tr>
+</table></div>
+<p class="meta">Columns and tables count base tables, partitions and materialized views, reached in any way listed below. Changes counts tables with personal data the login can insert into, update, delete from or empty.</p>
+
+
+<h2>Personal data in this database</h2>
+
+<div class="wrap"><table>
+<tr><th>Column</th><th>Holds</th><th>How BareSQL knows</th><th>Read by</th></tr>
+<tr><td class="mono">app.customers.email<div class="meta">table · text</div></td><td><span class="cat">email address</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are email addresses</td><td>clean_app</td></tr><tr><td class="mono">app.customers.full_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>clean_app</td></tr>
+</table></div>
+
+
+<h2>Logins</h2>
+
+<h3 id="login-clean_app">clean_app</h3>
+<p class="meta">member of no role · password stored as a SCRAM hash</p>
+
+<div class="wrap"><table>
+<tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
+<tr><td class="mono">app.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.customers.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr>
+</table></div>
+
+<details><summary>6 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">app.customers.id</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.customers.created_at</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.orders.id</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.orders.customer_id</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.orders.total</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.orders.created_at</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr>
+</table></div></details>
+
+<details><summary>What it can change (3)</summary>
+<div class="wrap"><table><tr><th>Table</th><th>Privilege</th><th>How</th></tr>
+<tr><td class="mono">app.customers <span class="cat">personal data</span></td><td>INSERT</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.customers <span class="cat">personal data</span></td><td>UPDATE</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.orders</td><td>INSERT</td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr>
+</table></div></details>
+
+
+
+
+<h3 id="login-clean_reports">clean_reports</h3>
+<p class="meta">member of no role · no password set</p>
+<p>Reads no personal data.</p>
+<details><summary>5 other columns it can read</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+<tr><td class="mono">app.orders.total</td><td><ul class="routes"><li>through view reports.daily_sales (rights of clean_owner)</li></ul></td></tr><tr><td class="mono">app.orders.created_at</td><td><ul class="routes"><li>through view reports.daily_sales (rights of clean_owner)</li></ul></td></tr><tr><td class="mono">reports.daily_sales.day</td><td><ul class="routes"><li>granted to clean_reports</li></ul></td></tr><tr><td class="mono">reports.daily_sales.orders</td><td><ul class="routes"><li>granted to clean_reports</li></ul></td></tr><tr><td class="mono">reports.daily_sales.revenue</td><td><ul class="routes"><li>granted to clean_reports</li></ul></td></tr>
+</table></div></details>
+
+
+<details><summary>Functions that run with someone else's rights (1)</summary>
+<div class="wrap"><table><tr><th>Function</th><th>Runs as</th><th>How</th></tr>
+<tr><td class="mono">reports.order_count()</td><td>clean_counter</td><td><ul class="routes"><li>granted to clean_reports</li></ul></td></tr>
+</table></div></details>
+
+
+
+
+<h2>Everyone (PUBLIC)</h2>
+<p>What every role can read, including roles created after this audit.</p>
+<p>No personal data is open to every role.</p>
+
+
+
+
+<h2>Method</h2>
+<p>Schemas audited: <code>app</code>, <code>public</code>, <code>reports</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_clean</code>, login method md5.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+
+
+<p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>
+<footer>Made with BareSQL 0.1.0-dev · baresql.com · 2026-10-26T12:00:00Z</footer>
+</main>
+</body>
+</html>

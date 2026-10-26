@@ -82,14 +82,18 @@ type loginView struct {
 	Anchor   string
 	Personal []ColumnReach
 	Other    []ColumnReach
+	Nothing  []ColumnReach // granted, but no route gives rows today
 }
 
 func splitReach(l LoginReport) loginView {
 	v := loginView{L: l, Anchor: anchor(l.Name)}
 	for _, c := range l.Read {
-		if c.Personal != nil {
+		switch {
+		case !givesRows(c.Routes):
+			v.Nothing = append(v.Nothing, c)
+		case c.Personal != nil:
 			v.Personal = append(v.Personal, c)
-		} else {
+		default:
 			v.Other = append(v.Other, c)
 		}
 	}
@@ -145,7 +149,7 @@ func WriteHTML(w io.Writer, res *Result) error {
 				Writable: l.Summary.PersonalWritable, Notes: strings.Join(notes, ", ")})
 		}
 		for _, c := range l.Read {
-			if c.Personal != nil {
+			if c.Personal != nil && givesRows(c.Routes) {
 				k := c.Relation + "." + quoteIdent(c.Column)
 				readers[k] = append(readers[k], l.Name)
 			}
@@ -245,7 +249,18 @@ func WriteSummary(w io.Writer, res *Result) {
 			}
 		}
 	}
-	fmt.Fprintf(w, "%d logins, %d of them can read personal data; %d columns hold personal data.\n", len(res.Logins), personal, cols)
+	who := fmt.Sprintf("%d logins, %d of them can read personal data", len(res.Logins), personal)
+	switch {
+	case len(res.Logins) == 1 && personal == 1:
+		who = "1 login, which can read personal data"
+	case len(res.Logins) == 1:
+		who = "1 login, which cannot read personal data"
+	}
+	what := fmt.Sprintf("%d columns hold personal data", cols)
+	if cols == 1 {
+		what = "1 column holds personal data"
+	}
+	fmt.Fprintf(w, "%s; %s.\n", who, what)
 	counts := map[string]int{}
 	for _, f := range res.Findings {
 		counts[f.Severity]++

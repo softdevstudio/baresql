@@ -1,0 +1,28 @@
+substring-start (warning): SUBSTR from position 0 or below
+
+SUBSTR('abc', 0, 2) is 'a' on SQLite and PostgreSQL and an empty string on
+MySQL and MariaDB.
+
+Positions start at 1. SQLite and PostgreSQL count position 0 as part of the
+requested length, while MySQL and MariaDB return nothing for a start of 0.
+Negative starts differ as well: SQLite, MySQL and MariaDB count them from the
+end, and PostgreSQL counts them before the first character.
+
+Example:
+    SELECT SUBSTR('abc', 0, 2)
+
+    SQLite 3.45.1        'a'
+    PostgreSQL 16.15     'a'
+    MySQL 8.0.46         ''
+    MariaDB 10.11.14     ''
+
+The same on every engine:
+    SELECT SUBSTR('abc', 1, 1)
+
+    SQLite 3.45.1        'a'
+    PostgreSQL 16.15     'a'
+    MySQL 8.0.46         'a'
+    MariaDB 10.11.14     'a'
+
+Start at 1 or later. For the last n characters, SUBSTR(x, LENGTH(x) - n + 1)
+works on all four for ASCII text (LENGTH counts bytes on MySQL and MariaDB).

@@ -89,6 +89,10 @@ For every login, the server's own privilege checks were asked about every table 
 <div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
 {{range .Other}}<tr><td class="mono">{{.Relation}}.{{.Column}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
 </table></div></details>{{end}}
+{{if .Nothing}}<details><summary>{{len .Nothing}} column{{if ne (len .Nothing) 1}}s{{end}} it may select that give{{if eq (len .Nothing) 1}}s{{end}} it nothing today</summary>
+<div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
+{{range .Nothing}}<tr><td class="mono">{{.Relation}}.{{.Column}}{{if .Personal}} {{range labels .Personal.Categories}}<span class="cat">{{.}}</span>{{end}}{{end}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}
+</table></div></details>{{end}}
 {{if .L.Write}}<details><summary>What it can change ({{len .L.Write}})</summary>
 <div class="wrap"><table><tr><th>Table</th><th>Privilege</th><th>How</th></tr>
 {{range .L.Write}}<tr><td class="mono">{{.Relation}}{{if .Personal}} <span class="cat">personal data</span>{{end}}</td><td>{{.Privilege}}{{if .Columns}} ({{range $i, $c := .Columns}}{{if $i}}, {{end}}{{$c}}{{end}}){{end}}</td><td><ul class="routes">{{range .Routes}}<li>{{route .}}</li>{{end}}</ul></td></tr>{{end}}

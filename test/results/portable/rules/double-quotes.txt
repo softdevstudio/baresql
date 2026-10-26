@@ -1,0 +1,32 @@
+double-quotes (warning): Double quotes
+
+Double quotes name a column on SQLite and PostgreSQL. On MySQL and MariaDB
+they make a string, so SELECT "name" returns the word name.
+
+Standard SQL quotes names with double quotes, and SQLite and PostgreSQL follow
+it. MySQL and MariaDB read "..." like '...' unless the ANSI_QUOTES mode is on:
+the query still runs and returns the same text on every row. SQLite also turns
+a double-quoted word into a string when no column has that name.
+
+Given:
+    CREATE TABLE people (name VARCHAR(20));
+    INSERT INTO people VALUES ('Ann')
+
+Example:
+    SELECT "name" FROM people
+
+    SQLite 3.45.1        'Ann'
+    PostgreSQL 16.15     'Ann'
+    MySQL 8.0.46         'name'
+    MariaDB 10.11.14     'name'
+
+The same on every engine:
+    SELECT name FROM people
+
+    SQLite 3.45.1        'Ann'
+    PostgreSQL 16.15     'Ann'
+    MySQL 8.0.46         'Ann'
+    MariaDB 10.11.14     'Ann'
+
+Use single quotes for text. For names, use plain lower-case names that are not
+keywords: that is the one form all four engines read the same way.

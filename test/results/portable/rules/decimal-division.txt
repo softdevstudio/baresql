@@ -1,0 +1,30 @@
+decimal-division (warning): Dividing decimals
+
+80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333333333333333 on PostgreSQL
+and a floating point number on SQLite.
+
+MySQL and MariaDB give the result of a decimal division four more decimal
+places than the dividend has (the div_precision_increment setting) and cut it
+there. PostgreSQL keeps at least 16 significant digits, and SQLite divides as
+floating point numbers. Shares of an amount, prices per unit and AVG of a
+DECIMAL column then differ in the last digits, and sums of them by a cent here
+and there.
+
+Example:
+    SELECT 80.50 / 3
+
+    SQLite 3.45.1        26.833333333333332
+    PostgreSQL 16.15     26.8333333333333333
+    MySQL 8.0.46         26.833333
+    MariaDB 10.11.14     26.833333
+
+The same on every engine:
+    SELECT ROUND(80.50 / 3, 2)
+
+    SQLite 3.45.1        26.83
+    PostgreSQL 16.15     26.83
+    MySQL 8.0.46         26.83
+    MariaDB 10.11.14     26.83
+
+Round on purpose to the places you need: ROUND(80.50 / 3, 2) is 26.83 on all
+four engines.

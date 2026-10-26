@@ -1,0 +1,37 @@
+boolean-as-number (error): Booleans and numbers
+
+PostgreSQL keeps booleans and numbers apart: active = 1, WHERE 1 and inserting
+1 into a BOOLEAN column all fail there.
+
+On SQLite, MySQL and MariaDB a boolean is the number 0 or 1, and TRUE is
+another way to write 1. PostgreSQL has a real boolean type with no automatic
+conversion from integers, so code written for MySQL that compares flags with 1
+stops there.
+
+Given:
+    CREATE TABLE users (active BOOLEAN);
+    INSERT INTO users VALUES (TRUE)
+
+Example:
+    SELECT COUNT(*) FROM users WHERE active = 1
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     error: operator does not exist: boolean = integer
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+The same on every engine:
+    SELECT COUNT(*) FROM users WHERE active = TRUE
+
+    SQLite 3.45.1        1
+    PostgreSQL 16.15     1
+    MySQL 8.0.46         1
+    MariaDB 10.11.14     1
+
+Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All
+four engines accept them.
+
+                    SQLite PostgreSQL MySQL MariaDB
+boolean = number    yes    no         yes   yes
+WHERE number        yes    no         yes   yes     Write a comparison: WHERE x <> 0, or WHERE 1 = 1.
+number into BOOLEAN yes    no         yes   yes     Insert TRUE or FALSE.

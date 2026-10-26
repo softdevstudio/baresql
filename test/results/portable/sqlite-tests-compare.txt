@@ -1,0 +1,70 @@
+Compared on SQLite 3.45.1, PostgreSQL 16.15.
+
+queries.sql:4  INSERT OR IGNORE INTO users (id, email, name, created_at) VALUES (1, 'ann@example.com', 'Ann Lee'...
+  refused by PostgreSQL, answered by SQLite
+  SQLite: done
+  PostgreSQL: error: syntax error at or near "OR"
+  lint: insert-ignore
+
+queries.sql:8  SELECT id, email FROM users WHERE email LIKE 'bob%'
+  1 rows on SQLite, 0 on PostgreSQL
+  SQLite: 2, 'Bob@Example.com'
+  PostgreSQL: no rows
+  lint: like-case
+
+queries.sql:11  SELECT email FROM users WHERE is_admin = 1
+  refused by PostgreSQL, answered by SQLite
+  SQLite: 'Bob@Example.com'
+  PostgreSQL: error: operator does not exist: boolean = integer
+  lint: boolean-as-number
+
+queries.sql:17  SELECT b.id, u.name FROM bookings b JOIN users u ON u.id = b.user_id ORDER BY u.name
+  the same rows in a different order
+  SQLite: 4 rows
+      4, NULL
+      1, 'Ann Lee'
+      2, 'Ann Lee'
+      3, 'Bob Stone'
+  PostgreSQL: 4 rows
+      1, 'Ann Lee'
+      2, 'Ann Lee'
+      3, 'Bob Stone'
+      4, NULL
+  lint: null-order
+
+queries.sql:20  SELECT u.id, u.email, b.starts_at FROM users u JOIN bookings b ON b.user_id = u.id GROUP BY u.id ...
+  refused by PostgreSQL, answered by SQLite
+  SQLite: 3 rows
+      1, 'ann@example.com', '2026-06-01 15:00:00'
+      2, 'Bob@Example.com', '2026-06-15 15:00:00'
+      3, 'cleo@example.com', '2026-08-01 15:00:00'
+  PostgreSQL: error: column "b.starts_at" must appear in the GROUP BY clause or be used in an aggregate function
+  lint: ungrouped-column
+
+queries.sql:24  SELECT id, date(starts_at, '+' || nights || ' days') AS checkout FROM bookings ORDER BY id
+  refused by PostgreSQL, answered by SQLite
+  SQLite: 4 rows
+      1, '2026-06-04'
+      2, '2026-07-12'
+      3, '2026-06-20'
+      4, '2026-08-02'
+  PostgreSQL: error: function date(timestamp without time zone, text) does not exist
+  lint: function-not-everywhere, pipes-concat
+
+queries.sql:27  SELECT strftime('%Y-%m', starts_at) AS month, SUM(price_cents) FROM bookings GROUP BY month ORDER...
+  refused by PostgreSQL, answered by SQLite
+  SQLite: 3 rows
+      '2026-06', 97000
+      '2026-07', 25000
+      '2026-08', 13000
+  PostgreSQL: error: function strftime(unknown, timestamp without time zone) does not exist
+  lint: function-not-everywhere, null-order
+
+queries.sql:34  INSERT INTO bookings VALUES (5, 2, '2026-09-01 15:00:00', 2, '240.00', NULL)
+  refused by PostgreSQL, answered by SQLite
+  SQLite: done
+  PostgreSQL: error: invalid input syntax for type integer: "240.00"
+  lint: type-not-enforced
+
+15 statements: 7 answered alike, 8 differ.
+baresql rules <code> explains each lint code above.

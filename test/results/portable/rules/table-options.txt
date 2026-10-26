@@ -1,0 +1,42 @@
+table-options (error): MySQL table options
+
+ENGINE=, DEFAULT CHARSET=, indexes inside CREATE TABLE, column comments and ON
+UPDATE belong to MySQL and MariaDB; SQLite and PostgreSQL refuse them.
+
+Dumps made with mysqldump carry these options on every table. SQLite's own
+options, WITHOUT ROWID and STRICT, fail on the other three engines in the same
+way.
+
+Example:
+    CREATE TABLE t (x INTEGER) ENGINE=InnoDB;
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        error: near "=": syntax error
+    PostgreSQL 16.15     error: syntax error at or near "ENGINE"
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+The same on every engine:
+    CREATE TABLE t (x INTEGER);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Leave the options out of schemas meant for every engine, and create indexes
+with separate CREATE INDEX statements.
+
+                          SQLite PostgreSQL MySQL MariaDB
+ENGINE                    no     no         yes   yes
+WITHOUT ROWID             yes    no         no    no
+STRICT                    yes    no         no    no
+WITH (...)                no     yes        no    no
+INHERITS                  no     yes        no    no
+PARTITION BY              no     yes        yes   yes
+index inside CREATE TABLE no     no         yes   yes     Create the index with a separate CREATE INDEX statement.
+CHARACTER SET             no     no         yes   yes
+COMMENT                   yes    no         yes   yes
+ON UPDATE                 no     no         yes   yes     Set the column in the UPDATE statements, or with a trigger per engine.
+COLLATE                   no     no         yes   yes

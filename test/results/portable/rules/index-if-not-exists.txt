@@ -1,0 +1,28 @@
+index-if-not-exists (error): CREATE INDEX IF NOT EXISTS
+
+MySQL refuses IF NOT EXISTS in CREATE INDEX; SQLite, PostgreSQL and MariaDB
+accept it.
+
+MySQL accepts IF NOT EXISTS for tables and databases, and not for indexes.
+
+Example:
+    CREATE TABLE t (x INTEGER);
+    CREATE INDEX IF NOT EXISTS t_x ON t (x);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     0
+
+The same on every engine:
+    CREATE TABLE t (x INTEGER);
+    CREATE INDEX t_x ON t (x);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Create each index once, in a migration that runs once, without IF NOT EXISTS.

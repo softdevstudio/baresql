@@ -1,0 +1,7 @@
+BareSQL Audit of baresql_fx_saas (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)) as postgres
+4 logins, 4 of them can read personal data; 5 columns hold personal data.
+Findings: 1 high, 1 medium, 1 low
+  high   view-bypasses-row-security   support.ticket_context
+  medium rls-owner-login              app.audit_log
+  low    rls-no-policies              app.api_keys
+Wrote baresql-report/report.html and baresql-report/audit.json

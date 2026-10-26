@@ -1,0 +1,1605 @@
+{
+  "tool": "baresql",
+  "version": "0.1.0-dev",
+  "generated": "2026-10-26T12:00:00Z",
+  "server": {
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "version_num": 160015,
+    "database": "baresql_fx_saas",
+    "target": "postgres://postgres@127.0.0.1:5432/baresql_fx_saas",
+    "tls": false,
+    "auth": "md5",
+    "auditor": "postgres",
+    "auditor_is_superuser": true
+  },
+  "settings": {
+    "sampled": true,
+    "sample_rows": 200,
+    "schemas": [
+      "app",
+      "public",
+      "support"
+    ],
+    "logins": [
+      "saas_admin_app",
+      "saas_agent",
+      "saas_app",
+      "saas_migrator"
+    ]
+  },
+  "relations": [
+    {
+      "name": "app.accounts",
+      "kind": "table",
+      "owner": "saas_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "tenant_isolation",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "saas_app"
+          ],
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text))::integer)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "app.api_keys",
+      "kind": "table",
+      "owner": "saas_owner",
+      "row_security": "on",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "api_key",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "secret"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "3 of 3 sampled values look like random tokens",
+              "3 of 3 sampled values contain a key or token"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "app.audit_log",
+      "kind": "table",
+      "owner": "saas_migrator",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "tenant_isolation",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "PUBLIC"
+          ],
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text))::integer)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "actor_email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "action",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "app.invoices",
+      "kind": "table",
+      "owner": "saas_owner",
+      "row_security": "forced",
+      "policies": [
+        {
+          "name": "tenant_isolation",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "saas_app"
+          ],
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text))::integer)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "amount",
+          "type": "numeric(10,2)"
+        }
+      ]
+    },
+    {
+      "name": "app.tenants",
+      "kind": "table",
+      "owner": "saas_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "name",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "app.tickets",
+      "kind": "table",
+      "owner": "saas_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "support_read",
+          "command": "SELECT",
+          "permissive": true,
+          "roles": [
+            "saas_support"
+          ],
+          "using": "true"
+        },
+        {
+          "name": "tenant_isolation",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "saas_app"
+          ],
+          "using": "(tenant_id = (current_setting('app.tenant_id'::text))::integer)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "account_id",
+          "type": "integer"
+        },
+        {
+          "name": "subject",
+          "type": "text"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone"
+        }
+      ]
+    },
+    {
+      "name": "support.invoice_summary",
+      "kind": "view",
+      "owner": "saas_owner",
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "app.invoices.id"
+          ]
+        },
+        {
+          "name": "amount",
+          "type": "numeric(10,2)",
+          "sources": [
+            "app.invoices.amount"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "support.ticket_context",
+      "kind": "view",
+      "owner": "saas_owner",
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "app.tickets.id"
+          ]
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "sources": [
+            "app.tickets.subject"
+          ]
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from app.accounts.email"
+            ]
+          },
+          "sources": [
+            "app.accounts.email"
+          ]
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from app.accounts.full_name"
+            ]
+          },
+          "sources": [
+            "app.accounts.full_name"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "support.ticket_context_invoker",
+      "kind": "view",
+      "owner": "saas_owner",
+      "security_invoker": true,
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "app.tickets.id"
+          ]
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "sources": [
+            "app.tickets.subject"
+          ]
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from app.accounts.email"
+            ]
+          },
+          "sources": [
+            "app.accounts.email"
+          ]
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from app.accounts.full_name"
+            ]
+          },
+          "sources": [
+            "app.accounts.full_name"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "support.ticket_list",
+      "kind": "view",
+      "owner": "saas_owner",
+      "security_invoker": true,
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "app.tickets.id"
+          ]
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "sources": [
+            "app.tickets.subject"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "support.ticket_overview",
+      "kind": "view",
+      "owner": "saas_owner",
+      "sampled": false,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "sources": [
+            "support.ticket_list.id"
+          ]
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "sources": [
+            "support.ticket_list.subject"
+          ]
+        }
+      ]
+    }
+  ],
+  "logins": [
+    {
+      "name": "saas_admin_app",
+      "attributes": [
+        "bypassrls"
+      ],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.api_keys",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.api_keys",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.api_keys",
+          "kind": "table",
+          "column": "api_key",
+          "personal": {
+            "categories": [
+              "secret"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "3 of 3 sampled values look like random tokens",
+              "3 of 3 sampled values contain a key or token"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tenants",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tenants",
+          "kind": "table",
+          "column": "name",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "account_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "body",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_admin_app",
+              "rows": "all rows (BYPASSRLS)"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 4,
+        "columns": 16,
+        "personal_columns": 4,
+        "personal_tables": 2,
+        "categories": [
+          "email",
+          "name",
+          "phone",
+          "secret"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "saas_agent",
+      "attributes": [],
+      "member_of": [
+        "saas_support"
+      ],
+      "password": "none",
+      "read": [
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_context",
+                  "owner": "saas_owner"
+                }
+              ],
+              "rows": "all rows (owner; row security not forced)"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_context",
+                  "owner": "saas_owner"
+                }
+              ],
+              "rows": "all rows (owner; row security not forced)"
+            }
+          ]
+        },
+        {
+          "relation": "app.invoices",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.invoice_summary",
+                  "owner": "saas_owner"
+                }
+              ],
+              "rows": "no rows (row security on, no policy lets this role read)"
+            }
+          ]
+        },
+        {
+          "relation": "app.invoices",
+          "kind": "table",
+          "column": "amount",
+          "routes": [
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.invoice_summary",
+                  "owner": "saas_owner"
+                }
+              ],
+              "rows": "no rows (row security on, no policy lets this role read)"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "rows allowed by policy support_read"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_context",
+                  "owner": "saas_owner"
+                }
+              ],
+              "rows": "all rows (owner; row security not forced)"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_list",
+                  "owner": "the reader"
+                }
+              ],
+              "rows": "rows allowed by policy support_read"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_overview",
+                  "owner": "saas_owner"
+                },
+                {
+                  "view": "support.ticket_list",
+                  "owner": "the reader"
+                }
+              ],
+              "rows": "rows allowed by policy support_read"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "rows allowed by policy support_read"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "account_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "rows allowed by policy support_read"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "rows allowed by policy support_read"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_context",
+                  "owner": "saas_owner"
+                }
+              ],
+              "rows": "all rows (owner; row security not forced)"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_list",
+                  "owner": "the reader"
+                }
+              ],
+              "rows": "rows allowed by policy support_read"
+            },
+            {
+              "kind": "view",
+              "views": [
+                {
+                  "view": "support.ticket_overview",
+                  "owner": "saas_owner"
+                },
+                {
+                  "view": "support.ticket_list",
+                  "owner": "the reader"
+                }
+              ],
+              "rows": "rows allowed by policy support_read"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "body",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "rows allowed by policy support_read"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "rows allowed by policy support_read"
+            }
+          ]
+        },
+        {
+          "relation": "support.invoice_summary",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.invoice_summary",
+          "kind": "view",
+          "column": "amount",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context",
+          "kind": "view",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context",
+          "kind": "view",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from app.accounts.email"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context",
+          "kind": "view",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from app.accounts.full_name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context_invoker",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context_invoker",
+          "kind": "view",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context_invoker",
+          "kind": "view",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "comes from app.accounts.email"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_context_invoker",
+          "kind": "view",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "comes from app.accounts.full_name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support",
+              "rows": "reading it fails: the view needs app.accounts.email, app.accounts.full_name and app.accounts.id, which the reader may not read"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_list",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_list",
+          "kind": "view",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_overview",
+          "kind": "view",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        },
+        {
+          "relation": "support.ticket_overview",
+          "kind": "view",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_support"
+            }
+          ]
+        }
+      ],
+      "write": null,
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 6,
+        "columns": 18,
+        "personal_columns": 2,
+        "personal_tables": 1,
+        "categories": [
+          "email",
+          "name"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "saas_app",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "column": "phone",
+          "personal": {
+            "categories": [
+              "phone"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are phone numbers"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.tenants",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tenants",
+          "kind": "table",
+          "column": "name",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "account_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "subject",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "body",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "column": "created_at",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app",
+              "rows": "rows allowed by policy tenant_isolation"
+            }
+          ]
+        }
+      ],
+      "write": [
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.accounts",
+          "kind": "table",
+          "privilege": "DELETE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        },
+        {
+          "relation": "app.tickets",
+          "kind": "table",
+          "privilege": "DELETE",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "saas_app"
+            }
+          ]
+        }
+      ],
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 3,
+        "columns": 13,
+        "personal_columns": 3,
+        "personal_tables": 1,
+        "categories": [
+          "email",
+          "name",
+          "phone"
+        ],
+        "writable_tables": 2,
+        "personal_writable": 1
+      }
+    },
+    {
+      "name": "saas_migrator",
+      "attributes": [],
+      "member_of": null,
+      "password": "none",
+      "read": [
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator",
+              "rows": "all rows (owner; row security not forced)"
+            }
+          ]
+        },
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator",
+              "rows": "all rows (owner; row security not forced)"
+            }
+          ]
+        },
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "column": "actor_email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "20 of 20 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator",
+              "rows": "all rows (owner; row security not forced)"
+            }
+          ]
+        },
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "column": "action",
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator",
+              "rows": "all rows (owner; row security not forced)"
+            }
+          ]
+        }
+      ],
+      "write": [
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator"
+            }
+          ]
+        },
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "privilege": "UPDATE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator"
+            }
+          ]
+        },
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "privilege": "DELETE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator"
+            }
+          ]
+        },
+        {
+          "relation": "app.audit_log",
+          "kind": "table",
+          "privilege": "TRUNCATE",
+          "personal": true,
+          "routes": [
+            {
+              "kind": "owner",
+              "role": "saas_migrator"
+            }
+          ]
+        }
+      ],
+      "functions": null,
+      "server": null,
+      "foreign_servers": null,
+      "summary": {
+        "relations": 1,
+        "columns": 4,
+        "personal_columns": 1,
+        "personal_tables": 1,
+        "categories": [
+          "email"
+        ],
+        "writable_tables": 1,
+        "personal_writable": 1
+      }
+    }
+  ],
+  "public": {
+    "name": "PUBLIC",
+    "attributes": [],
+    "member_of": null,
+    "read": [],
+    "write": null,
+    "functions": null,
+    "server": null,
+    "foreign_servers": null,
+    "summary": {
+      "relations": 0,
+      "columns": 0,
+      "personal_columns": 0,
+      "personal_tables": 0,
+      "categories": [],
+      "writable_tables": 0,
+      "personal_writable": 0
+    }
+  },
+  "default_privileges": [],
+  "findings": [
+    {
+      "code": "view-bypasses-row-security",
+      "severity": "high",
+      "subject": "support.ticket_context",
+      "message": "View support.ticket_context reads app.accounts, app.tickets with rights that skip row security, so these logins see every row: saas_agent."
+    },
+    {
+      "code": "rls-owner-login",
+      "severity": "medium",
+      "subject": "app.audit_log",
+      "message": "Row security on app.audit_log is not forced and its owner saas_migrator can log in: sessions logged in as saas_migrator see every row."
+    },
+    {
+      "code": "rls-no-policies",
+      "severity": "low",
+      "subject": "app.api_keys",
+      "message": "Row security is on for app.api_keys but it has no policies: only its owner and roles that bypass row security see any rows."
+    }
+  ],
+  "not_seen": [],
+  "mismatches": []
+}

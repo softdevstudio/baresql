@@ -1,0 +1,27 @@
+varchar-length (error): VARCHAR without a length
+
+VARCHAR without a length works on SQLite and PostgreSQL; MySQL and MariaDB
+require one.
+
+PostgreSQL reads VARCHAR without a length as text of any length, and SQLite
+ignores lengths anyway.
+
+Example:
+    CREATE TABLE t (x VARCHAR);
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the...
+
+The same on every engine:
+    CREATE TABLE t (x VARCHAR(255));
+    SELECT COUNT(*) FROM t
+
+    SQLite 3.45.1        0
+    PostgreSQL 16.15     0
+    MySQL 8.0.46         0
+    MariaDB 10.11.14     0
+
+Give a length, VARCHAR(255), or use TEXT for long values.

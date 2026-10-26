@@ -94,7 +94,7 @@ func Compare(old, new *Result) *Comparison {
 	c := &Comparison{Old: old.Generated, New: new.Generated}
 	of, nf := facts(old), facts(new)
 	detail := func(f fact) string {
-		d := strings.Join(f.routes, "; ")
+		d := strings.Join(f.routes, " | ")
 		if len(f.cats) > 0 {
 			d = strings.Join(labels(f.cats), ", ") + "; " + d
 		}
@@ -116,7 +116,7 @@ func Compare(old, new *Result) *Comparison {
 		}
 		if added := minus(f.routes, o.routes); len(added) > 0 {
 			c.Other = append(c.Other, Change{Kind: "route", Login: f.login, Object: f.object,
-				Detail: "new route: " + strings.Join(added, "; ")})
+				Detail: "new route: " + strings.Join(added, " | ")})
 		}
 	}
 	for k, f := range of {

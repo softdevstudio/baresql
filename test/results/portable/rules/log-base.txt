@@ -1,0 +1,30 @@
+log-base (warning): LOG with one argument
+
+LOG(x) is the base-10 logarithm on SQLite and PostgreSQL and the natural
+logarithm on MySQL and MariaDB.
+
+LOG(100) is 2 on SQLite and PostgreSQL and 4.605 on MySQL and MariaDB. With
+two arguments, LOG(b, x) is the logarithm of x to base b on all four. SQLite
+has LOG, LN, LOG10 and POWER only when it is built with its math functions:
+the sqlite3 program is by default since version 3.35, and some systems ship it
+without them.
+
+Example:
+    SELECT LOG(100)
+
+    SQLite 3.45.1        2.0
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         4.605170185988092
+    MariaDB 10.11.14     4.605170185988092
+
+The same on every engine:
+    SELECT LOG10(100)
+
+    SQLite 3.45.1        2.0
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+Say which one you mean: LN(x) for the natural logarithm, LOG10(x) for base 10.
+
+The SQLite answers assume a build with math functions.

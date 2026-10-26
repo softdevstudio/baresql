@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -98,11 +99,12 @@ func TestScale(t *testing.T) {
 	for _, l := range res.Logins {
 		reads += len(l.Read)
 	}
-	line := fmt.Sprintf("scale: %d tables x 10 columns, %d logins, sampled: audit took %.1fs, %d readable login-columns",
-		tables, logins, took.Seconds(), reads)
+	line := fmt.Sprintf("%d tables of 10 columns, %d logins, values sampled: the audit took %.1f seconds and found %d readable login-columns (PostgreSQL %s, %d CPUs, %s/%s)",
+		tables, logins, took.Seconds(), reads, res.Server.Version, runtime.NumCPU(), runtime.GOOS, runtime.GOARCH)
 	t.Log(line)
 	if dir := os.Getenv("BARESQL_RECORD_DIR"); dir != "" {
-		os.WriteFile(filepath.Join(dir, "audit-scale.txt"), []byte(line+"\n"), 0o644)
+		os.MkdirAll(filepath.Join(dir, "audit"), 0o755)
+		os.WriteFile(filepath.Join(dir, "audit", "scale.txt"), []byte(line+"\n"), 0o644)
 	}
 }
 

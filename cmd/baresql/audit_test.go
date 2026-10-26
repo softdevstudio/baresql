@@ -79,7 +79,7 @@ func TestCLIAuditAndBaseline(t *testing.T) {
 			t.Fatalf("%s not written: %v", f, err)
 		}
 	}
-	if !strings.Contains(out.String(), "1 logins, 0 of them can read personal data") {
+	if !strings.Contains(out.String(), "1 login, which cannot read personal data") {
 		t.Fatalf("summary:\n%s", out.String())
 	}
 

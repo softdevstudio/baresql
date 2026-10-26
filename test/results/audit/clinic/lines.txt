@@ -1,0 +1,97 @@
+finding high server-file-access clinic_it
+finding low foreign-server-mapping clinic_lab
+finding medium admin-option clinic_hr
+finding medium grant-option-personal clinic_billing
+finding medium md5-passwords logins
+foreign-server clinic_lab clinic_lab_server granted to clinic_lab
+function clinic_it pg_read_file(text) granted to clinic_it
+read clinic_auditor clinic.appointments.id [-] granted to clinic_staff through clinic_doctor
+read clinic_auditor clinic.appointments.patient_id [-] granted to clinic_staff through clinic_doctor
+read clinic_auditor clinic.appointments.room [-] granted to clinic_staff through clinic_doctor
+read clinic_auditor clinic.appointments.starts_at [-] granted to clinic_staff through clinic_doctor
+read clinic_auditor clinic.lab_results.id [-] granted to clinic_doctor
+read clinic_auditor clinic.lab_results.patient_id [-] granted to clinic_doctor
+read clinic_auditor clinic.lab_results.payload [email,name] granted to clinic_doctor
+read clinic_auditor clinic.patients.date_of_birth [birth-date] granted to clinic_doctor
+read clinic_auditor clinic.patients.email [email] granted to clinic_doctor
+read clinic_auditor clinic.patients.first_name [name] granted to clinic_doctor
+read clinic_auditor clinic.patients.home_address [address] granted to clinic_doctor
+read clinic_auditor clinic.patients.id [-] granted to clinic_doctor
+read clinic_auditor clinic.patients.insurance_number [insurance-id] granted to clinic_doctor
+read clinic_auditor clinic.patients.last_name [name] granted to clinic_doctor
+read clinic_auditor clinic.patients.national_id [national-id] granted to clinic_doctor
+read clinic_auditor clinic.patients.phone [phone] granted to clinic_doctor
+read clinic_auditor clinic.visits.diagnosis [health] granted to clinic_doctor
+read clinic_auditor clinic.visits.id [-] granted to clinic_doctor
+read clinic_auditor clinic.visits.notes [-] granted to clinic_doctor
+read clinic_auditor clinic.visits.patient_id [-] granted to clinic_doctor
+read clinic_auditor clinic.visits.visit_date [-] granted to clinic_doctor
+read clinic_billing clinic.patients.email [email] column granted to clinic_billing with grant option
+read clinic_billing clinic.patients.id [-] column granted to clinic_billing with grant option
+read clinic_billing clinic.patients.insurance_number [insurance-id] column granted to clinic_billing with grant option
+read clinic_drsmith clinic.appointments.id [-] granted to clinic_staff through clinic_doctor
+read clinic_drsmith clinic.appointments.patient_id [-] granted to clinic_staff through clinic_doctor
+read clinic_drsmith clinic.appointments.room [-] granted to clinic_staff through clinic_doctor
+read clinic_drsmith clinic.appointments.starts_at [-] granted to clinic_staff through clinic_doctor
+read clinic_drsmith clinic.lab_results.id [-] granted to clinic_doctor
+read clinic_drsmith clinic.lab_results.patient_id [-] granted to clinic_doctor
+read clinic_drsmith clinic.lab_results.payload [email,name] granted to clinic_doctor
+read clinic_drsmith clinic.patients.date_of_birth [birth-date] granted to clinic_doctor
+read clinic_drsmith clinic.patients.email [email] granted to clinic_doctor
+read clinic_drsmith clinic.patients.first_name [name] granted to clinic_doctor
+read clinic_drsmith clinic.patients.home_address [address] granted to clinic_doctor
+read clinic_drsmith clinic.patients.id [-] granted to clinic_doctor
+read clinic_drsmith clinic.patients.insurance_number [insurance-id] granted to clinic_doctor
+read clinic_drsmith clinic.patients.last_name [name] granted to clinic_doctor
+read clinic_drsmith clinic.patients.national_id [national-id] granted to clinic_doctor
+read clinic_drsmith clinic.patients.phone [phone] granted to clinic_doctor
+read clinic_drsmith clinic.visits.diagnosis [health] granted to clinic_doctor
+read clinic_drsmith clinic.visits.id [-] granted to clinic_doctor
+read clinic_drsmith clinic.visits.notes [-] granted to clinic_doctor
+read clinic_drsmith clinic.visits.patient_id [-] granted to clinic_doctor
+read clinic_drsmith clinic.visits.visit_date [-] granted to clinic_doctor
+read clinic_frontdesk clinic.appointments.id [-] granted to clinic_staff
+read clinic_frontdesk clinic.appointments.patient_id [-] granted to clinic_staff
+read clinic_frontdesk clinic.appointments.room [-] granted to clinic_staff
+read clinic_frontdesk clinic.appointments.starts_at [-] granted to clinic_staff
+read clinic_frontdesk clinic.patients.first_name [name] column granted to clinic_frontdesk
+read clinic_frontdesk clinic.patients.id [-] column granted to clinic_frontdesk
+read clinic_frontdesk clinic.patients.last_name [name] column granted to clinic_frontdesk
+read clinic_frontdesk clinic.patients.phone [phone] column granted to clinic_frontdesk
+read clinic_lab clinic.lab_results.id [-] granted to clinic_lab
+read clinic_lab clinic.lab_results.patient_id [-] granted to clinic_lab
+read clinic_lab clinic.lab_results.payload [email,name] granted to clinic_lab
+read clinic_locum clinic.appointments.id [-] after SET ROLE clinic_doctor: granted to clinic_staff
+read clinic_locum clinic.appointments.id [-] after SET ROLE clinic_staff: granted to clinic_staff
+read clinic_locum clinic.appointments.patient_id [-] after SET ROLE clinic_doctor: granted to clinic_staff
+read clinic_locum clinic.appointments.patient_id [-] after SET ROLE clinic_staff: granted to clinic_staff
+read clinic_locum clinic.appointments.room [-] after SET ROLE clinic_doctor: granted to clinic_staff
+read clinic_locum clinic.appointments.room [-] after SET ROLE clinic_staff: granted to clinic_staff
+read clinic_locum clinic.appointments.starts_at [-] after SET ROLE clinic_doctor: granted to clinic_staff
+read clinic_locum clinic.appointments.starts_at [-] after SET ROLE clinic_staff: granted to clinic_staff
+read clinic_locum clinic.lab_results.id [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.lab_results.patient_id [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.lab_results.payload [email,name] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.date_of_birth [birth-date] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.email [email] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.first_name [name] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.home_address [address] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.id [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.insurance_number [insurance-id] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.last_name [name] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.national_id [national-id] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.patients.phone [phone] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.visits.diagnosis [health] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.visits.id [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.visits.notes [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.visits.patient_id [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_locum clinic.visits.visit_date [-] after SET ROLE clinic_doctor: granted to clinic_doctor
+read clinic_research clinic.diagnosis_stats.diagnosis [health] granted to clinic_research
+read clinic_research clinic.diagnosis_stats.visits [-] granted to clinic_research
+read clinic_research clinic.visits_2025.diagnosis [health] granted to clinic_research
+read clinic_research clinic.visits_2025.id [-] granted to clinic_research
+read clinic_research clinic.visits_2025.notes [-] granted to clinic_research
+read clinic_research clinic.visits_2025.patient_id [-] granted to clinic_research
+read clinic_research clinic.visits_2025.visit_date [-] granted to clinic_research
+server clinic_it read-server-files may run pg_read_file(text)
+server clinic_it read-server-files member of pg_read_server_files

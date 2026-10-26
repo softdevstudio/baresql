@@ -1,0 +1,33 @@
+fetch-first (error): FETCH FIRST n ROWS ONLY
+
+The standard FETCH FIRST works on PostgreSQL and MariaDB; SQLite and MySQL
+refuse it.
+
+MariaDB added FETCH FIRST in version 10.6. SQLite and MySQL know only LIMIT,
+and they refuse OFFSET n ROWS for the same reason.
+
+Given:
+    CREATE TABLE t (x INTEGER);
+    INSERT INTO t VALUES (1), (2), (3)
+
+Example:
+    SELECT x FROM t ORDER BY x FETCH FIRST 2 ROWS ONLY
+
+    SQLite 3.45.1        error: near "FETCH": syntax error
+    PostgreSQL 16.15     1; 2
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     1; 2
+
+The same on every engine:
+    SELECT x FROM t ORDER BY x LIMIT 2
+
+    SQLite 3.45.1        1; 2
+    PostgreSQL 16.15     1; 2
+    MySQL 8.0.46         1; 2
+    MariaDB 10.11.14     1; 2
+
+Use LIMIT n, with OFFSET m when you need an offset.
+
+              SQLite PostgreSQL MySQL MariaDB
+FETCH FIRST   no     yes        no    yes
+OFFSET n ROWS no     yes        no    yes     Use LIMIT n OFFSET m, which all four accept.

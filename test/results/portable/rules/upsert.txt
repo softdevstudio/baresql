@@ -1,0 +1,43 @@
+upsert (error): Insert or update (upsert)
+
+ON CONFLICT ... DO UPDATE works on SQLite and PostgreSQL and ON DUPLICATE KEY
+UPDATE on MySQL and MariaDB; no single statement works on all four.
+
+REPLACE INTO works on SQLite, MySQL and MariaDB, but it deletes the old row
+and inserts a new one, which fires delete triggers and resets the columns the
+statement leaves out. Of these four engines, MERGE exists on PostgreSQL 15 and
+later only.
+
+Given:
+    CREATE TABLE t (id INTEGER PRIMARY KEY, n INTEGER);
+    INSERT INTO t VALUES (1, 1)
+
+Example:
+    INSERT INTO t VALUES (1, 2) ON CONFLICT (id) DO UPDATE SET n = excluded.n;
+    SELECT n FROM t
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the...
+
+The same on every engine:
+    UPDATE t SET n = 2 WHERE id = 1;
+    INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1);
+    SELECT n FROM t
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+Update first, then insert what is missing: UPDATE t SET n = 2 WHERE id = 1,
+then INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE
+id = 1). Run both in one transaction.
+
+                        SQLite PostgreSQL MySQL MariaDB
+ON CONFLICT DO UPDATE   yes    yes        no    no
+ON DUPLICATE KEY UPDATE no     no         yes   yes
+REPLACE INTO            yes    no         yes   yes
+INSERT OR REPLACE       yes    no         no    no
+MERGE                   no     yes        no    no      The PostgreSQL answer holds from 15.
