@@ -52,8 +52,20 @@ demo=$root/test/demo
 pg=$BARESQL_TEST_PG my=$BARESQL_TEST_MYSQL ma=$BARESQL_TEST_MARIADB
 run "$root" 0 "$p/rules.txt" "$bin" rules
 run "$root" 0 "$p/rules.json" "$bin" rules --format json
+mkdir -p "$p/examples" "$tmp/examples"
 for code in $(grep -o '^  [a-z][a-z-]*' "$p/rules.txt"); do
   run "$root" 0 "$p/rules/$code.txt" "$bin" rules "$code"
+  # What lint says about the rule's own example, as a user would see it.
+  "$bin" rules "$code" --format json > "$tmp/rule.json"
+  python3 - "$tmp/rule.json" "$tmp/examples/example.sql" <<'PY'
+import json, sys
+e = json.load(open(sys.argv[1]))
+sql = (e.get("setup", "") + ";\n" if e.get("setup") else "") + e["example"] + ";\n"
+open(sys.argv[2], "w").write(sql)
+PY
+  set +e
+  (cd "$tmp/examples" && "$bin" lint --all example.sql) > "$p/examples/$code.txt" 2>&1
+  set -e
 done
 run "$demo" 1 "$p/shop-lint.txt" "$bin" lint shop.sql
 run "$demo" 1 "$p/shop-lint-all.txt" "$bin" lint --all shop.sql
@@ -96,6 +108,8 @@ which engine versions they were recorded.
 - `audit/scale.txt`: the audit of 1,000 tables and 50 logins, timed.
 - `portable/rules.txt`, `rules.json`, `rules/<code>.txt`: `baresql rules`,
   `--format json` and `baresql rules <code>`.
+- `portable/examples/<code>.txt`: `baresql lint --all` on each rule's own
+  example.
 - `portable/counts.txt`: rules, catalog rows and recorded answers.
 - `portable/shop-*`, `sqlite-tests-*`, `mysql-to-postgres-*`: lint and
   compare on the demo projects in test/demo.

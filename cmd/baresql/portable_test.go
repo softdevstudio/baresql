@@ -144,15 +144,16 @@ func exec(prog string, args ...string) error {
 }
 
 // TestReadmeDocumentsCodes: README.md lists every rule code and finding
-// code, which are a public interface.
+// code, which are a public interface, with the severity they have.
 func TestReadmeDocumentsCodes(t *testing.T) {
 	readme, err := os.ReadFile("../../README.md")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, code := range portable.RuleCodes() {
-		if !strings.Contains(string(readme), "| `"+code+"` |") {
-			t.Errorf("README.md does not list rule %s", code)
+	for _, e := range portable.Catalog() {
+		row := "| `" + e.Code + "` | " + e.Severity + " | " + strings.ReplaceAll(e.Title, "|", `\|`) + " |"
+		if !strings.Contains(string(readme), row) {
+			t.Errorf("README.md's rule table needs the row\n%s", row)
 		}
 	}
 	src, err := os.ReadFile("../../audit/findings.go")
@@ -161,10 +162,11 @@ func TestReadmeDocumentsCodes(t *testing.T) {
 	}
 	n := 0
 	for _, part := range strings.Split(string(src), `add("`)[1:] {
-		code := part[:strings.IndexByte(part, '"')]
+		f := strings.SplitN(part, `"`, 4)
+		code, severity := f[0], f[2]
 		n++
-		if !strings.Contains(string(readme), "| `"+code+"` |") {
-			t.Errorf("README.md does not list finding %s", code)
+		if !strings.Contains(string(readme), "| `"+code+"` | "+severity+" |") {
+			t.Errorf("README.md does not list finding %s as %s", code, severity)
 		}
 	}
 	if n < 15 {

@@ -1606,7 +1606,7 @@
     "severity": "error",
     "summary": "Operators such as ::, ILIKE, DIV and <=> belong to one or two engines and are syntax errors on the others.",
     "detail": "Each operator in the table was used on all four engines, and the table shows where it ran and what to write instead.",
-    "advice": "Prefer the operators all four share: = <> < > <= >= + - * / % || (see pipes-concat), LIKE, IN, BETWEEN, IS NULL.",
+    "advice": "Prefer the operators all four share: = <> < > <= >= + - * / %, LIKE, IN, BETWEEN, IS NULL. Leave || out: it joins text on SQLite and PostgreSQL and means OR on MySQL and MariaDB (see pipes-concat).",
     "example": "SELECT 'abc' ILIKE 'ABC'",
     "rewrite": "SELECT LOWER('abc') LIKE LOWER('ABC')",
     "items": [

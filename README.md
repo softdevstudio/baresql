@@ -425,10 +425,10 @@ Rule codes never change.
 | `concat-null` | warning | CONCAT with a NULL argument |
 | `text-compare-case` | info | Text comparisons and letter case |
 | `like-case` | info | LIKE and letter case |
-| `text-number-compare` | warning | Comparing text with a number |
+| `text-number-compare` | error | Comparing text with a number |
 | `double-quotes` | warning | Double quotes |
 | `null-order` | info | Where NULL sorts |
-| `ungrouped-column` | warning | Columns missing from GROUP BY |
+| `ungrouped-column` | error | Columns missing from GROUP BY |
 | `cast-to-text` | warning | CAST to text |
 | `cast-to-number` | error | CAST to an integer or a decimal |
 | `cast-to-date` | warning | CAST to a date |
@@ -443,11 +443,11 @@ Rule codes never change.
 | `backslash-escapes` | warning | Backslashes in strings |
 | `like-escape` | warning | Escaping % and _ in LIKE |
 | `log-base` | warning | LOG with one argument |
-| `caret-operator` | warning | The ^ operator |
+| `caret-operator` | error | The ^ operator |
 | `dash-comment` | warning | -- comments need a space on MySQL |
 | `column-name-case` | warning | Upper-case column names |
 | `table-name-case` | error | Table names in a different case |
-| `type-not-enforced` | warning | SQLite keeps values that do not fit the column |
+| `type-not-enforced` | error | SQLite keeps values that do not fit the column |
 | `boolean-as-number` | error | Booleans and numbers |
 | `auto-increment` | error | Numbering new rows |
 | `backticks` | error | Backticks around names |

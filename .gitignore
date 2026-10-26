@@ -7,3 +7,4 @@ dist/
 test.log
 fuzz.log
 .ci-certs/
+*.got
