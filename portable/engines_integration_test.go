@@ -128,6 +128,25 @@ func TestSQLiteSafeMode(t *testing.T) {
 	}
 }
 
+// TestPostgresOneStatement: a second statement hidden from BareSQL's
+// splitter reaches PostgreSQL in the same message, and the server refuses
+// it instead of running both. (MySQL reads # as a comment, so a splitter
+// in that mode sees one statement here; PostgreSQL reads an operator.)
+func TestPostgresOneStatement(t *testing.T) {
+	o, ok := engineOpener(t, Postgres)
+	if !ok {
+		t.Skip("no PostgreSQL")
+	}
+	e := openFresh(t, []opener{o})[0]
+	mustRun(t, e, "CREATE TABLE kept (x INTEGER)")
+	if a := mustRun(t, e, "SELECT 1 # 1; DROP TABLE kept"); a.Err == "" {
+		t.Fatalf("two statements ran: %+v", a)
+	}
+	if a := mustRun(t, e, "SELECT COUNT(*) FROM kept"); a.Err != "" {
+		t.Fatalf("the hidden DROP ran: %+v", a)
+	}
+}
+
 func TestSQLiteSource(t *testing.T) {
 	prog, err := FindSQLite(os.Getenv("BARESQL_TEST_SQLITE"))
 	if err != nil {
