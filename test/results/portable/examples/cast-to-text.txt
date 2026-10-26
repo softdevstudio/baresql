@@ -1,0 +1,5 @@
+example.sql:1:8: warning: CAST(x AS CHAR) keeps one character on PostgreSQL, where CHAR means CHAR(1). [cast-to-text]
+    CAST(123 AS CHAR)
+    CONCAT(x) with one argument turns a value into text on all four engines (SQLite from version 3.44).
+
+1 problem: 1 warning.

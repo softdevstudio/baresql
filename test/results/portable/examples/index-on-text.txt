@@ -1,0 +1,5 @@
+example.sql:1:17: error: MySQL refuses an index, unique key or primary key on a TEXT or BLOB column without a prefix length, and MariaDB refuses the primary key. [index-on-text]
+    x TEXT PRIMARY KEY
+    Use VARCHAR(n) for columns you index.
+
+1 problem: 1 error.

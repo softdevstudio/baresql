@@ -24,7 +24,7 @@ shop.sql:7  SELECT SUM(stock) / COUNT(*) FROM products
   lint: integer-division, division-by-zero
 
 shop.sql:8  SELECT name FROM products ORDER BY stock
-  the same rows in a different order
+  the same rows in a different order (NULL sorts differently, or rows that tie in ORDER BY came in another order)
   SQLite and MySQL: 3 rows
       'Teapot'
       'mug lid'

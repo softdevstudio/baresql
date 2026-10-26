@@ -1,0 +1,5 @@
+example.sql:1:8: info: MySQL and MariaDB compare text without regard to letter case or accents by default; SQLite and PostgreSQL compare it exactly. [text-compare-case]
+    'abc' = 'ABC'
+    Compare LOWER(a) = LOWER(b) where case should not matter, and store values in one case. No form makes MySQL compare exactly without naming a collation, and collation names differ on every engine.
+
+1 problem: 1 note.

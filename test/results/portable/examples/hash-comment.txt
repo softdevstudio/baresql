@@ -1,0 +1,5 @@
+example.sql:1:10: error: # starts a comment on MySQL and MariaDB only; SQLite refuses it, and PostgreSQL reads it as the XOR operator. [hash-comment]
+    # one;
+    Use -- comments, with a space after the dashes, or /* ... */.
+
+1 problem: 1 error.

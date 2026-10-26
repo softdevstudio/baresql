@@ -95,7 +95,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <div class="wrap"><table>
 <tr><th>Column</th><th>Holds</th><th>How BareSQL knows</th><th>Read by</th></tr>
-<tr><td class="mono">clinic.diagnosis_stats.diagnosis<div class="meta">materialized view · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data; comes from clinic.visits.diagnosis</td><td>clinic_research</td></tr><tr><td class="mono">clinic.lab_results.payload<div class="meta">table · jsonb</div></td><td><span class="cat">email address</span><span class="cat">person&#39;s name</span><div class="meta">high confidence</div></td><td class="meta">JSON key patient.email holds email address in 20 of 20 sampled values; JSON key patient.email (in 20 of 20 sampled values) is named like email address; JSON key patient.name (in 20 of 20 sampled values) is named like person&#39;s name</td><td>clinic_auditor, clinic_drsmith, clinic_lab, clinic_locum</td></tr><tr><td class="mono">clinic.patients.first_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>clinic_auditor, clinic_drsmith, clinic_frontdesk, clinic_locum</td></tr><tr><td class="mono">clinic.patients.last_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>clinic_auditor, clinic_drsmith, clinic_frontdesk, clinic_locum</td></tr><tr><td class="mono">clinic.patients.date_of_birth<div class="meta">table · date</div></td><td><span class="cat">date of birth</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are plausible dates of birth</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.national_id<div class="meta">table · text</div></td><td><span class="cat">national ID number</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are national ID numbers (es-dni)</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.email<div class="meta">table · text</div></td><td><span class="cat">email address</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are email addresses</td><td>clinic_auditor, clinic_billing, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.phone<div class="meta">table · text</div></td><td><span class="cat">phone number</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are phone numbers</td><td>clinic_auditor, clinic_drsmith, clinic_frontdesk, clinic_locum</td></tr><tr><td class="mono">clinic.patients.home_address<div class="meta">table · text</div></td><td><span class="cat">postal address</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests postal address</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.insurance_number<div class="meta">table · text</div></td><td><span class="cat">insurance number</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests insurance number</td><td>clinic_auditor, clinic_billing, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.visits.diagnosis<div class="meta">partitioned table · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.visits_2025.diagnosis<div class="meta">partition · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data</td><td>clinic_research</td></tr><tr><td class="mono">clinic.visits_2026.diagnosis<div class="meta">partition · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data</td><td><span class="meta">no audited login</span></td></tr>
+<tr><td class="mono">clinic.diagnosis_stats.diagnosis<div class="meta">materialized view · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data; comes from clinic.visits.diagnosis</td><td>clinic_research</td></tr><tr><td class="mono">clinic.lab_results.payload<div class="meta">table · jsonb</div></td><td><span class="cat">email address</span><span class="cat">person&#39;s name</span><div class="meta">high confidence</div></td><td class="meta">JSON key patient.email holds email address in 20 of 20 sampled values; JSON key patient.email (in 20 of 20 sampled values) is named like email address; JSON key patient.name (in 20 of 20 sampled values) is named like person&#39;s name</td><td>clinic_auditor, clinic_drsmith, clinic_lab, clinic_locum</td></tr><tr><td class="mono">clinic.patients.first_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>clinic_auditor, clinic_drsmith, clinic_frontdesk, clinic_locum</td></tr><tr><td class="mono">clinic.patients.last_name<div class="meta">table · text</div></td><td><span class="cat">person&#39;s name</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests person&#39;s name</td><td>clinic_auditor, clinic_drsmith, clinic_frontdesk, clinic_locum</td></tr><tr><td class="mono">clinic.patients.date_of_birth<div class="meta">table · date</div></td><td><span class="cat">date of birth</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are plausible dates of birth</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.national_id<div class="meta">table · text</div></td><td><span class="cat">national ID number</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are national ID numbers (es-dni)</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.email<div class="meta">table · text</div></td><td><span class="cat">email address</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are email addresses</td><td>clinic_auditor, clinic_billing, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.phone<div class="meta">table · text</div></td><td><span class="cat">phone number</span><div class="meta">high confidence</div></td><td class="meta">30 of 30 sampled values are phone numbers</td><td>clinic_auditor, clinic_drsmith, clinic_frontdesk, clinic_locum</td></tr><tr><td class="mono">clinic.patients.home_address<div class="meta">table · text</div></td><td><span class="cat">postal address</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests postal address</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.patients.insurance_number<div class="meta">table · text</div></td><td><span class="cat">insurance number</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests insurance number</td><td>clinic_auditor, clinic_billing, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.visits.diagnosis<div class="meta">partitioned table · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data; found in partitions clinic.visits_2025 and clinic.visits_2026</td><td>clinic_auditor, clinic_drsmith, clinic_locum</td></tr><tr><td class="mono">clinic.visits_2025.diagnosis<div class="meta">partition · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data</td><td>clinic_research</td></tr><tr><td class="mono">clinic.visits_2026.diagnosis<div class="meta">partition · text</div></td><td><span class="cat">health data</span><div class="meta">medium confidence</div></td><td class="meta">the column name suggests health data</td><td><span class="meta">no audited login</span></td></tr>
 </table></div>
 
 
@@ -103,6 +103,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clinic_auditor">clinic_auditor</h3>
 <p class="meta">member of clinic_doctor (no set) · no password set</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -122,6 +123,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-clinic_billing">clinic_billing</h3>
 <p class="meta">member of no role · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">clinic.patients.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>column granted to clinic_billing with grant option</li></ul></td></tr><tr><td class="mono">clinic.patients.insurance_number<div class="meta">table</div></td><td><span class="cat">insurance number</span></td><td><ul class="routes"><li>column granted to clinic_billing with grant option</li></ul></td></tr>
@@ -139,6 +141,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clinic_drsmith">clinic_drsmith</h3>
 <p class="meta">member of clinic_doctor · no password set</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -158,6 +161,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-clinic_frontdesk">clinic_frontdesk</h3>
 <p class="meta">member of clinic_staff · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">clinic.patients.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>column granted to clinic_frontdesk</li></ul></td></tr><tr><td class="mono">clinic.patients.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>column granted to clinic_frontdesk</li></ul></td></tr><tr><td class="mono">clinic.patients.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>column granted to clinic_frontdesk</li></ul></td></tr>
@@ -175,6 +179,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clinic_hr">clinic_hr</h3>
 <p class="meta">member of clinic_doctor (no inherit, no set, admin) · no password set</p>
+
 <p>Reads no personal data.</p>
 
 
@@ -185,6 +190,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clinic_it">clinic_it</h3>
 <p class="meta">createrole · member of pg_read_server_files · no password set</p>
+
 <p>Reads no personal data.</p>
 
 
@@ -198,6 +204,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clinic_lab">clinic_lab</h3>
 <p class="meta">member of no role · password stored as an MD5 hash</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -217,6 +224,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-clinic_locum">clinic_locum</h3>
 <p class="meta">member of clinic_doctor (no inherit) · can SET ROLE clinic_doctor, clinic_staff · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">clinic.lab_results.payload<div class="meta">table</div></td><td><span class="cat">email address</span><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.date_of_birth<div class="meta">table</div></td><td><span class="cat">date of birth</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.national_id<div class="meta">table</div></td><td><span class="cat">national ID number</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.home_address<div class="meta">table</div></td><td><span class="cat">postal address</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.patients.insurance_number<div class="meta">table</div></td><td><span class="cat">insurance number</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr><tr><td class="mono">clinic.visits.diagnosis<div class="meta">partitioned table</div></td><td><span class="cat">health data</span></td><td><ul class="routes"><li>after SET ROLE clinic_doctor: granted to clinic_doctor</li></ul></td></tr>
@@ -234,6 +242,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clinic_research">clinic_research</h3>
 <p class="meta">member of no role · no password set</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -260,7 +269,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h2>Method</h2>
 <p>Schemas audited: <code>clinic</code>, <code>public</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_clinic</code>, login method md5.</p>
-<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Sampled values are turned into text by their type's own output function, never by a cast, and each table is read on its own, without its partitions or child tables. Views are traced to the columns they read from their stored definitions, without running them.</p>
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>

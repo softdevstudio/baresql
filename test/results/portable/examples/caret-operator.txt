@@ -1,0 +1,5 @@
+example.sql:1:8: error: 2 ^ 3 is 8 on PostgreSQL, where ^ is a power, 1 on MySQL and MariaDB, where it is a bitwise exclusive or, and an error on SQLite. [caret-operator]
+    2 ^ 3
+    Use POWER(a, b), which all four engines have (SQLite when it is built with its math functions).
+
+1 problem: 1 error.

@@ -1,0 +1,5 @@
+example.sql:2:1: error: MySQL refuses IF NOT EXISTS in CREATE INDEX; SQLite, PostgreSQL and MariaDB accept it. [index-if-not-exists]
+    CREATE INDEX IF NOT EXISTS
+    Create each index once, in a migration that runs once, without IF NOT EXISTS.
+
+1 problem: 1 error.

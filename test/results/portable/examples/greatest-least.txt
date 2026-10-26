@@ -1,0 +1,5 @@
+example.sql:3:8: error: GREATEST and LEAST are missing on SQLite, skip NULL on PostgreSQL and return NULL on MySQL and MariaDB. [greatest-least]
+    GREATEST(a, b)
+    Write it out with CASE and say what NULL should do. CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a >= b THEN a ELSE b END skips NULL, as PostgreSQL's GREATEST does, on all four engines. A plain CASE WHEN a >= b THEN a ELSE b END answers b whenever the comparison meets a NULL, so it gives 5 for (NULL, 5) and NULL for (1, NULL).
+
+1 problem: 1 error.

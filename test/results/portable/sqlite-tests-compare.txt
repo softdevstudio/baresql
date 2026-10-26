@@ -19,7 +19,7 @@ queries.sql:11  SELECT email FROM users WHERE is_admin = 1
   lint: boolean-as-number
 
 queries.sql:17  SELECT b.id, u.name FROM bookings b JOIN users u ON u.id = b.user_id ORDER BY u.name
-  the same rows in a different order
+  the same rows in a different order (NULL sorts differently, or rows that tie in ORDER BY came in another order)
   SQLite: 4 rows
       4, NULL
       1, 'Ann Lee'

@@ -1,0 +1,5 @@
+example.sql:2:23: error: SQLite stores the text 'abc' in the INTEGER column n; PostgreSQL, MySQL and MariaDB refuse it. [type-not-enforced]
+    'abc'
+    Run the tests on the production engine as well, or check values in the application before they reach the database.
+
+1 problem: 1 error.

@@ -364,18 +364,21 @@
           "name": "text column = number",
           "setup": "CREATE TABLE items (code VARCHAR(10), n INTEGER);\nINSERT INTO items VALUES ('abc', 0)",
           "probe": "SELECT COUNT(*) FROM items WHERE code = 0",
-          "advice": ""
+          "advice": "",
+          "message": "{what} compares a text column with a number: MySQL and MariaDB turn the text into a number, so 'abc' matches 0, SQLite compares it as text and finds nothing, and PostgreSQL refuses it."
         },
         {
           "name": "'1' = 1",
           "probe": "SELECT '1' = 1",
-          "advice": ""
+          "advice": "",
+          "message": "{what} compares text with a number: false on SQLite, true on PostgreSQL, MySQL and MariaDB."
         },
         {
-          "name": "'abc' = number column",
-          "setup": "CREATE TABLE items (code VARCHAR(10), n INTEGER);\nINSERT INTO items VALUES ('abc', 0)",
-          "probe": "SELECT COUNT(*) FROM items WHERE n = 'abc'",
-          "advice": ""
+          "name": "'abc' = number",
+          "setup": "CREATE TABLE scores (n INTEGER);\nINSERT INTO scores VALUES (0)",
+          "probe": "SELECT COUNT(*) FROM scores WHERE n = 'abc'",
+          "advice": "",
+          "message": "{what} compares text that is no number with a number: PostgreSQL refuses it, MySQL and MariaDB read the text as 0, and SQLite finds no match."
         }
       ],
       "answers": {
@@ -444,18 +447,24 @@
               ]
             }
           },
-          "'abc' = number column": {
+          "'abc' = number": {
             "mariadb": {
-              "error": "Table 'items' already exists"
+              "rows": [
+                "1"
+              ]
             },
             "mysql": {
-              "error": "Table 'items' already exists"
+              "rows": [
+                "1"
+              ]
             },
             "postgres": {
-              "error": "relation \"items\" already exists"
+              "error": "invalid input syntax for type integer: \"abc\""
             },
             "sqlite": {
-              "error": "table items already exists"
+              "rows": [
+                "0"
+              ]
             }
           },
           "text column = number": {
@@ -1315,7 +1324,7 @@
       "title": "Adding numbers to dates",
       "severity": "warning",
       "summary": "A date plus 1 is the next day on PostgreSQL, the number 20240132 on MySQL and MariaDB, and 2025 on SQLite.",
-      "detail": "MySQL and MariaDB turn the date into the number 20240131 and add 1. SQLite turns the text into the number 2024. PostgreSQL adds a day. Subtracting two dates goes the same way: PostgreSQL counts days and MySQL and MariaDB subtract the numbers. INTERVAL arithmetic works on PostgreSQL, MySQL and MariaDB, with different result types, and SQLite has no INTERVAL.",
+      "detail": "MySQL and MariaDB turn the date into the number 20240131 and add 1. SQLite turns the text into the number 2024. PostgreSQL adds a day. Subtracting two dates goes the same way: PostgreSQL counts days and MySQL and MariaDB subtract the numbers. INTERVAL arithmetic works on PostgreSQL, MySQL and MariaDB, with different result types, and SQLite has no INTERVAL. PostgreSQL's usual INTERVAL '1 day', with the unit inside the quotes, works on PostgreSQL only.",
       "advice": "No date arithmetic reads the same on all four engines. Use date(d, '+1 day') on SQLite and d + INTERVAL '1' DAY on the other three, or do the arithmetic in the application.",
       "example": "SELECT CAST('2024-01-31' AS DATE) + 1",
       "items": [
@@ -1329,6 +1338,12 @@
           "probe": "SELECT CAST('2024-01-31' AS DATE) + INTERVAL '1' DAY",
           "advice": "",
           "message": "SQLite has no INTERVAL, and the other engines give the result different types."
+        },
+        {
+          "name": "INTERVAL 'n unit'",
+          "probe": "SELECT CAST('2024-01-31' AS DATE) + INTERVAL '1 day'",
+          "advice": "",
+          "message": "INTERVAL '1 day', with the unit inside the quotes, works on PostgreSQL only: SQLite has no INTERVAL, and MySQL and MariaDB want the unit outside them, INTERVAL '1' DAY."
         }
       ],
       "answers": {
@@ -1373,6 +1388,22 @@
             },
             "sqlite": {
               "error": "near \"DAY\": syntax error"
+            }
+          },
+          "INTERVAL 'n unit'": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1"
+            },
+            "postgres": {
+              "rows": [
+                "2024-02-01 00:00:00"
+              ]
+            },
+            "sqlite": {
+              "error": "no such column: INTERVAL"
             }
           },
           "date + number": {
@@ -2295,8 +2326,13 @@
           "advice": ""
         },
         {
-          "name": "a fraction in an integer column",
+          "name": "a quoted fraction in an integer column",
           "probe": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES ('12.50');\nSELECT n FROM t",
+          "advice": ""
+        },
+        {
+          "name": "a fraction in an integer column",
+          "probe": "CREATE TABLE t (n INTEGER);\nINSERT INTO t VALUES (12.5);\nSELECT n FROM t",
           "advice": ""
         },
         {
@@ -2324,6 +2360,28 @@
         },
         "items": {
           "a fraction in an integer column": {
+            "mariadb": {
+              "rows": [
+                "13"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "13"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "13"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "12.5"
+              ]
+            }
+          },
+          "a quoted fraction in an integer column": {
             "mariadb": {
               "rows": [
                 "13"
@@ -3606,25 +3664,28 @@
       "severity": "error",
       "summary": "GREATEST and LEAST are missing on SQLite, skip NULL on PostgreSQL and return NULL on MySQL and MariaDB.",
       "detail": "GREATEST(1, NULL) is 1 on PostgreSQL and NULL on MySQL and MariaDB. SQLite has the same idea under the names MAX(a, b) and MIN(a, b) with two or more arguments; they return NULL when any argument is NULL, and the other engines read MAX and MIN as aggregates.",
-      "advice": "Use CASE WHEN a \u003e= b THEN a ELSE b END, which is NULL when either side is NULL on all four. Wrap the arguments in COALESCE to skip NULL instead.",
-      "setup": "CREATE TABLE t (a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, NULL)",
-      "example": "SELECT GREATEST(a, b) FROM t",
-      "rewrite": "SELECT CASE WHEN a \u003e= b THEN a ELSE b END FROM t",
+      "advice": "Write it out with CASE and say what NULL should do. CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a \u003e= b THEN a ELSE b END skips NULL, as PostgreSQL's GREATEST does, on all four engines. A plain CASE WHEN a \u003e= b THEN a ELSE b END answers b whenever the comparison meets a NULL, so it gives 5 for (NULL, 5) and NULL for (1, NULL).",
+      "setup": "CREATE TABLE t (id INTEGER PRIMARY KEY, a INTEGER, b INTEGER);\nINSERT INTO t VALUES (1, 1, NULL), (2, NULL, 5)",
+      "example": "SELECT GREATEST(a, b) FROM t ORDER BY id",
+      "rewrite": "SELECT CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a \u003e= b THEN a ELSE b END FROM t ORDER BY id",
       "answers": {
         "example": {
           "mariadb": {
             "rows": [
+              "NULL",
               "NULL"
             ]
           },
           "mysql": {
             "rows": [
+              "NULL",
               "NULL"
             ]
           },
           "postgres": {
             "rows": [
-              "1"
+              "1",
+              "5"
             ]
           },
           "sqlite": {
@@ -3634,22 +3695,26 @@
         "rewrite": {
           "mariadb": {
             "rows": [
-              "NULL"
+              "1",
+              "5"
             ]
           },
           "mysql": {
             "rows": [
-              "NULL"
+              "1",
+              "5"
             ]
           },
           "postgres": {
             "rows": [
-              "NULL"
+              "1",
+              "5"
             ]
           },
           "sqlite": {
             "rows": [
-              "NULL"
+              "1",
+              "5"
             ]
           }
         }
@@ -7118,7 +7183,7 @@
       "severity": "error",
       "summary": "Operators such as ::, ILIKE, DIV and \u003c=\u003e belong to one or two engines and are syntax errors on the others.",
       "detail": "Each operator in the table was used on all four engines, and the table shows where it ran and what to write instead.",
-      "advice": "Prefer the operators all four share: = \u003c\u003e \u003c \u003e \u003c= \u003e= + - * / % || (see pipes-concat), LIKE, IN, BETWEEN, IS NULL.",
+      "advice": "Prefer the operators all four share: = \u003c\u003e \u003c \u003e \u003c= \u003e= + - * / %, LIKE, IN, BETWEEN, IS NULL. Leave || out: it joins text on SQLite and PostgreSQL and means OR on MySQL and MariaDB (see pipes-concat).",
       "example": "SELECT 'abc' ILIKE 'ABC'",
       "rewrite": "SELECT LOWER('abc') LIKE LOWER('ABC')",
       "items": [

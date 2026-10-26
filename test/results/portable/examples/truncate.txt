@@ -1,0 +1,5 @@
+example.sql:3:1: error: SQLite has no TRUNCATE; PostgreSQL, MySQL and MariaDB have it. [truncate]
+    TRUNCATE TABLE
+    Use DELETE FROM t.
+
+1 problem: 1 error.

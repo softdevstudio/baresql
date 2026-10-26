@@ -92,6 +92,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-saas_admin_app">saas_admin_app</h3>
 <p class="meta">bypassrls · member of no role · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">app.accounts.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to saas_admin_app; all rows (BYPASSRLS)</li></ul></td></tr><tr><td class="mono">app.accounts.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to saas_admin_app; all rows (BYPASSRLS)</li></ul></td></tr><tr><td class="mono">app.accounts.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>granted to saas_admin_app; all rows (BYPASSRLS)</li></ul></td></tr><tr><td class="mono">app.api_keys.api_key<div class="meta">table</div></td><td><span class="cat">key, token or secret</span></td><td><ul class="routes"><li>granted to saas_admin_app; all rows (BYPASSRLS)</li></ul></td></tr>
@@ -109,6 +110,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-saas_agent">saas_agent</h3>
 <p class="meta">member of saas_support · no password set</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -131,6 +133,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-saas_app">saas_app</h3>
 <p class="meta">member of no role · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">app.accounts.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.accounts.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.accounts.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr>
@@ -143,7 +146,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <details><summary>What it can change (6)</summary>
 <div class="wrap"><table><tr><th>Table</th><th>Privilege</th><th>How</th></tr>
-<tr><td class="mono">app.accounts <span class="cat">personal data</span></td><td>INSERT</td><td><ul class="routes"><li>granted to saas_app</li></ul></td></tr><tr><td class="mono">app.accounts <span class="cat">personal data</span></td><td>UPDATE</td><td><ul class="routes"><li>granted to saas_app</li></ul></td></tr><tr><td class="mono">app.accounts <span class="cat">personal data</span></td><td>DELETE</td><td><ul class="routes"><li>granted to saas_app</li></ul></td></tr><tr><td class="mono">app.tickets</td><td>INSERT</td><td><ul class="routes"><li>granted to saas_app</li></ul></td></tr><tr><td class="mono">app.tickets</td><td>UPDATE</td><td><ul class="routes"><li>granted to saas_app</li></ul></td></tr><tr><td class="mono">app.tickets</td><td>DELETE</td><td><ul class="routes"><li>granted to saas_app</li></ul></td></tr>
+<tr><td class="mono">app.accounts <span class="cat">personal data</span></td><td>INSERT</td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.accounts <span class="cat">personal data</span></td><td>UPDATE</td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.accounts <span class="cat">personal data</span></td><td>DELETE</td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.tickets</td><td>INSERT</td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.tickets</td><td>UPDATE</td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr><tr><td class="mono">app.tickets</td><td>DELETE</td><td><ul class="routes"><li>granted to saas_app; rows allowed by policy tenant_isolation</li></ul></td></tr>
 </table></div></details>
 
 
@@ -151,6 +154,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-saas_migrator">saas_migrator</h3>
 <p class="meta">member of no role · no password set</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -164,7 +168,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <details><summary>What it can change (4)</summary>
 <div class="wrap"><table><tr><th>Table</th><th>Privilege</th><th>How</th></tr>
-<tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>INSERT</td><td><ul class="routes"><li>owner saas_migrator</li></ul></td></tr><tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>UPDATE</td><td><ul class="routes"><li>owner saas_migrator</li></ul></td></tr><tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>DELETE</td><td><ul class="routes"><li>owner saas_migrator</li></ul></td></tr><tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>TRUNCATE</td><td><ul class="routes"><li>owner saas_migrator</li></ul></td></tr>
+<tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>INSERT</td><td><ul class="routes"><li>owner saas_migrator; all rows (owner; row security not forced)</li></ul></td></tr><tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>UPDATE</td><td><ul class="routes"><li>owner saas_migrator; all rows (owner; row security not forced)</li></ul></td></tr><tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>DELETE</td><td><ul class="routes"><li>owner saas_migrator; all rows (owner; row security not forced)</li></ul></td></tr><tr><td class="mono">app.audit_log <span class="cat">personal data</span></td><td>TRUNCATE</td><td><ul class="routes"><li>owner saas_migrator</li></ul></td></tr>
 </table></div></details>
 
 
@@ -180,7 +184,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h2>Method</h2>
 <p>Schemas audited: <code>app</code>, <code>public</code>, <code>support</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_saas</code>, login method md5.</p>
-<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Sampled values are turned into text by their type's own output function, never by a cast, and each table is read on its own, without its partitions or child tables. Views are traced to the columns they read from their stored definitions, without running them.</p>
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>

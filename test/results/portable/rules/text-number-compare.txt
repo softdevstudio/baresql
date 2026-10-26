@@ -32,7 +32,7 @@ The same on every engine:
 Compare like with like: quote the number when the column holds text (code =
 '0'), or convert one side with CAST.
 
-                      SQLite PostgreSQL MySQL MariaDB
-text column = number  0      no         1     1
-'1' = 1               0      true       1     1
-'abc' = number column no     no         no    no
+                     SQLite PostgreSQL MySQL MariaDB
+text column = number 0      no         1     1
+'1' = 1              0      true       1     1
+'abc' = number       0      no         1     1

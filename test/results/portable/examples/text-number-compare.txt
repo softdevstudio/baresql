@@ -1,0 +1,5 @@
+example.sql:3:34: error: code = 0 compares a text column with a number: MySQL and MariaDB turn the text into a number, so 'abc' matches 0, SQLite compares it as text and finds nothing, and PostgreSQL refuses it. [text-number-compare]
+    code = 0
+    Compare like with like: quote the number when the column holds text (code = '0'), or convert one side with CAST.
+
+1 problem: 1 error.

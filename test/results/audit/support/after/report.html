@@ -92,6 +92,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-shop_alice">shop_alice</h3>
 <p class="meta">member of shop_support_team · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">shop.customers.first_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.last_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.customers.phone<div class="meta">table</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>through view support.customer_lookup (rights of shop_owner)</li></ul></td></tr><tr><td class="mono">shop.newsletter.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to PUBLIC</li></ul></td></tr><tr><td class="mono">support.customer_lookup.customer_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr><tr><td class="mono">support.customer_lookup.phone<div class="meta">view</div></td><td><span class="cat">phone number</span></td><td><ul class="routes"><li>granted to shop_support_team</li></ul></td></tr>
@@ -112,6 +113,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-shop_bob">shop_bob</h3>
 <p class="meta">noinherit · member of shop_support_team (no inherit) · can SET ROLE shop_support_team · no password set</p>
+
 
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -155,7 +157,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h2>Method</h2>
 <p>Schemas audited: <code>public</code>, <code>shop</code>, <code>support</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_shop</code>, login method md5.</p>
-<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Sampled values are turned into text by their type's own output function, never by a cast, and each table is read on its own, without its partitions or child tables. Views are traced to the columns they read from their stored definitions, without running them.</p>
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>

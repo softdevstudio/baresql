@@ -1,0 +1,5 @@
+example.sql:1:28: error: The table option ENGINE works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [table-options]
+    ENGINE
+    Leave the options out of schemas meant for every engine, and create indexes with separate CREATE INDEX statements.
+
+1 problem: 1 error.

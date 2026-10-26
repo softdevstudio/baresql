@@ -1,0 +1,5 @@
+example.sql:3:8: error: COUNT(DISTINCT a, b) counts pairs on MySQL and MariaDB; SQLite and PostgreSQL take one expression only. [count-distinct-columns]
+    COUNT(DISTINCT a, b)
+    Count the rows of a DISTINCT subquery: SELECT COUNT(*) FROM (SELECT DISTINCT a, b FROM t) AS s.
+
+1 problem: 1 error.

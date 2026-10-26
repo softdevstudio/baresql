@@ -1,0 +1,5 @@
+example.sql:2:22: error: The table is created as Users and named users here: MySQL and MariaDB on Linux find no table users. [table-name-case]
+    users
+    Use lower-case table names and spell each one the same way everywhere.
+
+1 problem: 1 error.

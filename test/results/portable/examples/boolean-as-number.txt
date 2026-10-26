@@ -1,0 +1,5 @@
+example.sql:3:34: error: PostgreSQL has no = between a boolean and a number. [boolean-as-number]
+    active = 1
+    Compare and insert TRUE and FALSE (active = TRUE, or simply WHERE active). All four engines accept them.
+
+1 problem: 1 error.

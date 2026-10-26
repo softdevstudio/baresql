@@ -1,0 +1,5 @@
+example.sql:1:19: info: PostgreSQL pads CHAR(n) values with spaces up to n characters; SQLite, MySQL and MariaDB give them back as stored. [char-padding]
+    CHAR(5)
+    Use VARCHAR(n) unless every value has exactly n characters.
+
+1 problem: 1 note.

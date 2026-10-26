@@ -1,0 +1,5 @@
+example.sql:1:8: warning: SQLite's LOWER and UPPER change only the letters A to Z, so LOWER('ÉCOLE') is 'École' there and 'école' elsewhere. [lower-non-ascii]
+    LOWER('ÉCOLE')
+    Fold case in the application before storing or comparing, or keep a lower-case copy of the column.
+
+1 problem: 1 warning.

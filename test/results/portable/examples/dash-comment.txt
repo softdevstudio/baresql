@@ -1,0 +1,5 @@
+example.sql:1:10: warning: On MySQL and MariaDB, -- starts a comment only when a space follows it, so SELECT 1 --1 is 2 there and 1 elsewhere. [dash-comment]
+    --1;
+    Put a space after --.
+
+1 problem: 1 warning.

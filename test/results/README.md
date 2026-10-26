@@ -22,6 +22,8 @@ which engine versions they were recorded.
 - `audit/scale.txt`: the audit of 1,000 tables and 50 logins, timed.
 - `portable/rules.txt`, `rules.json`, `rules/<code>.txt`: `baresql rules`,
   `--format json` and `baresql rules <code>`.
+- `portable/examples/<code>.txt`: `baresql lint --all` on each rule's own
+  example.
 - `portable/counts.txt`: rules, catalog rows and recorded answers.
 - `portable/shop-*`, `sqlite-tests-*`, `mysql-to-postgres-*`: lint and
   compare on the demo projects in test/demo.

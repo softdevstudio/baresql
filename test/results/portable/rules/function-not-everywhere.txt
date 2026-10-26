@@ -96,7 +96,7 @@ CHR               no     yes        no    yes     No form works on all four engi
 ASCII             no     yes        yes   yes     No form works on all four engines; unicode() on SQLite.
 UNICODE           yes    no         no    no      No form works on all four engines; ASCII() on PostgreSQL, MySQL and MariaDB.
 TYPEOF            yes    no         no    no      No form works on all four engines; it exists on SQLite only.
-JSON_EXTRACT      yes    no         yes   yes     No form works on all four engines; the -> and ->> operators on PostgreSQL.
+JSON_EXTRACT      1      no         '1'   '1'     No form works on all four engines; the -> and ->> operators on PostgreSQL.
 STDDEV            no     yes        yes   yes     No form works on all four engines; compute it from SUM and COUNT, or in the application.
 VARIANCE          no     yes        yes   yes     No form works on all four engines; compute it from SUM and COUNT, or in the application.
 BOOL_AND          no     yes        no    no      Use MIN(CASE WHEN x THEN 1 ELSE 0 END) = 1.

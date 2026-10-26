@@ -1,0 +1,5 @@
+example.sql:1:8: warning: MySQL and MariaDB read a backslash in a string as an escape character; SQLite and PostgreSQL keep it as a backslash. [backslash-escapes]
+    'C:\\temp'
+    Keep backslashes out of SQL string literals: pass such values as query parameters, which every driver sends without escaping.
+
+1 problem: 1 warning.

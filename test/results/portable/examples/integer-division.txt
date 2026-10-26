@@ -1,0 +1,5 @@
+example.sql:1:8: warning: Dividing an integer by an integer drops the fraction on SQLite and PostgreSQL; MySQL and MariaDB keep it. [integer-division]
+    7 / 2
+    Multiply one side by 1.0 for the fraction and round it to the places you need (see decimal-division): ROUND(7 * 1.0 / 2, 2) is 3.5 on every engine. For a whole number on every engine, take the remainder off first: (7 - 7 % 2) / 2.
+
+1 problem: 1 warning.

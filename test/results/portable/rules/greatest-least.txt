@@ -9,24 +9,27 @@ arguments; they return NULL when any argument is NULL, and the other engines
 read MAX and MIN as aggregates.
 
 Given:
-    CREATE TABLE t (a INTEGER, b INTEGER);
-    INSERT INTO t VALUES (1, NULL)
+    CREATE TABLE t (id INTEGER PRIMARY KEY, a INTEGER, b INTEGER);
+    INSERT INTO t VALUES (1, 1, NULL), (2, NULL, 5)
 
 Example:
-    SELECT GREATEST(a, b) FROM t
+    SELECT GREATEST(a, b) FROM t ORDER BY id
 
     SQLite 3.45.1        error: no such function: GREATEST
-    PostgreSQL 16.15     1
-    MySQL 8.0.46         NULL
-    MariaDB 10.11.14     NULL
+    PostgreSQL 16.15     1; 5
+    MySQL 8.0.46         NULL; NULL
+    MariaDB 10.11.14     NULL; NULL
 
 The same on every engine:
-    SELECT CASE WHEN a >= b THEN a ELSE b END FROM t
+    SELECT CASE WHEN a IS NULL THEN b WHEN b IS NULL OR a >= b THEN a ELSE b END FROM t ORDER BY id
 
-    SQLite 3.45.1        NULL
-    PostgreSQL 16.15     NULL
-    MySQL 8.0.46         NULL
-    MariaDB 10.11.14     NULL
+    SQLite 3.45.1        1; 5
+    PostgreSQL 16.15     1; 5
+    MySQL 8.0.46         1; 5
+    MariaDB 10.11.14     1; 5
 
-Use CASE WHEN a >= b THEN a ELSE b END, which is NULL when either side is NULL
-on all four. Wrap the arguments in COALESCE to skip NULL instead.
+Write it out with CASE and say what NULL should do. CASE WHEN a IS NULL THEN b
+WHEN b IS NULL OR a >= b THEN a ELSE b END skips NULL, as PostgreSQL's
+GREATEST does, on all four engines. A plain CASE WHEN a >= b THEN a ELSE b END
+answers b whenever the comparison meets a NULL, so it gives 5 for (NULL, 5)
+and NULL for (1, NULL).

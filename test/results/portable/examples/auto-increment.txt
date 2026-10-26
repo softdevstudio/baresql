@@ -1,0 +1,5 @@
+example.sql:1:20: warning: SERIAL numbers rows on PostgreSQL, MySQL and MariaDB; on SQLite it is only a type name and the column stays NULL. [auto-increment]
+    SERIAL
+    No column definition numbers rows on all four engines. Keep one schema file per engine for these tables, or let the application assign the ids.
+
+1 problem: 1 warning.

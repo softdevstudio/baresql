@@ -1,0 +1,5 @@
+example.sql:3:8: warning: Double quotes name a column on SQLite and PostgreSQL. On MySQL and MariaDB they make a string, so SELECT "name" returns the word name. [double-quotes]
+    "name"
+    Use single quotes for text. For names, use plain lower-case names that are not keywords: that is the one form all four engines read the same way.
+
+1 problem: 1 warning.

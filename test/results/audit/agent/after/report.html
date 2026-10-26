@@ -86,6 +86,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-saas_agent">saas_agent</h3>
 <p class="meta">member of saas_support · no password set</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">app.accounts.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>column granted to saas_support; rows allowed by policy support_read</li><li>through view support.ticket_context (rights of the reader); rows allowed by policy support_read</li><li>through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">app.accounts.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>column granted to saas_support; rows allowed by policy support_read</li><li>through view support.ticket_context (rights of the reader); rows allowed by policy support_read</li><li>through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">support.ticket_context.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context.full_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context_invoker.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context_invoker.full_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr>
@@ -114,7 +115,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h2>Method</h2>
 <p>Schemas audited: <code>app</code>, <code>public</code>, <code>support</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_saas</code>, login method md5.</p>
-<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Sampled values are turned into text by their type's own output function, never by a cast, and each table is read on its own, without its partitions or child tables. Views are traced to the columns they read from their stored definitions, without running them.</p>
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>

@@ -1,0 +1,5 @@
+example.sql:1:8: warning: || joins text on SQLite and PostgreSQL. On MySQL and MariaDB it means OR, so 'a' || 'b' is 0. [pipes-concat]
+    'a' || 'b'
+    Use CONCAT(a, b), which all four engines have (SQLite from version 3.44). CONCAT treats NULL differently on different engines; see concat-null.
+
+1 problem: 1 warning.

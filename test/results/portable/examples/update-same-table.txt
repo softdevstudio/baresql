@@ -1,0 +1,8 @@
+example.sql:3:43: error: MySQL refuses an UPDATE or DELETE whose subquery reads the table being changed; SQLite, PostgreSQL and MariaDB accept it. [update-same-table]
+    FROM t
+    Wrap the subquery in one more SELECT used as a table: WHERE id IN (SELECT id FROM (SELECT id FROM t WHERE x = 0) AS s).
+example.sql:4:26: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    id
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+
+2 problems: 1 error, 1 note.

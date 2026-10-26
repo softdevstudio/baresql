@@ -1,0 +1,5 @@
+example.sql:1:13: warning: PostgreSQL returns the column Total as total; SQLite, MySQL and MariaDB return Total. [column-name-case]
+    Total
+    Use lower-case names for columns and aliases.
+
+1 problem: 1 warning.

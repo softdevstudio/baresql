@@ -113,25 +113,36 @@ content and config values only; never touch the theme).
 
 0.1.0 in development (started 2026-10-26). Done: repo setup, CI with one
 job per engine version, release workflow; pgwire and mysqlwire; BareSQL
-Audit (audit, diff, --baseline, report.html, audit.json, four fixtures;
-views checked the way PostgreSQL checks them, including views that fail);
-BareSQL Portable (lint with 58 rules and 191 catalog rows, compare, rules,
-the catalog recorded on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46,
-MariaDB 10.11.14 and green on every CI version); README as the manual;
-smoke.sh exercises every command; test/results recorded (step 5: the
-independent review is next).
+Audit (audit, diff, --baseline, report.html, audit.json; five fixtures:
+shop, saas, clinic, clean, and edge for corner cases such as a real role
+named "PUBLIC"; views checked the way PostgreSQL checks them, including
+views that fail); BareSQL Portable (lint with 58 rules and 193 catalog
+rows, compare, rules, the catalog recorded on SQLite 3.45.1, PostgreSQL
+16.15, MySQL 8.0.46, MariaDB 10.11.14 and green on every CI version);
+README as the manual; smoke.sh exercises every command. Step 5 is done: an
+independent review of each tool, the fixes, a second review pass that
+found nothing blocking, and test/results re-recorded (2026-10-26). Step 6,
+the site, is next.
 
 ## Gaps and to-do
 
 - PostgreSQL 19 is due on 2026-11-19: add it to the CI list after release.
 - Audit: one database per run; row security is judged per table (policy
   conditions are not evaluated); write access through views and functions
-  is not traced; passwords outside ASCII are sent without SASLprep.
+  is not traced; passwords outside ASCII are sent without SASLprep. From
+  the review, left for later: a child table read only through its parent
+  gets no line of its own (the parent's line carries its data); phone
+  numbers inside arrays are found by column name only; the bare words
+  `pan` and `tin` count as card and tax ID.
 - Portable: lint reads tokens, not a full parse, and knows column types
   only from CREATE TABLE in the files it reads; JSON functions, stored
   procedures and triggers are not covered; collation-dependent sort order
   (PostgreSQL's depends on the cluster locale) is not a rule; MariaDB's
-  trailing-space equality ('a' = 'a ' is true there) is not a rule.
+  trailing-space equality ('a' = 'a ' is true there) is not a rule. The
+  differences the review found without a rule (README, Limits: ALTER
+  TABLE forms, reserved words, FILTER, FROM DUAL, AVG digits, ROUND of
+  halves and the rest) are planned for 0.2; the owner may pull them into
+  0.1.
 - compare runs scripts with the logins' rights; it skips statements that
   leave the scratch space and refuses writes to other databases on
   MySQL/MariaDB, but it is no sandbox (README says so).
@@ -165,7 +176,7 @@ order, pushing after each step:
    answers compared by meaning), `baresql rules` (catalog with a minimal
    example, recorded answers per engine and the portable rewrite; CI
    re-runs the catalog). (done)
-5. Record results, independent review, fixes, re-record.
+5. Record results, independent review, fixes, re-record. (done)
 6. baresql.com: pages Audit, Portable, Quick Start, Sample Reports,
    Reference, Download, About (with the name), Contact
    (info@baresql.com); posts: launch, the name, an explainer per tool, how

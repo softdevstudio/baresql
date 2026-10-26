@@ -1,0 +1,5 @@
+example.sql:1:19: error: VARCHAR without a length works on SQLite and PostgreSQL; MySQL and MariaDB require one. [varchar-length]
+    VARCHAR
+    Give a length, VARCHAR(255), or use TEXT for long values.
+
+1 problem: 1 error.

@@ -1,0 +1,11 @@
+example.sql:3:8: error: DISTINCT ON (a) keeps one row per value of a on PostgreSQL only. [distinct-on]
+    DISTINCT ON (a)
+    Number the rows of each group and keep the first: SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS n FROM t) AS s WHERE n = 1.
+example.sql:3:45: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    a
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+example.sql:3:48: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    b
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+
+3 problems: 1 error, 2 notes.

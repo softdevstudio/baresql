@@ -1,0 +1,5 @@
+example.sql:2:29: error: INSERT ... RETURNING works on SQLite, PostgreSQL and MariaDB; MySQL refuses it. [returning]
+    RETURNING
+    Read the new id through the driver, which has a call for it on every engine, or select the row again by a unique key after the insert.
+
+1 problem: 1 error.

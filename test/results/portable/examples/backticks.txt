@@ -1,0 +1,5 @@
+example.sql:3:8: error: Backticks quote names on SQLite, MySQL and MariaDB; PostgreSQL refuses them. [backticks]
+    `name`
+    Use plain lower-case names that are not keywords; they need no quotes on any engine.
+
+1 problem: 1 error.

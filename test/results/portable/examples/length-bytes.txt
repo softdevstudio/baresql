@@ -1,0 +1,5 @@
+example.sql:1:8: warning: LENGTH counts characters on SQLite and PostgreSQL and bytes on MySQL and MariaDB, so LENGTH('é') is 1 or 2. [length-bytes]
+    LENGTH('é')
+    No function counts characters on all four engines: use CHAR_LENGTH on PostgreSQL, MySQL and MariaDB and LENGTH on SQLite.
+
+1 problem: 1 warning.

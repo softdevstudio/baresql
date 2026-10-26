@@ -1,0 +1,8 @@
+example.sql:3:54: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    x
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+example.sql:3:56: error: MySQL and MariaDB refuse LIMIT in a subquery under IN, ANY, ALL or SOME; SQLite and PostgreSQL accept it. [limit-in-subquery]
+    LIMIT 1
+    Wrap the limited query in a subquery used as a table: IN (SELECT x FROM (SELECT x FROM t ORDER BY x LIMIT 1) AS s).
+
+2 problems: 1 error, 1 note.

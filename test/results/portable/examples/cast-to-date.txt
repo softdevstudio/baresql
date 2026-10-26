@@ -1,0 +1,5 @@
+example.sql:1:8: warning: SQLite has no date type: CAST('2024-05-06' AS DATE) is the number 2024 there and a date on the other engines. [cast-to-date]
+    CAST('2024-05-06' AS DATE)
+    DATE(x) gives a date on PostgreSQL, MySQL and MariaDB and ISO text (2024-05-06) on SQLite, which sorts and compares the same way.
+
+1 problem: 1 warning.

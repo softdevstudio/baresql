@@ -1,0 +1,5 @@
+example.sql:3:50: error: SQLite, MySQL and MariaDB let HAVING use a name given in the select list; PostgreSQL refuses it. [alias-in-having]
+    n
+    Repeat the aggregate: HAVING COUNT(*) > 1.
+
+1 problem: 1 error.

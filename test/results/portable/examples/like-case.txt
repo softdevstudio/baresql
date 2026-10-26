@@ -1,0 +1,5 @@
+example.sql:1:8: info: LIKE ignores letter case on SQLite, MySQL and MariaDB and respects it on PostgreSQL. [like-case]
+    'abc' LIKE 'ABC'
+    Write LOWER(x) LIKE LOWER(pattern), or a pattern that is already in lower case, to ignore case on all four.
+
+1 problem: 1 note.

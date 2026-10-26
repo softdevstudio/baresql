@@ -74,6 +74,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-clean_app">clean_app</h3>
 <p class="meta">member of no role · password stored as a SCRAM hash</p>
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">app.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.customers.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr>
@@ -94,6 +95,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clean_reports">clean_reports</h3>
 <p class="meta">member of no role · no password set</p>
+
 <p>Reads no personal data.</p>
 <details><summary>5 other columns it can read</summary>
 <div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
@@ -118,7 +120,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h2>Method</h2>
 <p>Schemas audited: <code>app</code>, <code>public</code>, <code>reports</code>. Connection: <code>postgres://postgres@127.0.0.1:5432/baresql_fx_clean</code>, login method md5.</p>
-<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Views are traced to the columns they read from their stored definitions, without running them.</p>
+<p>BareSQL never calls a function written in SQL or a procedural language, never reads views or foreign tables, and never writes. Sampled values are turned into text by their type's own output function, never by a cast, and each table is read on its own, without its partitions or child tables. Views are traced to the columns they read from their stored definitions, without running them.</p>
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>

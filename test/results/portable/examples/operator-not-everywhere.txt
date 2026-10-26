@@ -1,0 +1,5 @@
+example.sql:1:14: error: The ILIKE operator works on PostgreSQL only; SQLite, MySQL and MariaDB refuse it. [operator-not-everywhere]
+    ILIKE
+    Use LOWER(x) LIKE LOWER(pattern).
+
+1 problem: 1 error.

@@ -1,0 +1,5 @@
+example.sql:1:8: error: IFNULL() works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [function-not-everywhere]
+    IFNULL(NULL, 'x')
+    Use COALESCE(a, b).
+
+1 problem: 1 error.

@@ -1,8 +1,8 @@
 rules: 58 (35 errors, 15 warnings, 8 notes)
-rows of forms of other rules: 70
+rows of forms of other rules: 72
 rows of function-not-everywhere: 78
 rows of operator-not-everywhere: 16
 rows of type-not-everywhere: 27
-rows in all: 191
-recorded answers: 1204, on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14
+rows in all: 193
+recorded answers: 1212, on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46, MariaDB 10.11.14
 answers kept for other versions and builds: 4

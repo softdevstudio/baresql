@@ -1,0 +1,5 @@
+example.sql:3:8: warning: CONCAT skips NULL arguments on SQLite and PostgreSQL. On MySQL and MariaDB one NULL makes the whole result NULL. [concat-null]
+    CONCAT(first_name, ' ', last_name)
+    Wrap every argument that can be NULL in COALESCE(x, '').
+
+1 problem: 1 warning.

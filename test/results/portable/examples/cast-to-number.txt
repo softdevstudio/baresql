@@ -1,0 +1,5 @@
+example.sql:1:8: error: MySQL refuses CAST(x AS INTEGER), and SQLite drops the fraction where PostgreSQL and MariaDB round it. [cast-to-number]
+    CAST(5.7 AS INTEGER)
+    Round on purpose with ROUND(x) or ROUND(x, digits), which every engine has.
+
+1 problem: 1 error.

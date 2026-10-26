@@ -1,0 +1,8 @@
+example.sql:5:22: error: UPDATE ... FROM works on SQLite and PostgreSQL; MySQL and MariaDB refuse it. [update-join]
+    FROM
+    Use subqueries, which all four accept: UPDATE t SET x = (SELECT u.x FROM u WHERE u.id = t.id) WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id), and DELETE FROM t WHERE id IN (SELECT id FROM u).
+example.sql:6:26: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    id
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+
+2 problems: 1 error, 1 note.

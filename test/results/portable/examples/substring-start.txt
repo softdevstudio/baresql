@@ -1,0 +1,5 @@
+example.sql:1:8: warning: SUBSTR('abc', 0, 2) is 'a' on SQLite and PostgreSQL and an empty string on MySQL and MariaDB. [substring-start]
+    SUBSTR('abc', 0, 2)
+    Start at 1 or later. For the last n characters, SUBSTR(x, LENGTH(x) - n + 1) works on all four for ASCII text (LENGTH counts bytes on MySQL and MariaDB).
+
+1 problem: 1 warning.

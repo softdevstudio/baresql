@@ -1,0 +1,5 @@
+example.sql:3:29: error: ON CONFLICT ... DO UPDATE works on SQLite and PostgreSQL; MySQL and MariaDB refuse it. [upsert]
+    ON CONFLICT(id) DO UPDATE
+    Update first, then insert what is missing: UPDATE t SET n = 2 WHERE id = 1, then INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). Run both in one transaction.
+
+1 problem: 1 error.

@@ -1,0 +1,8 @@
+example.sql:1:28: info: SQLite stores DECIMAL values as floating point numbers, so sums and comparisons can be off in the last digits. [decimal-as-float]
+    DECIMAL(10, 2)
+    Compare rounded values, ROUND(x, 2) = 0.3, or keep amounts as integers in the smallest unit, such as cents.
+example.sql:3:8: info: SQLite stores DECIMAL and NUMERIC values as floating point numbers, so sums of prices pick up rounding errors the other engines do not have. [decimal-as-float]
+    SUM(price) = 0.3
+    Compare rounded values, ROUND(x, 2) = 0.3, or keep amounts as integers in the smallest unit, such as cents.
+
+2 problems: 2 notes.

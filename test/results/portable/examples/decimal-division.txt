@@ -1,0 +1,5 @@
+example.sql:1:8: warning: 80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333333333333333 on PostgreSQL and a floating point number on SQLite. [decimal-division]
+    80.50 / 3
+    Round on purpose to the places you need: ROUND(80.50 / 3, 2) is 26.83 on all four engines.
+
+1 problem: 1 warning.

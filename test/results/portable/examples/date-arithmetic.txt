@@ -1,0 +1,8 @@
+example.sql:1:8: warning: SQLite has no date type: CAST('2024-05-06' AS DATE) is the number 2024 there and a date on the other engines. [cast-to-date]
+    CAST('2024-01-31' AS DATE)
+    DATE(x) gives a date on PostgreSQL, MySQL and MariaDB and ISO text (2024-05-06) on SQLite, which sorts and compares the same way.
+example.sql:1:8: warning: A date plus 1 is the next day on PostgreSQL, the number 20240132 on MySQL and MariaDB, and 2025 on SQLite. [date-arithmetic]
+    CAST('2024-01-31' AS DATE) + 1
+    No date arithmetic reads the same on all four engines. Use date(d, '+1 day') on SQLite and d + INTERVAL '1' DAY on the other three, or do the arithmetic in the application.
+
+2 problems: 2 warnings.

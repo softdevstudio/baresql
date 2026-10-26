@@ -1,0 +1,5 @@
+example.sql:5:24: error: FULL OUTER JOIN works on SQLite and PostgreSQL; MySQL and MariaDB refuse it. [full-outer-join]
+    FULL OUTER
+    Combine a LEFT JOIN with the rows of the other table that found no match: ... FROM a LEFT JOIN b ON a.x = b.x UNION ALL SELECT ... FROM b LEFT JOIN a ON a.x = b.x WHERE a.x IS NULL.
+
+1 problem: 1 error.

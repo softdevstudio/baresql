@@ -1,0 +1,5 @@
+example.sql:2:1: error: CREATE OR REPLACE VIEW works on PostgreSQL, MySQL and MariaDB; SQLite refuses it. [create-or-replace]
+    CREATE OR REPLACE VIEW
+    Drop and create: DROP VIEW IF EXISTS v, then CREATE VIEW v AS ...
+
+1 problem: 1 error.

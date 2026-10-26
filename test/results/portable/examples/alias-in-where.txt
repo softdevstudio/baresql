@@ -1,0 +1,5 @@
+example.sql:3:32: error: SQLite lets WHERE use a name given in the select list; PostgreSQL, MySQL and MariaDB refuse it. [alias-in-where]
+    y
+    Repeat the expression in WHERE (WHERE x * 2 > 2), or select from a subquery that defines the name.
+
+1 problem: 1 error.

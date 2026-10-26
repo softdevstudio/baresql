@@ -1,0 +1,5 @@
+example.sql:3:11: error: A selected column that is neither grouped nor aggregated takes its value from any row of the group on SQLite and MariaDB; PostgreSQL and MySQL refuse the query. [ungrouped-column]
+    b
+    Add the column to GROUP BY, or say which value you want with an aggregate such as MAX(b).
+
+1 problem: 1 error.

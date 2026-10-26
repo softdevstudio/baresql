@@ -57,7 +57,7 @@ queries.sql:20  SELECT id, DATEDIFF('2026-06-01', issued_on) FROM invoices ORDER
   lint: function-not-everywhere
 
 queries.sql:23  SELECT country, COUNT(*) FROM customers GROUP BY country ORDER BY country
-  the same rows in a different order
+  the same rows in a different order (NULL sorts differently, or rows that tie in ORDER BY came in another order)
   PostgreSQL: 3 rows
       'DE', 1
       'FR', 1

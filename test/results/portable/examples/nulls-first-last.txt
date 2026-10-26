@@ -1,0 +1,5 @@
+example.sql:3:28: error: NULLS FIRST and NULLS LAST work on SQLite and PostgreSQL; MySQL and MariaDB refuse them. [nulls-first-last]
+    NULLS LAST
+    Sort on x IS NULL first: ORDER BY x IS NULL, x for NULLS LAST and ORDER BY x IS NOT NULL, x for NULLS FIRST.
+
+1 problem: 1 error.

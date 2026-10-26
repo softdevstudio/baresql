@@ -237,7 +237,7 @@
       "name": "clinic.visits",
       "kind": "partitioned table",
       "owner": "clinic_owner",
-      "sampled": true,
+      "sampled": false,
       "columns": [
         {
           "name": "id",
@@ -260,7 +260,8 @@
             ],
             "confidence": "medium",
             "evidence": [
-              "the column name suggests health data"
+              "the column name suggests health data",
+              "found in partitions clinic.visits_2025 and clinic.visits_2026"
             ]
           }
         },
@@ -274,7 +275,7 @@
       "name": "clinic.visits_2025",
       "kind": "partition",
       "owner": "clinic_owner",
-      "sampled": false,
+      "sampled": true,
       "partition_of": "clinic.visits",
       "columns": [
         {
@@ -312,7 +313,7 @@
       "name": "clinic.visits_2026",
       "kind": "partition",
       "owner": "clinic_owner",
-      "sampled": false,
+      "sampled": true,
       "partition_of": "clinic.visits",
       "columns": [
         {
@@ -671,7 +672,8 @@
             ],
             "confidence": "medium",
             "evidence": [
-              "the column name suggests health data"
+              "the column name suggests health data",
+              "found in partitions clinic.visits_2025 and clinic.visits_2026"
             ]
           },
           "routes": [
@@ -1117,7 +1119,8 @@
             ],
             "confidence": "medium",
             "evidence": [
-              "the column name suggests health data"
+              "the column name suggests health data",
+              "found in partitions clinic.visits_2025 and clinic.visits_2026"
             ]
           },
           "routes": [
@@ -1811,7 +1814,8 @@
             ],
             "confidence": "medium",
             "evidence": [
-              "the column name suggests health data"
+              "the column name suggests health data",
+              "found in partitions clinic.visits_2025 and clinic.visits_2026"
             ]
           },
           "routes": [

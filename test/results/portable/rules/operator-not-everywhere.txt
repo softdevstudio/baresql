@@ -22,8 +22,9 @@ The same on every engine:
     MySQL 8.0.46         1
     MariaDB 10.11.14     1
 
-Prefer the operators all four share: = <> < > <= >= + - * / % || (see
-pipes-concat), LIKE, IN, BETWEEN, IS NULL.
+Prefer the operators all four share: = <> < > <= >= + - * / %, LIKE, IN,
+BETWEEN, IS NULL. Leave || out: it joins text on SQLite and PostgreSQL and
+means OR on MySQL and MariaDB (see pipes-concat).
 
                  SQLite PostgreSQL MySQL MariaDB
 ::               no     yes        no    no      Use CAST(x AS type) (see cast-to-number for integers).

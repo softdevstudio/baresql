@@ -22,7 +22,8 @@ Example:
 Run the tests on the production engine as well, or check values in the
 application before they reach the database.
 
-                                SQLite PostgreSQL MySQL MariaDB
-text in a number column         yes    no         no    no
-a fraction in an integer column 12.5   no         13    13
-too long for VARCHAR(n)         yes    no         no    no
+                                       SQLite PostgreSQL MySQL MariaDB
+text in a number column                yes    no         no    no
+a quoted fraction in an integer column 12.5   no         13    13
+a fraction in an integer column        12.5   13         13    13
+too long for VARCHAR(n)                yes    no         no    no

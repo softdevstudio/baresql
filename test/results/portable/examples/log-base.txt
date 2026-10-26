@@ -1,0 +1,5 @@
+example.sql:1:8: warning: LOG(x) is the base-10 logarithm on SQLite and PostgreSQL and the natural logarithm on MySQL and MariaDB. [log-base]
+    LOG(100)
+    Say which one you mean: LN(x) for the natural logarithm, LOG10(x) for base 10.
+
+1 problem: 1 warning.

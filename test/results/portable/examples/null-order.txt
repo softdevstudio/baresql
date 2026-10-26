@@ -1,0 +1,5 @@
+example.sql:3:26: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    x
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+
+1 problem: 1 note.
