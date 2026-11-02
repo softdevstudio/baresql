@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0 (in progress)
+
+- PostgreSQL 19 in CI, once it ships (due 2026-11-19).
+
 ## 0.3.0
 
 BareSQL Audit reads several databases in one run and reads the simple
