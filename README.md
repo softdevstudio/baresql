@@ -147,10 +147,14 @@ database over its own connection and read-only transaction and writes one
 report: every relation, function and foreign server is named after its
 database first (`shop.app.orders`), each login appears once with what it
 reaches everywhere, and the databases a login may not connect to are listed
-(`cannot_connect_to` in audit.json, `cannot-connect` lines). A database the
-auditing login can't connect to is listed under what wasn't seen. Compare
-reports of the same kind with `baresql diff`: a single-database report and
-one of several name their tables differently.
+(`cannot_connect_to` in audit.json, `cannot-connect` lines). Findings about
+one database's objects or grants say which database; findings about roles,
+which belong to the whole server, appear once. A database the auditing
+login can't connect to, and with `--database` the databases left out, are
+listed under what wasn't seen. `baresql diff` and `--baseline` compare only
+audits of the same databases and exit 2 otherwise: a single-database report
+and one of several name their tables differently, and a database missing
+from the newer audit would hide what grew there.
 
 ### Flags
 
@@ -331,8 +335,17 @@ grows. `--format json` gives the comparison as JSON.
 - Row security conditions are read, not run: BareSQL understands true,
   false, comparisons of a column with current_user, session_user, constants
   and current_setting(), and AND and OR of those. For other conditions it
-  says which policies apply and not which rows they let through. diff sees a
-  policy that starts or stops applying, not a change to its condition.
+  says which policies apply and not which rows they let through. diff and
+  `--baseline` compare which policies apply, not what their conditions
+  say: a condition that changes, even to `true`, is no growth there.
+- A setting read with `current_setting()` counts as one any session can
+  change when its name has a dot (`app.tenant_id`), except the settings of
+  extensions that keep theirs for superusers (pgaudit, auto_explain,
+  pg_stat_statements and others BareSQL knows by name).
+- On PostgreSQL 17 and later, a login event trigger runs on every
+  connection, the audit's too. A superuser auditor's connections to the
+  databases of `--all-databases` or `--database` turn event triggers off;
+  any other auditor's can't, so check `pg_event_trigger` first.
 - Write access is listed per table and not followed through views or
   functions.
 - Phone numbers stored in arrays (`text[]`) are recognized by the column's

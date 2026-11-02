@@ -227,7 +227,7 @@ only Go 1.24.7; release builds use the current stable Go).
 Steps:
 1. [x] upkeep
 2. [x] Phase A rules, catalog, answers, tests; README; record
-3. [ ] independent review, fixes; release 0.2.0; site; note; plan
-4. [ ] Phase B: multi-database audit, RLS evaluation, fixtures, tests
+3. [x] independent review, fixes; release 0.2.0; site; note; plan (v0.2.0 on 4221d78)
+4. [x] Phase B: multi-database audit, RLS evaluation, fixtures, tests
 5. [ ] independent review, fixes; release 0.3.0; site; note; plan
 6. [ ] Phase C: PostgreSQL 19 in CI after 2026-11-19

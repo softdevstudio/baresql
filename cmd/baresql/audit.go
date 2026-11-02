@@ -24,7 +24,7 @@ func runAudit(ctx context.Context, args []string, stdout, stderr io.Writer) int 
 	fs.Var(&logins, "login", "audit only this login (repeat or separate with commas)")
 	fs.Var(&schemas, "schema", "audit only this schema (repeat or separate with commas)")
 	var databases listFlag
-	fs.Var(&databases, "database", "audit this database of the server too (repeat or separate with commas); the report names objects db.schema.name")
+	fs.Var(&databases, "database", "audit these databases of the server, in one report (repeat or separate with commas); objects are named db.schema.name")
 	allDBs := fs.Bool("all-databases", false, "audit every database of the server that accepts connections, in one report")
 	noSample := fs.Bool("no-sample", false, "read no table data: find personal data by column names only")
 	rows := fs.Int("sample-rows", 200, "rows to read per table when sampling (at most 10000)")
@@ -90,6 +90,10 @@ func runAudit(ctx context.Context, args []string, stdout, stderr io.Writer) int 
 	}
 	if old != nil {
 		cmp := audit.Compare(old, res)
+		if cmp.Databases != "" {
+			fmt.Fprintf(stderr, "baresql audit: --baseline: the audits cover different databases (%s); audit the same databases as the baseline\n", audit.CleanText(cmp.Databases))
+			return 2
+		}
 		w := stdout
 		if *format != "summary" {
 			w = stderr
@@ -126,6 +130,10 @@ func runDiff(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	cmp := audit.Compare(old, cur)
+	if cmp.Databases != "" {
+		fmt.Fprintf(stderr, "baresql diff: the audits cover different databases (%s); compare audits of the same databases\n", audit.CleanText(cmp.Databases))
+		return 2
+	}
 	switch *format {
 	case "text":
 		cmp.Write(stdout)

@@ -2,7 +2,34 @@
 
 ## 0.3.0
 
-Not released yet.
+BareSQL Audit reads several databases in one run and reads the simple
+shapes of row security policies. An independent review came before the
+release; what it found is fixed with tests (audit/review_030_test.go).
+
+- `--database NAME` (repeat) or `--all-databases`: each database is audited
+  over its own connection and read-only transaction, and the report names
+  every relation, function and foreign server after its database
+  (`shop.app.orders`). Each login appears once; `cannot_connect_to` lists
+  the databases it may not connect to. Findings about one database's
+  objects or grants name the database. `diff` and `--baseline` refuse to
+  compare audits of different databases (exit 2).
+- Policy conditions are read when they are true, false, or a column
+  compared with `current_user`, `session_user`, constants or
+  `current_setting()`, joined with AND and OR. True gives `all rows (policy
+  p lets every row through)`, false (or a restrictive policy that is
+  false, or an ALL policy with only WITH CHECK, when reading) gives no
+  rows, and the rest add the condition in words to the route
+  (`rows_where` in audit.json), naming the policies BareSQL can't read.
+- New finding `rls-session-setting`: a permissive or restrictive policy
+  picks rows by a setting such as `app.tenant_id`, which any session can
+  change, so the logins it covers can read rows meant for others, unless a
+  restrictive policy ties the rows to the role's own name.
+- A policy that lets every row through no longer counts as "statistics
+  only" for a schema the login can't use: pg_stats hides such tables.
+- On PostgreSQL 17 and later, a superuser auditor's connections for
+  several databases turn login event triggers off.
+- Audits from 0.2 work as baselines: a true policy, written as "rows allowed
+  by policy p" then, is no growth.
 
 ## 0.2.0
 

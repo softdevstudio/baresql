@@ -67,7 +67,7 @@ For every login, the server's own privilege checks were asked about every table 
 <p class="meta">Columns and tables count base tables, partitions and materialized views, reached in any way listed below. Changes counts tables with personal data the login can insert into, update, delete from or empty.</p>
 {{else}}<p>No login can read a column that looks like personal data.</p>{{end}}
 
-<h2>Personal data in this database</h2>
+<h2>Personal data in {{if .R.Server.Databases}}these databases{{else}}this database{{end}}</h2>
 {{if .Data}}
 <div class="wrap"><table>
 <tr><th>Column</th><th>Holds</th><th>How BareSQL knows</th><th>Read by</th></tr>
@@ -80,6 +80,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h3 id="login-{{.Anchor}}">{{.L.Name}}</h3>
 <p class="meta">{{if .L.Attributes}}{{range $i, $a := .L.Attributes}}{{if $i}}, {{end}}{{$a}}{{end}} · {{end}}{{if .L.MemberOf}}member of {{range $i, $m := .L.MemberOf}}{{if $i}}, {{end}}{{$m}}{{end}}{{else}}member of no role{{end}}{{if .L.CanSetRole}} · can SET ROLE {{range $i, $m := .L.CanSetRole}}{{if $i}}, {{end}}{{$m}}{{end}}{{end}}{{if .L.Password}} · {{password .L.Password}}{{end}}</p>
 {{if .L.CannotConnect}}<p class="note">This login may not connect to the database, so what it is granted here gives it nothing until it may. Its grants are listed below as giving it nothing today.</p>{{end}}
+{{if .L.CannotConnectTo}}<p class="note">This login may not connect to {{range $i, $d := .L.CannotConnectTo}}{{if $i}}, {{end}}{{$d}}{{end}}, so what it is granted there gives it nothing until it may.</p>{{end}}
 {{if .Personal}}
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
@@ -123,7 +124,7 @@ For every login, the server's own privilege checks were asked about every table 
 <h2>Tables created later</h2>
 <p>Default privileges hand these rights out on objects that don't exist yet.</p>
 <div class="wrap"><table><tr><th>When</th><th>creates</th><th>in</th><th>it grants</th><th>to</th></tr>
-{{range .R.DefaultPrivileges}}<tr><td>{{.Creator}}</td><td>{{.Objects}}</td><td>{{if .Schema}}{{.Schema}}{{else}}any schema{{end}}</td><td>{{.Privilege}}</td><td>{{.Grantee}}</td></tr>{{end}}
+{{range .R.DefaultPrivileges}}<tr><td>{{.Creator}}</td><td>{{.Objects}}</td><td>{{if .Database}}{{.Database}}: {{end}}{{if .Schema}}{{.Schema}}{{else}}any schema{{end}}</td><td>{{.Privilege}}</td><td>{{.Grantee}}</td></tr>{{end}}
 </table></div>
 {{end}}
 

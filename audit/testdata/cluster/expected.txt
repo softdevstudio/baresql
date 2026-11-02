@@ -1,6 +1,7 @@
 # Two databases audited in one run (--database), and the row security
 # conditions BareSQL reads.
 cannot-connect cluster_app baresql_fx_cluster_b
+finding medium rls-session-setting baresql_fx_cluster.app.ledger
 finding medium rls-session-setting baresql_fx_cluster.app.orders
 read cluster_analyst baresql_fx_cluster.app.archive.email [email] granted to cluster_analyst; no rows (policy closed lets no row through)
 read cluster_analyst baresql_fx_cluster.app.archive.id [-] granted to cluster_analyst; no rows (policy closed lets no row through)
@@ -11,13 +12,16 @@ read cluster_analyst baresql_fx_cluster.app.reports.title [-] granted to cluster
 read cluster_analyst baresql_fx_cluster_b.crm.contacts.email [email] granted to cluster_analyst
 read cluster_analyst baresql_fx_cluster_b.crm.contacts.full_name [name] granted to cluster_analyst
 read cluster_analyst baresql_fx_cluster_b.crm.contacts.id [-] granted to cluster_analyst
+read cluster_app baresql_fx_cluster.app.ledger.amount [-] granted to cluster_app; rows allowed by policy open_all and restricted by ledger_tenant (where open_all: every row; and always ledger_tenant: tenant_id matches the setting app.tenant, which any session can set)
+read cluster_app baresql_fx_cluster.app.ledger.id [-] granted to cluster_app; rows allowed by policy open_all and restricted by ledger_tenant (where open_all: every row; and always ledger_tenant: tenant_id matches the setting app.tenant, which any session can set)
+read cluster_app baresql_fx_cluster.app.ledger.tenant_id [-] granted to cluster_app; rows allowed by policy open_all and restricted by ledger_tenant (where open_all: every row; and always ledger_tenant: tenant_id matches the setting app.tenant, which any session can set)
 read cluster_app baresql_fx_cluster.app.notes.author [-] granted to cluster_app; rows allowed by policy own_notes (where author is the name of the current role)
 read cluster_app baresql_fx_cluster.app.notes.body [-] granted to cluster_app; rows allowed by policy own_notes (where author is the name of the current role)
 read cluster_app baresql_fx_cluster.app.notes.id [-] granted to cluster_app; rows allowed by policy own_notes (where author is the name of the current role)
-read cluster_app baresql_fx_cluster.app.orders.email [email] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; eu_only: region is 'eu')
-read cluster_app baresql_fx_cluster.app.orders.id [-] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; eu_only: region is 'eu')
-read cluster_app baresql_fx_cluster.app.orders.region [-] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; eu_only: region is 'eu')
-read cluster_app baresql_fx_cluster.app.orders.tenant_id [-] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; eu_only: region is 'eu')
+read cluster_app baresql_fx_cluster.app.orders.email [email] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu')
+read cluster_app baresql_fx_cluster.app.orders.id [-] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu')
+read cluster_app baresql_fx_cluster.app.orders.region [-] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu')
+read cluster_app baresql_fx_cluster.app.orders.tenant_id [-] granted to cluster_app; rows allowed by policy tenant and restricted by eu_only (where tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu')
 read cluster_app baresql_fx_cluster_b.crm.contacts.email [email] granted to cluster_app; cannot connect: no CONNECT privilege on database baresql_fx_cluster_b
 read cluster_app baresql_fx_cluster_b.crm.contacts.full_name [name] granted to cluster_app; cannot connect: no CONNECT privilege on database baresql_fx_cluster_b
 read cluster_app baresql_fx_cluster_b.crm.contacts.id [-] granted to cluster_app; cannot connect: no CONNECT privilege on database baresql_fx_cluster_b

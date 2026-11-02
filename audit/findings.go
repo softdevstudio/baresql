@@ -145,6 +145,11 @@ func (a *analysis) findings(res *Result) []Finding {
 		}
 	}
 
+	relByName := map[string]*Relation{}
+	for _, rel := range a.s.Relations {
+		relByName[a.s.QualifiedName(rel)] = rel
+	}
+
 	// Row security.
 	for _, rel := range sortedRelations(a.s) {
 		if !rel.RLS || !isBase(rel) {
@@ -180,46 +185,71 @@ func (a *analysis) findings(res *Result) []Finding {
 				name, owner.Name, owner.Name))
 		}
 	}
-	// Policies that pick rows by a setting the session controls.
-	readers := map[string]map[string][]string{} // relation -> policy -> logins
+	// Policies that pick rows by a setting the session controls: on a
+	// route where one of the policies that decide the rows depends on a
+	// setting, and no restrictive policy ties them to the role's own name.
+	type key struct{ rel, policy string }
+	who := map[key][]string{}
+	settingOf := map[key][]string{}
 	for _, l := range res.Logins {
 		for _, c := range l.Read {
+			rel := relByName[c.Relation]
+			if rel == nil {
+				continue
+			}
 			for _, r := range c.Routes {
-				perm, _, ok := policyList(r.Rows)
+				perm, restr, ok := policyList(r.Rows)
 				if !ok {
 					continue
 				}
-				for _, p := range perm {
-					if readers[c.Relation] == nil {
-						readers[c.Relation] = map[string][]string{}
+				meaning := func(n string) (rowMeaning, *Policy) {
+					for i := range a.s.Policies {
+						p := &a.s.Policies[i]
+						if p.Rel == rel.OID && quoteIdent(p.Name) == n && (p.Cmd == "ALL" || p.Cmd == "SELECT") {
+							return policyCondition(p, "SELECT"), p
+						}
 					}
-					if !slices.Contains(readers[c.Relation][p], l.Name) {
-						readers[c.Relation][p] = append(readers[c.Relation][p], l.Name)
+					return rowMeaning{}, nil
+				}
+				own := false
+				for _, n := range restr {
+					if m, _ := meaning(n); (m.kind == rowsOwn || m.kind == rowsNone) && len(m.settings) == 0 {
+						own = true
+					}
+				}
+				if own {
+					continue
+				}
+				for _, n := range append(append([]string{}, perm...), restr...) {
+					m, p := meaning(n)
+					if p == nil || len(m.settings) == 0 {
+						continue
+					}
+					k := key{c.Relation, n}
+					settingOf[k] = m.settings
+					if !slices.Contains(who[k], l.Name) {
+						who[k] = append(who[k], l.Name)
 					}
 				}
 			}
 		}
 	}
-	for _, rel := range sortedRelations(a.s) {
-		if !rel.RLS {
-			continue
+	keys := make([]key, 0, len(who))
+	for k := range who {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].rel != keys[j].rel {
+			return keys[i].rel < keys[j].rel
 		}
-		name := a.s.QualifiedName(rel)
-		for i := range a.s.Policies {
-			p := &a.s.Policies[i]
-			if p.Rel != rel.OID || !p.Permissive || (p.Cmd != "ALL" && p.Cmd != "SELECT") {
-				continue
-			}
-			m := policyCondition(p, "SELECT")
-			who := readers[name][quoteIdent(p.Name)]
-			if m.kind != rowsSetting || len(who) == 0 {
-				continue
-			}
-			sort.Strings(who)
-			add("rls-session-setting", "medium", name, fmt.Sprintf(
-				"Policy %s on %s picks rows by the setting %s, which any session can set to any value: %s can read rows meant for others by changing it.",
-				quoteIdent(p.Name), name, strings.Join(m.settings, " and "), andList(who)), "where "+m.text)
-		}
+		return keys[i].policy < keys[j].policy
+	})
+	for _, k := range keys {
+		names := who[k]
+		sort.Strings(names)
+		add("rls-session-setting", "medium", k.rel, fmt.Sprintf(
+			"Policy %s on %s picks rows by the setting %s, which any session can set to any value: %s can read rows meant for others by changing it.",
+			k.policy, k.rel, strings.Join(settingOf[k], " and "), andList(names)))
 	}
 
 	// Views that hand out rows row security would hide.

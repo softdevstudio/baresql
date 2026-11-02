@@ -21,10 +21,21 @@ func runServer(ctx context.Context, cfg pgwire.Config, opt RunOptions) (*Result,
 	}
 	res, err := c.Query(ctx, `SELECT datname FROM pg_catalog.pg_database
 		WHERE datallowconn AND NOT datistemplate ORDER BY datname`)
-	c.Close()
 	if err != nil {
+		c.Close()
 		return nil, fmt.Errorf("audit: listing the databases: %w", err)
 	}
+	// PostgreSQL 17 runs login event triggers, user code, on every
+	// connection; a superuser auditor connects with them off. Other
+	// auditors can't, and the README says so.
+	quiet := false
+	if q, err := c.Query(ctx, `SELECT pg_catalog.current_setting('server_version_num')::int >= 170000
+		AND (SELECT rolsuper FROM pg_catalog.pg_roles WHERE rolname = current_user)`); err == nil &&
+		len(q) == 1 && len(q[0].Rows) == 1 && q[0].Rows[0][0].String() == "t" {
+		quiet = true
+	}
+	target := c.Config().Redacted()
+	c.Close()
 	var all []string
 	for _, r := range res[0].Rows {
 		all = append(all, r[0].String())
@@ -34,7 +45,7 @@ func runServer(ctx context.Context, cfg pgwire.Config, opt RunOptions) (*Result,
 		dbs = nil
 		for _, d := range opt.Databases {
 			if !slices.Contains(all, d) {
-				return nil, fmt.Errorf("audit: database %s does not exist or does not accept connections", quoteIdent(d))
+				return nil, fmt.Errorf("audit: database %s does not exist, is a template or does not accept connections", quoteIdent(d))
 			}
 			if !slices.Contains(dbs, d) {
 				dbs = append(dbs, d)
@@ -52,6 +63,13 @@ func runServer(ctx context.Context, cfg pgwire.Config, opt RunOptions) (*Result,
 	for _, db := range dbs {
 		dc := cfg
 		dc.Database = db
+		if quiet {
+			dc.Params = map[string]string{}
+			for k, v := range cfg.Params {
+				dc.Params[k] = v
+			}
+			dc.Params["event_triggers"] = "off"
+		}
 		conn, err := pgwire.Connect(ctx, dc)
 		if err != nil {
 			if ctx.Err() != nil {
@@ -78,7 +96,12 @@ func runServer(ctx context.Context, cfg pgwire.Config, opt RunOptions) (*Result,
 		return nil, fmt.Errorf("audit: no database could be audited")
 	}
 	out := Merge(parts)
+	out.Server.Target = target
 	out.NotSeen = append(out.NotSeen, skipped...)
+	if !opt.AllDatabases && len(dbs) < len(all) {
+		out.NotSeen = append(out.NotSeen, NotSeen{What: "other databases",
+			Why: fmt.Sprintf("only the %d databases named with --database were audited, of %d on the server", len(dbs), len(all))})
+	}
 	out.Settings.Databases = dbs
 	if opt.AllDatabases {
 		out.Settings.AllDatabases = true
@@ -96,13 +119,13 @@ func Merge(parts []*Result) *Result {
 	logins := map[string]*LoginReport{}
 	var order []string
 	public := &LoginReport{Name: "PUBLIC"}
-	seenFinding := map[string]bool{}
+	seenFinding := map[string]int{}
 	seenNotSeen := map[string]bool{}
 	for _, p := range parts {
 		db := p.Server.Database
 		out.Server.Databases = append(out.Server.Databases, db)
 		for _, s := range p.Settings.Schemas {
-			out.Settings.Schemas = append(out.Settings.Schemas, quoteIdent(db)+"."+s)
+			out.Settings.Schemas = append(out.Settings.Schemas, quoteIdent(db)+"."+quoteIdent(s))
 		}
 		out.Relations = append(out.Relations, p.Relations...)
 		for _, l := range p.Logins {
@@ -124,11 +147,31 @@ func Merge(parts []*Result) *Result {
 			out.DefaultPrivileges = append(out.DefaultPrivileges, d)
 		}
 		for _, f := range p.Findings {
-			k := f.Code + "\x00" + f.Subject + "\x00" + f.Message + "\x00" + strings.Join(f.Details, "\x00")
-			if !seenFinding[k] {
-				seenFinding[k] = true
-				out.Findings = append(out.Findings, f)
+			// Findings about a login's or role's rights in one database
+			// name the database: the same words can hold in two of them.
+			if !serverWide[f.Code] && !strings.HasPrefix(f.Subject, quoteIdent(db)+".") {
+				f.Subject = quoteIdent(db) + ": " + f.Subject
+				f.Message = "In database " + quoteIdent(db) + ": " + f.Message
 			}
+			if f.Code == "unexplained-access" {
+				var d []string
+				for _, x := range f.Details {
+					d = append(d, quoteIdent(db)+": "+x)
+				}
+				f.Details = d
+			}
+			k := f.Code + "\x00" + f.Subject + "\x00" + f.Message
+			if i, ok := seenFinding[k]; ok {
+				// The same server-wide finding: keep every detail once.
+				for _, d := range f.Details {
+					if !slices.Contains(out.Findings[i].Details, d) {
+						out.Findings[i].Details = append(out.Findings[i].Details, d)
+					}
+				}
+				continue
+			}
+			seenFinding[k] = len(out.Findings)
+			out.Findings = append(out.Findings, f)
 		}
 		for _, n := range p.NotSeen {
 			if !seenNotSeen[n.What+"\x00"+n.Why] {
@@ -140,7 +183,11 @@ func Merge(parts []*Result) *Result {
 			out.Mismatches = append(out.Mismatches, quoteIdent(db)+": "+m)
 		}
 	}
-	out.Server.Database = strings.Join(out.Server.Databases, ", ")
+	var quoted []string
+	for _, d := range out.Server.Databases {
+		quoted = append(quoted, quoteIdent(d))
+	}
+	out.Server.Database = strings.Join(quoted, ", ")
 	sort.Strings(order)
 	for _, name := range order {
 		l := logins[name]
@@ -173,6 +220,13 @@ func Merge(parts []*Result) *Result {
 		out.DefaultPrivileges = []DefaultPriv{}
 	}
 	return out
+}
+
+// serverWide findings are about roles, which belong to the whole server:
+// the same in every database, so one finding stands for all.
+var serverWide = map[string]bool{
+	"superuser-login": true, "set-role-superuser": true, "read-all-data": true, "createrole-escalation": true,
+	"see-all-queries": true, "admin-option": true, "connection-not-encrypted": true, "cleartext-password-login": true,
 }
 
 // mergeLogin adds what a login reaches in database db to m.

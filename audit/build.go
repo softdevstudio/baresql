@@ -81,7 +81,9 @@ func (a *analysis) readers(login uint32, public bool) []reader {
 func (a *analysis) readRows(role uint32, rel *Relation) (string, bool) {
 	rows := a.rowsFor(role, rel)
 	if !a.usage(role, rel.Schema) {
-		if !isBase(rel) || rel.Kind == 'f' || rel.RLS && !strings.HasPrefix(rows, "all rows") {
+		// pg_stats hides tables where row security applies to the role,
+		// even with a policy that lets every row through.
+		if !isBase(rel) || rel.Kind == 'f' || rel.RLS && (!strings.HasPrefix(rows, "all rows") || strings.HasPrefix(rows, "all rows (policy ")) {
 			return "", false
 		}
 		return statsPrefix + "no USAGE on schema " + quoteIdent(a.s.Schemas[rel.Schema].Name) +

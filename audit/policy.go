@@ -91,17 +91,24 @@ func (p *condParser) chain(word string, part func() (rowMeaning, bool)) (rowMean
 	}
 	out := rowMeaning{kind: parts[0].kind}
 	var texts []string
+	own := false
 	for _, m := range parts {
 		texts = append(texts, m.text)
 		out.settings = append(out.settings, m.settings...)
+		own = own || m.kind == rowsOwn
 		switch {
 		case m.kind == rowsUnknown || out.kind == rowsUnknown:
 			// One unread part leaves the whole unread, except that false
 			// in an AND and true in an OR decide it anyway.
 			out.kind = rowsUnknown
-		case word == "AND" && m.kind < out.kind, word == "OR" && m.kind > out.kind:
+		case word == "AND" && andRank[m.kind] < andRank[out.kind], word == "OR" && m.kind > out.kind:
 			out.kind = m.kind
 		}
+	}
+	// ANDed with the role's own name, a setting picks among the role's own
+	// rows only.
+	if word == "AND" && own {
+		out.settings = nil
 	}
 	for _, m := range parts {
 		if word == "AND" && m.kind == rowsNone {
@@ -117,6 +124,11 @@ func (p *condParser) chain(word string, part func() (rowMeaning, bool)) (rowMean
 	out.text = strings.Join(texts, strings.ToLower(" "+word+" "))
 	return out, true
 }
+
+// andRank orders kinds for AND by how much they decide: false and the
+// role's own rows narrow the most; a setting decides which rows whatever
+// constants sit beside it.
+var andRank = map[rowKind]int{rowsNone: 0, rowsOwn: 1, rowsSetting: 2, rowsFixed: 3, rowsEvery: 4}
 
 // term is a parenthesized condition, true, false, or a comparison.
 func (p *condParser) term() (rowMeaning, bool) {
@@ -259,8 +271,9 @@ func (p *condParser) operand() (operand, bool) {
 		p.i++
 		setting := name.StringValue()
 		// Placeholder settings (with a dot) can be set by any session;
-		// built-in ones aren't read here.
-		if !strings.Contains(setting, ".") {
+		// built-in ones, and those of extensions that register them as
+		// superuser-only, aren't read here.
+		if !strings.Contains(setting, ".") || reservedPrefix(setting) {
 			o = operand{kind: "other"}
 		} else {
 			o = operand{kind: "setting", setting: setting}
@@ -354,7 +367,10 @@ func (p *condParser) array() (operand, bool) {
 // keywordLike: words pg_get_expr prints that aren't column names.
 func keywordLike(t sqltext.Token) bool {
 	switch t.Upper() {
-	case "AND", "OR", "NOT", "NULL", "TRUE", "FALSE", "ANY", "ALL", "ARRAY", "SELECT", "CASE", "EXISTS", "IS", "IN":
+	case "AND", "OR", "NOT", "NULL", "TRUE", "FALSE", "ANY", "ALL", "ARRAY", "SELECT", "CASE", "EXISTS", "IS", "IN",
+		// SQL value functions, which pg_get_expr prints without parentheses.
+		"CURRENT_CATALOG", "CURRENT_SCHEMA", "SYSTEM_USER", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
+		"LOCALTIME", "LOCALTIMESTAMP":
 		return true
 	}
 	return false
@@ -391,33 +407,46 @@ func (a *analysis) whereText(rel *Relation, cmd, rows string) string {
 			byName[quoteIdent(p.Name)] = p
 		}
 	}
-	var parts []string
 	read := 0
-	names := append(append([]string{}, perm...), restr...)
-	for _, n := range names {
+	say := func(n string) string {
 		p := byName[n]
 		if p == nil {
-			continue
+			return n + ": condition not read"
 		}
 		m := policyCondition(p, cmd)
 		if m.kind == rowsUnknown {
-			continue
+			return n + ": condition not read"
 		}
 		read++
 		text := m.text
-		if len(m.settings) > 0 {
+		if len(m.settings) == 1 && strings.HasSuffix(text, "the setting "+m.settings[0]) {
 			text += ", which any session can set"
+		} else if len(m.settings) > 0 {
+			text += "; any session can set " + strings.Join(m.settings, " and ")
 		}
-		parts = append(parts, n+": "+text)
+		return n + ": " + text
+	}
+	var ps, rs []string
+	for _, n := range perm {
+		ps = append(ps, say(n))
+	}
+	for _, n := range restr {
+		rs = append(rs, say(n))
 	}
 	if read == 0 {
 		return ""
 	}
-	if len(names) == 1 {
-		_, text, _ := strings.Cut(parts[0], ": ")
+	if len(perm)+len(restr) == 1 {
+		_, text, _ := strings.Cut(ps[0], ": ")
 		return text
 	}
-	return strings.Join(parts, "; ")
+	// Permissive policies let rows through when any of them does;
+	// restrictive ones each have to.
+	out := strings.Join(ps, "; or ")
+	if len(rs) > 0 {
+		out += "; and always " + strings.Join(rs, "; and ")
+	}
+	return out
 }
 
 // fillRowsWhere adds RowsWhere to every route whose Rows names policies.
@@ -443,4 +472,18 @@ func (a *analysis) fillRowsWhere(res *Result) {
 			fill(w.Relation, w.Privilege, w.Routes)
 		}
 	}
+}
+
+// reservedPrefix reports whether a placeholder setting belongs to an
+// extension that registers its settings for superusers only, or that are
+// otherwise not a session's to change: such a setting is no session's
+// choice.
+func reservedPrefix(setting string) bool {
+	prefix, _, _ := strings.Cut(strings.ToLower(setting), ".")
+	switch prefix {
+	case "pgaudit", "auto_explain", "pg_stat_statements", "pg_cron", "pglogical", "citus", "timescaledb",
+		"pgsodium", "pg_net", "supautils", "pg_partman_bgw", "pg_prewarm", "pgrst":
+		return true
+	}
+	return false
 }

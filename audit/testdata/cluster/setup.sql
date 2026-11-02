@@ -38,4 +38,24 @@ CREATE TABLE app.drafts (id integer PRIMARY KEY, title text);
 ALTER TABLE app.drafts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY editors ON app.drafts FOR SELECT TO cluster_analyst USING (pg_has_role(current_user, 'cluster_owner', 'member'));
 GRANT SELECT ON app.drafts TO cluster_analyst;
+
+-- Every row through a permissive policy, the tenant picked by a
+-- restrictive one that reads a setting: still the session's choice.
+CREATE TABLE app.ledger (id integer PRIMARY KEY, tenant_id integer, amount numeric(10,2));
+ALTER TABLE app.ledger ENABLE ROW LEVEL SECURITY;
+CREATE POLICY open_all ON app.ledger TO cluster_app USING (true);
+CREATE POLICY ledger_tenant ON app.ledger AS RESTRICTIVE TO cluster_app USING (tenant_id = current_setting('app.tenant')::integer);
+GRANT SELECT ON app.ledger TO cluster_app;
+RESET ROLE;
+
+-- A schema the analyst may not use, holding a table whose policy lets
+-- every row through: pg_stats hides it while row security applies, so it
+-- gives nothing.
+CREATE SCHEMA hidden AUTHORIZATION cluster_owner;
+SET ROLE cluster_owner;
+CREATE TABLE hidden.people (id integer PRIMARY KEY, email text);
+INSERT INTO hidden.people SELECT g, 'p' || g || '@example.com' FROM generate_series(1, 30) g;
+ALTER TABLE hidden.people ENABLE ROW LEVEL SECURITY;
+CREATE POLICY everyone ON hidden.people FOR SELECT TO cluster_analyst USING (true);
+GRANT SELECT ON hidden.people TO cluster_analyst;
 RESET ROLE;

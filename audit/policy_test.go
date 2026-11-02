@@ -16,7 +16,7 @@ func TestPolicyMeaning(t *testing.T) {
 		{"true", rowsEvery, "every row"},
 		{"false", rowsNone, "no row"},
 		{"(region = ANY (ARRAY['eu'::text, 'us'::text]))", rowsFixed, "region is one of 'eu', 'us'"},
-		{"((tenant_id = 3) AND (owner = CURRENT_USER))", rowsFixed, "tenant_id is 3 and owner is the name of the current role"},
+		{"((tenant_id = 3) AND (owner = CURRENT_USER))", rowsOwn, "tenant_id is 3 and owner is the name of the current role"},
 		{"((current_setting('app.role'::text, true) = 'admin'::text) OR (owner = CURRENT_USER))", rowsSetting,
 			"the setting app.role is 'admin' or owner is the name of the current role"},
 		{"((tenant_id = 1) OR true)", rowsEvery, "every row"},

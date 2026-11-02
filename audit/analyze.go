@@ -200,6 +200,7 @@ func (a *analysis) rowsForCmd(role uint32, rel *Relation, cmd string) string {
 	var permissive, restrictive []string
 	var every, none []string // permissive policies whose condition is true, or false
 	narrowed := false        // a restrictive policy that isn't plainly true
+	var blocked []string     // restrictive policies whose condition is false
 	for i := range a.s.Policies {
 		p := &a.s.Policies[i]
 		if p.Rel != rel.OID || (p.Cmd != "ALL" && p.Cmd != cmd) {
@@ -229,10 +230,16 @@ func (a *analysis) rowsForCmd(role uint32, rel *Relation, cmd string) string {
 			if kind != rowsEvery {
 				narrowed = true
 			}
+			if kind == rowsNone {
+				blocked = append(blocked, quoteIdent(p.Name))
+			}
 		}
 	}
 	if len(permissive) == 0 {
 		return "no rows (row security on, no policy lets this role " + cmdVerb[cmd] + ")"
+	}
+	if len(blocked) > 0 {
+		return "no rows (restricted by policy " + strings.Join(blocked, ", ") + ", which lets no row through)"
 	}
 	if len(every) > 0 && !narrowed {
 		return "all rows (policy " + strings.Join(every, ", ") + " lets every row through)"
@@ -255,6 +262,10 @@ func policyCondition(p *Policy, cmd string) rowMeaning {
 		expr = p.Check
 	}
 	if expr == "" {
+		if cmd != "INSERT" {
+			// An ALL policy with only WITH CHECK shows no existing rows.
+			return rowMeaning{kind: rowsNone, text: "no row"}
+		}
 		return rowMeaning{}
 	}
 	return policyMeaning(expr)

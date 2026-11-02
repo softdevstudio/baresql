@@ -29,10 +29,14 @@ func (c Change) String() string {
 
 // Comparison is what changed between an older and a newer audit.
 type Comparison struct {
-	Old, New string   `json:"-"`
-	Grew     []Change `json:"grew"`   // reach the newer audit has and the older didn't
-	Shrank   []Change `json:"shrank"` // reach that is gone
-	Other    []Change `json:"other"`  // new routes to old reach, findings that came or went
+	Old, New string `json:"-"`
+	// Databases says how the two audits cover different databases (a
+	// single-database audit and one of several, or different sets); the
+	// comparison then means little, and the CLI refuses it.
+	Databases string   `json:"databases,omitempty"`
+	Grew      []Change `json:"grew"`   // reach the newer audit has and the older didn't
+	Shrank    []Change `json:"shrank"` // reach that is gone
+	Other     []Change `json:"other"`  // new routes to old reach, findings that came or went
 }
 
 // GrewAny reports whether any login can do something it couldn't before.
@@ -125,7 +129,7 @@ func facts(r *Result) map[string]fact {
 		var out []Route
 		for _, r := range rs {
 			if r.GivesRows() {
-				out = append(out, r)
+				out = append(out, diffRoute(r))
 			}
 		}
 		return out
@@ -172,8 +176,37 @@ func facts(r *Result) map[string]fact {
 }
 
 // Compare lists what changed from old to new.
+// diffRoute is a route as diff compares it: without the words on policy
+// conditions, and a policy whose condition is true named as the policy it
+// is ("rows allowed by policy p"), as audits before 0.3 wrote it. diff
+// sees which policies apply, not what their conditions say.
+func diffRoute(r Route) Route {
+	r.RowsWhere = ""
+	if rest, ok := strings.CutPrefix(r.Rows, "all rows (policy "); ok {
+		if names, ok := strings.CutSuffix(rest, " lets every row through)"); ok {
+			r.Rows = "rows allowed by policy " + names
+		}
+	}
+	return r
+}
+
+// databaseSet names the databases an audit covers, for Compare.
+func databaseSet(r *Result) string {
+	if len(r.Server.Databases) == 0 {
+		return "the single database " + quoteIdent(r.Server.Database)
+	}
+	var names []string
+	for _, d := range r.Server.Databases {
+		names = append(names, quoteIdent(d))
+	}
+	return "databases " + strings.Join(names, ", ")
+}
+
 func Compare(old, new *Result) *Comparison {
 	c := &Comparison{Old: old.Generated, New: new.Generated}
+	if (len(old.Server.Databases) > 0 || len(new.Server.Databases) > 0) && databaseSet(old) != databaseSet(new) {
+		c.Databases = "the older audit covers " + databaseSet(old) + ", the newer " + databaseSet(new)
+	}
 	of, nf := facts(old), facts(new)
 	detail := func(f fact) string {
 		d := strings.Join(f.routes, " | ")
@@ -252,6 +285,9 @@ func minus(a, b []string) []string {
 // Write prints the comparison as text.
 func (c *Comparison) Write(w io.Writer) {
 	fmt.Fprintf(w, "Compared the audit of %s with the audit of %s.\n", c.Old, c.New)
+	if c.Databases != "" {
+		fmt.Fprintf(w, "The audits cover different databases: %s.\n", cleanText(c.Databases))
+	}
 	section := func(title, mark string, cs []Change) {
 		fmt.Fprintf(w, "%s: %d\n", title, len(cs))
 		for _, ch := range cs {
