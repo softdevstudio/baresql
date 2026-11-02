@@ -2,8 +2,10 @@ package portable
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/softdevstudio/baresql/internal/sqltext"
 )
@@ -71,6 +73,17 @@ func init() {
 	addRule("create-or-replace", ruleCreateOrReplace)
 	addRule("function-not-everywhere", ruleFunctionNotEverywhere)
 	addRule("operator-not-everywhere", ruleOperatorNotEverywhere)
+	addRule("alter-column", ruleAlterColumn)
+	addRule("reserved-word", ruleReservedWord)
+	addRule("aggregate-filter", ruleAggregateFilter)
+	addRule("from-dual", ruleFromDual)
+	addRule("trim-from", ruleTrimFrom)
+	addRule("substring-from", ruleSubstringFrom)
+	addRule("drop-cascade", ruleDropCascade)
+	addRule("cast-to-float", ruleCastToFloat)
+	addRule("avg-digits", ruleAvgDigits)
+	addRule("round-half", ruleRoundHalf)
+	addRule("group-case", ruleGroupCase)
 }
 
 func ruleIntegerDivision(r *rule, c *lintCtx) {
@@ -1806,4 +1819,446 @@ func firstLine(s string) string {
 		s = string(r[:77]) + "..."
 	}
 	return s
+}
+
+// alterTarget returns the index of the first action of ALTER TABLE name,
+// or -1 when the statement is no ALTER TABLE.
+func (c *lintCtx) alterTarget() int {
+	if len(c.ts) < 4 || !c.ts[0].Is("ALTER") || !c.ts[1].Is("TABLE") {
+		return -1
+	}
+	i := 2
+	if c.at(i).Is("IF") && c.at(i+1).Is("EXISTS") {
+		i += 2
+	}
+	if c.at(i).Is("ONLY") {
+		i++
+	}
+	for c.at(i + 1).IsOp(".") {
+		i += 2
+	}
+	return i + 1
+}
+
+func ruleAlterColumn(r *rule, c *lintCtx) {
+	start := c.alterTarget()
+	if start < 0 || start >= len(c.ts) {
+		return
+	}
+	acts := c.items(start, len(c.ts), 0)
+	if len(acts) > 1 {
+		c.hitForm(r, 0, len(c.ts)-1, "several actions", "More than one action in one ALTER TABLE", "")
+	}
+	for _, a := range acts {
+		s, e := a[0], a[1]
+		w := c.ts[s]
+		switch {
+		case w.Is("ALTER"):
+			k := s + 1
+			if c.at(k).Is("COLUMN") {
+				k++
+			}
+			k++ // the column
+			switch {
+			case c.at(k).Is("TYPE"), c.at(k).Is("SET") && c.at(k+1).Is("DATA"):
+				c.hitForm(r, s, e, "ALTER COLUMN TYPE", "ALTER COLUMN ... TYPE", "")
+			case c.at(k).Is("SET") && c.at(k+1).Is("NOT"):
+				c.hitForm(r, s, e, "SET NOT NULL", "ALTER COLUMN ... SET NOT NULL", "")
+			case c.at(k).Is("DROP") && c.at(k+1).Is("NOT"):
+				c.hitForm(r, s, e, "DROP NOT NULL", "ALTER COLUMN ... DROP NOT NULL", "")
+			case c.at(k).Is("SET") && c.at(k+1).Is("DEFAULT"):
+				c.hitForm(r, s, e, "SET DEFAULT", "ALTER COLUMN ... SET DEFAULT", "")
+			case c.at(k).Is("DROP") && c.at(k+1).Is("DEFAULT"):
+				c.hitForm(r, s, e, "DROP DEFAULT", "ALTER COLUMN ... DROP DEFAULT", "")
+			}
+		case w.Is("MODIFY"):
+			c.hitForm(r, s, e, "MODIFY", "ALTER TABLE ... MODIFY", "")
+		case w.Is("CHANGE"):
+			c.hitForm(r, s, e, "CHANGE", "ALTER TABLE ... CHANGE", "")
+		case w.Is("ADD"):
+			k := s + 1
+			if c.at(k).Is("COLUMN") {
+				k++
+			}
+			switch {
+			case c.at(k).Is("IF") && c.at(k+1).Is("NOT") && c.at(k+2).Is("EXISTS"):
+				c.hitForm(r, s, e, "ADD COLUMN IF NOT EXISTS", "ADD COLUMN IF NOT EXISTS", "")
+			case k == s+1 && k <= e && c.constraintStart(k):
+				c.hitForm(r, s, e, "ADD CONSTRAINT", "ALTER TABLE ... ADD "+c.ts[k].Upper(), "")
+			}
+		case w.Is("DROP"):
+			k := s + 1
+			switch {
+			case c.at(k).Is("CONSTRAINT") || c.at(k).Is("CHECK"):
+				c.hitForm(r, s, e, "DROP CONSTRAINT", "ALTER TABLE ... DROP "+c.ts[k].Upper(), "")
+			case c.at(k).Is("PRIMARY"), c.at(k).Is("FOREIGN"), c.at(k).Is("INDEX"), c.at(k).Is("KEY") && k < e:
+				c.hitForm(r, s, e, "DROP INDEX", "ALTER TABLE ... "+c.span(s, min(e, k+1)), "")
+			case c.at(k).Is("COLUMN") && c.at(k+1).Is("IF"), c.at(k).Is("IF") && c.at(k+1).Is("EXISTS"):
+				c.hitForm(r, s, e, "DROP COLUMN IF EXISTS", "DROP COLUMN IF EXISTS", "")
+			}
+		case w.Is("RENAME"):
+			n := c.at(s + 1)
+			if !(n.Is("TO") || n.Is("COLUMN") || n.Is("INDEX") || n.Is("KEY") || n.Is("CONSTRAINT")) && (isName(n) || n.Is("AS")) {
+				if !(isName(n) && c.at(s+2).Is("TO")) { // RENAME a TO b renames a column on PostgreSQL
+					c.hitForm(r, s, e, "RENAME without TO", "ALTER TABLE ... RENAME without TO", "")
+				}
+			}
+		}
+	}
+}
+
+// reservedWords are the rows of reserved-word, by upper-case word. The
+// catalog is read in init, after package variables, so this is built on
+// first use.
+var reservedWords = sync.OnceValue(func() map[string]*Item {
+	out := map[string]*Item{}
+	if e := entry("reserved-word"); e != nil {
+		for i := range e.Items {
+			out[e.Items[i].Name] = &e.Items[i]
+		}
+	}
+	return out
+})
+
+// nameTokens returns the tokens a statement uses as names: column
+// definitions, tables and their aliases, aliases after AS, qualifiers,
+// column lists, and words that are columns of the tables named. Words
+// after a period are left out: every engine takes a reserved word there.
+func (c *lintCtx) nameTokens() map[int]bool {
+	out := map[int]bool{}
+	word := func(i int) bool { return i >= 0 && i < len(c.ts) && c.ts[i].Kind == sqltext.Word }
+	add := func(i int) {
+		if word(i) && !c.at(i-1).IsOp(".") {
+			out[i] = true
+		}
+	}
+	for _, d := range c.columnDefs() {
+		if !d.constraint {
+			add(d.name)
+		}
+	}
+	casts := map[int]bool{}
+	for i := range c.ts {
+		if _, as, _ := c.castTarget(i); as > 0 {
+			casts[as] = true
+		}
+	}
+	for i, t := range c.ts {
+		switch {
+		case t.Is("TABLE") || t.Is("VIEW") || t.Is("INDEX") && i > 0 && (c.ts[i-1].Is("CREATE") || c.ts[i-1].Is("UNIQUE")):
+			k := i + 1
+			if c.at(k).Is("IF") {
+				k++
+				if c.at(k).Is("NOT") {
+					k++
+				}
+				k++
+			}
+			if !c.at(k + 1).IsOp(".") {
+				add(k)
+			}
+		case t.Is("FROM") || t.Is("JOIN") || t.Is("UPDATE") || t.Is("INTO") || t.Is("REFERENCES") || t.Is("ON") && c.ts[0].Is("CREATE"):
+			k := i + 1
+			for word(k) {
+				if c.at(k + 1).IsOp(".") {
+					add(k)
+					k += 2
+					continue
+				}
+				if !(t.Is("FROM") && c.ts[k].Is("DUAL")) && !keywordsBeforeParen[c.ts[k].Upper()] {
+					add(k)
+				}
+				break
+			}
+		case t.Is("AS") && !casts[i] && word(i+1) && !c.at(i+2).IsOp("(", "."):
+			switch c.ts[i+1].Upper() {
+			case "SELECT", "WITH", "VALUES", "TABLE", "IDENTITY":
+			default:
+				add(i + 1)
+			}
+		case t.IsOp(".") && word(i-1):
+			add(i - 1)
+		case t.Is("RENAME"):
+			k := i + 1
+			if c.at(k).Is("COLUMN") {
+				k++
+				add(k)
+			}
+			if c.at(k + 1).Is("TO") {
+				add(k + 2)
+			} else if c.at(k).Is("TO") {
+				add(k + 1)
+			}
+		}
+	}
+	// INSERT INTO t (a, b) and the columns of CREATE INDEX ... (a, b).
+	for i, t := range c.ts {
+		if !t.IsOp("(") || i == 0 {
+			continue
+		}
+		// The table name before the list: INTO t (, INTO s.t (, ON t (.
+		k := i - 2
+		if c.at(k).IsOp(".") {
+			k -= 2
+		}
+		list := (c.ts[0].Is("INSERT") || c.ts[0].Is("REPLACE")) && c.at(k).Is("INTO") ||
+			c.ts[0].Is("CREATE") && c.at(k).Is("ON")
+		if !list || !isName(c.ts[i-1]) || c.depth[i] != 0 {
+			continue
+		}
+		for _, it := range c.items(i+1, c.close(i), 1) {
+			if it[0] == it[1] {
+				add(it[0])
+			}
+		}
+	}
+	// Known columns used as plain operands.
+	for i, t := range c.ts {
+		if t.Kind != sqltext.Word || c.at(i-1).IsOp(".") || c.at(i+1).IsOp("(", ".") {
+			continue
+		}
+		if _, ok := c.column(i, i); !ok {
+			continue
+		}
+		p, n := c.at(i-1), c.at(i+1)
+		prevOK := p.IsOp(",", "(", "=", "<", ">", "<=", ">=", "<>", "!=", "+", "-", "*", "/", "%") ||
+			p.Is("SELECT") || p.Is("WHERE") || p.Is("AND") || p.Is("OR") || p.Is("BY") || p.Is("SET") || p.Is("NOT") || p.Is("DISTINCT")
+		nextOK := i+1 >= len(c.ts) || n.IsOp(",", ")", "=", "<", ">", "<=", ">=", "<>", "!=", "+", "-", "*", "/", "%") ||
+			n.Is("FROM") || n.Is("AS") || n.Is("ASC") || n.Is("DESC") || n.Is("AND") || n.Is("OR") || n.Is("IS") ||
+			n.Is("IN") || n.Is("LIKE") || n.Is("BETWEEN") || n.Is("WHERE") || n.Is("ORDER") || n.Is("GROUP") || n.Is("LIMIT")
+		if prevOK && nextOK {
+			add(i)
+		}
+	}
+	return out
+}
+
+func ruleReservedWord(r *rule, c *lintCtx) {
+	words := reservedWords()
+	if len(words) == 0 {
+		return
+	}
+	names := c.nameTokens()
+	idx := make([]int, 0, len(names))
+	for i := range names {
+		idx = append(idx, i)
+	}
+	sort.Ints(idx)
+	for _, i := range idx {
+		w := c.ts[i].Upper()
+		if it := words[w]; it != nil {
+			c.hitForm(r, i, i, it.Name, "The name "+strings.ToLower(c.ts[i].Text), "")
+		}
+	}
+}
+
+func ruleAggregateFilter(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if !t.Is("FILTER") || !c.at(i-1).IsOp(")") || !c.at(i+1).IsOp("(") || !c.at(i+2).Is("WHERE") {
+			continue
+		}
+		open := c.pair[i-1]
+		if open < 1 || !c.isCall(open-1) {
+			continue
+		}
+		c.hit(r, open-1, c.close(i+1), "")
+	}
+}
+
+func ruleFromDual(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if t.Is("FROM") && c.at(i+1).Is("DUAL") && !c.at(i+2).IsOp(".") {
+			c.hit(r, i, i+1, "")
+		}
+	}
+}
+
+func ruleTrimFrom(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if !c.isCall(i) {
+			continue
+		}
+		open := i + 1
+		args := c.args(open)
+		end := c.close(open)
+		switch {
+		case t.Is("TRIM"):
+			first := c.at(open + 1)
+			hasFrom := false
+			for k := open + 1; k < end; k++ {
+				if c.ts[k].Is("FROM") && c.depth[k] == c.depth[open]+1 {
+					hasFrom = true
+				}
+			}
+			switch {
+			case first.Is("LEADING"):
+				c.hitForm(r, i, end, "LEADING", "TRIM(LEADING ... FROM ...)", "")
+			case first.Is("TRAILING"):
+				c.hitForm(r, i, end, "TRAILING", "TRIM(TRAILING ... FROM ...)", "")
+			case first.Is("BOTH"):
+				c.hitForm(r, i, end, "BOTH", "TRIM(BOTH ... FROM ...)", "")
+			case hasFrom:
+				c.hitForm(r, i, end, "chars FROM", "TRIM(chars FROM s)", "")
+			case len(args) == 2:
+				c.hitForm(r, i, end, "TRIM(s, chars)", "TRIM(s, chars)", "")
+			}
+		case t.Is("LTRIM") && len(args) == 2:
+			c.hitForm(r, i, end, "LTRIM(s, chars)", "LTRIM(s, chars)", "")
+		case t.Is("RTRIM") && len(args) == 2:
+			c.hitForm(r, i, end, "RTRIM(s, chars)", "RTRIM(s, chars)", "")
+		}
+	}
+}
+
+func ruleSubstringFrom(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if !(t.Is("SUBSTRING") || t.Is("SUBSTR")) || !c.isCall(i) {
+			continue
+		}
+		open := i + 1
+		end := c.close(open)
+		for k := open + 1; k < end; k++ {
+			if (c.ts[k].Is("FROM") || c.ts[k].Is("FOR")) && c.depth[k] == c.depth[open]+1 {
+				c.hit(r, i, end, "")
+				break
+			}
+		}
+	}
+}
+
+func ruleDropCascade(r *rule, c *lintCtx) {
+	if len(c.ts) < 4 || !c.ts[0].Is("DROP") || !(c.ts[1].Is("TABLE") || c.ts[1].Is("VIEW")) {
+		return
+	}
+	last := c.ts[len(c.ts)-1]
+	switch {
+	case last.Is("CASCADE"):
+		c.hitForm(r, 0, len(c.ts)-1, "CASCADE", "DROP "+c.ts[1].Upper()+" ... CASCADE", "")
+	case last.Is("RESTRICT"):
+		c.hitForm(r, 0, len(c.ts)-1, "RESTRICT", "DROP "+c.ts[1].Upper()+" ... RESTRICT", "")
+	}
+}
+
+func ruleCastToFloat(r *rule, c *lintCtx) {
+	for i := range c.ts {
+		typ, _, _ := c.castTarget(i)
+		end := c.close(i + 1)
+		switch typ {
+		case "DOUBLE PRECISION":
+			c.hitForm(r, i, end, "DOUBLE PRECISION", "CAST(x AS DOUBLE PRECISION)", "")
+		case "REAL":
+			c.hitForm(r, i, end, "REAL", "CAST(x AS REAL)", "")
+		case "DOUBLE":
+			c.hitForm(r, i, end, "DOUBLE", "CAST(x AS DOUBLE)", "")
+		case "FLOAT":
+			c.hitForm(r, i, end, "FLOAT", "CAST(x AS FLOAT)", "")
+		}
+	}
+}
+
+// roundedOutside reports whether the call at i is the first argument of
+// ROUND, TRUNCATE or TRUNC, or is cast to another type.
+func (c *lintCtx) roundedOutside(i int) bool {
+	if !c.at(i-1).IsOp("(") || !c.isCall(i-2) {
+		return false
+	}
+	switch c.ts[i-2].Upper() {
+	case "ROUND", "TRUNCATE", "TRUNC", "CAST":
+		return true
+	}
+	return false
+}
+
+func ruleAvgDigits(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if !t.Is("AVG") || !c.isCall(i) || c.roundedOutside(i) {
+			continue
+		}
+		a := c.args(i + 1)
+		if len(a) != 1 {
+			continue
+		}
+		s, e := a[0][0], a[0][1]
+		if c.ts[s].Is("DISTINCT") || c.ts[s].Is("ALL") {
+			s++
+		}
+		switch c.kindOf(s, e) {
+		case kInt, kDecimal:
+			c.hit(r, i, c.close(i+1), "")
+		case kUnknown:
+			c.hit(r, i, c.close(i+1), "info")
+		}
+	}
+}
+
+func ruleRoundHalf(r *rule, c *lintCtx) {
+	for i, t := range c.ts {
+		if !t.Is("ROUND") || !c.isCall(i) {
+			continue
+		}
+		a := c.args(i + 1)
+		if len(a) == 0 || c.kindOf(a[0][0], a[0][1]) != kFloat {
+			continue
+		}
+		if len(a) == 1 {
+			c.hitForm(r, i, c.close(i+1), "ROUND(x)", "ROUND(x)", "")
+		} else {
+			c.hitForm(r, i, c.close(i+1), "ROUND(x, n)", "ROUND(x, n)", "")
+		}
+	}
+}
+
+// textColumn reports whether tokens s..e are a plain reference to a text
+// column (not an expression such as LOWER(x)).
+func (c *lintCtx) textColumn(s, e int) bool {
+	if !(s == e && isName(c.ts[s]) || e == s+2 && c.ts[s+1].IsOp(".")) {
+		return false
+	}
+	return c.columnKind(s, e) == kText
+}
+
+func ruleGroupCase(r *rule, c *lintCtx) {
+	for _, b := range c.selectBlocks() {
+		if gs, ge := c.clause(b, "GROUP", "BY"); gs >= 0 {
+			for _, it := range c.items(gs, ge, c.depth[b[0]]) {
+				if c.textColumn(it[0], it[1]) {
+					c.hitForm(r, it[0], it[1], "GROUP BY", "GROUP BY on a text column", "")
+				}
+			}
+		}
+		if c.at(b[0]+1).Is("DISTINCT") && !c.at(b[0]+2).Is("ON") {
+			for _, it := range c.selectItems(b) {
+				_, _, end := c.alias(it)
+				if c.textColumn(it[0], end) {
+					c.hitForm(r, b[0], b[0]+1, "DISTINCT", "SELECT DISTINCT on a text column", "")
+					break
+				}
+			}
+		}
+	}
+	for i, t := range c.ts {
+		switch {
+		case t.Is("COUNT") && c.isCall(i) && c.at(i+2).Is("DISTINCT"):
+			if a := c.args(i + 1); len(a) == 1 && c.textColumn(i+3, a[0][1]) {
+				c.hitForm(r, i, c.close(i+1), "COUNT(DISTINCT)", "COUNT(DISTINCT) on a text column", "")
+			}
+		case t.Is("UNION") && !c.at(i+1).Is("ALL"):
+			for _, b := range c.selectBlocks() {
+				if b[1] != i && !(b[0] == i+1 && c.depth[b[0]] == c.depth[i]) {
+					continue
+				}
+				hit := false
+				for _, it := range c.selectItems(b) {
+					_, _, end := c.alias(it)
+					if c.textColumn(it[0], end) || c.letterLiteral(it[0], end) {
+						hit = true
+					}
+				}
+				if hit {
+					c.hitForm(r, i, i, "UNION", "UNION of text", "")
+					break
+				}
+			}
+		}
+	}
 }

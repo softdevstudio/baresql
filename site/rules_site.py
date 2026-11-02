@@ -176,4 +176,37 @@ RULES = {
 
 "operator-not-everywhere": ("SQL Operators That Exist on Some Engines Only and What to Write Instead", "functions and operators",
 "Operators such as `::`, `ILIKE`, `DIV` and `XOR` belong to one or two engines, and the others refuse them. BareSQL Portable knows {forms} operators like these."),
+
+"alter-column": ("Changing a Column With ALTER TABLE Takes a Different Statement on PostgreSQL, MySQL and SQLite", "schemas",
+"A migration widens a column with `ALTER TABLE products MODIFY name VARCHAR(80)`, and it runs on MySQL and MariaDB. PostgreSQL wants `ALTER COLUMN name TYPE VARCHAR(80)`, and SQLite can't change a column's type at all."),
+
+"reserved-word": ("Column Names Like rank, key and user Are Reserved Words on Some SQL Engines", "schemas",
+"A leaderboard table with a column called `rank` works on SQLite, PostgreSQL and MariaDB. On MySQL 8 the CREATE TABLE fails, because rank became a reserved word when window functions arrived. BareSQL Portable knows {forms} names like these."),
+
+"aggregate-filter": ("COUNT With FILTER Works on PostgreSQL and SQLite and Fails on MySQL and MariaDB", "queries",
+"A dashboard counts paid and unpaid orders in one pass with `COUNT(*) FILTER (WHERE paid)`. PostgreSQL and SQLite run it, and MySQL and MariaDB stop at FILTER with a syntax error."),
+
+"from-dual": ("SELECT FROM DUAL Runs on MySQL and Fails on PostgreSQL and SQLite", "syntax",
+"Code written for Oracle and carried over to MySQL often checks the clock with `SELECT NOW() FROM DUAL`. MySQL and MariaDB answer, and PostgreSQL and SQLite look for a table called dual that isn't there."),
+
+"trim-from": ("Trimming Leading Zeros Takes TRIM LEADING on PostgreSQL and MySQL and LTRIM on SQLite", "text",
+"Order numbers stored as `0042` lose their zeros with `TRIM(LEADING '0' FROM code)` on PostgreSQL, MySQL and MariaDB. SQLite refuses that form and wants `LTRIM(code, '0')`, which MySQL and MariaDB refuse in turn."),
+
+"substring-from": ("SUBSTRING With FROM and FOR Fails on SQLite", "text",
+"`SUBSTRING(phone FROM 1 FOR 3)` reads like plain English and runs on PostgreSQL, MySQL and MariaDB. SQLite stops at FROM with a syntax error."),
+
+"drop-cascade": ("DROP TABLE CASCADE Drops Dependent Objects on PostgreSQL Only", "schemas",
+"A test teardown runs `DROP TABLE customers CASCADE` and moves on. PostgreSQL drops the foreign keys that point at the table along with it, MySQL and MariaDB ignore the word and refuse the drop, and SQLite reads CASCADE as a syntax error."),
+
+"cast-to-float": ("No CAST to a Floating Point Type Works the Same on All Four SQL Engines", "numbers",
+"`CAST(price AS DOUBLE PRECISION)` is standard SQL and runs on SQLite, PostgreSQL and MySQL. MariaDB refuses it, PostgreSQL refuses `DOUBLE`, and `FLOAT` runs everywhere with fewer digits on MySQL and MariaDB."),
+
+"avg-digits": ("AVG Returns 1.6667 on MySQL and 1.6666666666666667 on PostgreSQL", "numbers",
+"The average rating of a product with ratings 1, 2 and 2 is 1.6667 on MySQL and MariaDB and 1.6666666666666667 on PostgreSQL and SQLite. A test that compares the number exactly passes on one and fails on the other."),
+
+"round-half": ("ROUND of 2.5 Is 3 on SQLite and 2 on PostgreSQL and MySQL for Floating Point Values", "numbers",
+"A price kept as a floating point number rounds to 3 on SQLite for 2.5 and to 2 on PostgreSQL, MySQL and MariaDB. With a DECIMAL column, or the literal 2.5, every engine says 3."),
+
+"group-case": ("GROUP BY Counts Berlin and berlin as One City on MySQL and Two on PostgreSQL", "queries",
+"A report counts sign-ups per city. On PostgreSQL and SQLite, Berlin and berlin are two rows. On MySQL and MariaDB they are one, and the count beside it is the sum of both."),
 }

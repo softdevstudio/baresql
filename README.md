@@ -579,20 +579,35 @@ Rule codes never change.
 | `create-or-replace` | error | CREATE OR REPLACE VIEW |
 | `function-not-everywhere` | error | Functions that exist on some engines only |
 | `operator-not-everywhere` | error | Operators that exist on some engines only |
+| `alter-column` | error | ALTER TABLE forms |
+| `reserved-word` | error | Names that are reserved words on some engines |
+| `aggregate-filter` | error | FILTER on aggregates |
+| `from-dual` | error | FROM DUAL |
+| `trim-from` | error | TRIM of characters other than spaces |
+| `substring-from` | error | SUBSTRING with FROM and FOR |
+| `drop-cascade` | error | DROP TABLE with CASCADE or RESTRICT |
+| `cast-to-float` | error | CAST to a floating point type |
+| `avg-digits` | warning | Digits of AVG |
+| `round-half` | warning | ROUND of a floating point half |
+| `group-case` | warning | GROUP BY and DISTINCT on text in mixed case |
 
 ### Limits
 
 - lint reads tokens and recognizes the shapes of expressions. It does not
   parse SQL fully, so it can miss a construct written in an unusual way,
   and it knows column types only from the CREATE TABLE statements it reads.
-- Some differences have no rule yet: ALTER TABLE syntax (ALTER COLUMN ...
-  TYPE, MODIFY, CHANGE), names that are reserved words on some engines
-  (user, key, rank, groups), aggregate FILTER (WHERE ...), FROM DUAL,
-  TRIM(LEADING ... FROM ...) and SUBSTRING(x FROM ... FOR ...), DROP TABLE
-  ... CASCADE (SQLite), CAST(x AS DOUBLE PRECISION) (MariaDB), the digits
-  of AVG over integers, ROUND of floating point halves (SQLite rounds 2.5
-  away from zero, the others to even), and GROUP BY and DISTINCT under MySQL's case
-  folding. compare shows them when they come up.
+- Names count as reserved words only where lint can tell they are names:
+  column definitions, table names and aliases, names after AS, qualifiers
+  before a period, column lists of INSERT and CREATE INDEX, and columns of
+  tables the files create. The catalog lists the words people often use as
+  names, not every reserved word of every engine.
+- group-case, avg-digits and round-half need to know a column's type, so
+  they look only at columns from CREATE TABLE statements in the files (and
+  at AVG over expressions of unknown type, as a note).
+- Some differences have no rule yet: GROUP BY and DISTINCT over accented
+  letters (MySQL's default collation also ignores accents), MariaDB's
+  trailing-space equality, and MySQL ignoring a REFERENCES clause written
+  inside a column definition. compare shows them when they come up.
 - JSON is covered only where it decides whether a statement runs at all
   (JSON_EXTRACT, `->>`, the JSONB type). The rest of the JSON functions and
   operators, stored procedures and triggers are left out: their syntax

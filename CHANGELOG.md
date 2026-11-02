@@ -2,7 +2,38 @@
 
 ## 0.2.0
 
-Not released yet.
+BareSQL Portable gets a rule for every difference the 0.1.0 README listed
+without one: 11 new rules, 69 in all. Each was run on SQLite, PostgreSQL,
+MySQL and MariaDB, and CI runs them again on every engine version it tests.
+
+- `alter-column`: ALTER COLUMN ... TYPE and SET/DROP NOT NULL (PostgreSQL
+  only), MODIFY and CHANGE (MySQL and MariaDB only), ALTER COLUMN ... SET or
+  DROP DEFAULT, several actions in one statement, ADD/DROP CONSTRAINT,
+  DROP INDEX/PRIMARY KEY/FOREIGN KEY, ADD COLUMN IF NOT EXISTS, DROP COLUMN
+  IF EXISTS and RENAME without TO, each with the engines that refuse it.
+- `reserved-word`: names that are reserved words on some engines (rank,
+  key, user, groups, row and 78 more), wherever lint can tell a word is a
+  name.
+- `aggregate-filter`: COUNT(*) FILTER (WHERE ...), which MySQL and MariaDB
+  lack.
+- `from-dual`: FROM DUAL, which SQLite and PostgreSQL lack.
+- `trim-from`: TRIM(LEADING/TRAILING/BOTH ... FROM ...) and TRIM(x FROM s),
+  which SQLite lacks, and the two-argument TRIM, LTRIM and RTRIM, which
+  MySQL and MariaDB lack.
+- `substring-from`: SUBSTRING(s FROM a FOR b), which SQLite lacks.
+- `drop-cascade`: DROP TABLE ... CASCADE or RESTRICT; SQLite refuses both,
+  and MySQL and MariaDB ignore CASCADE.
+- `cast-to-float`: CAST to DOUBLE PRECISION or REAL (MariaDB refuses),
+  DOUBLE (PostgreSQL refuses) and FLOAT (4 bytes on MySQL and MariaDB).
+- `avg-digits`: AVG of integers or decimals has 4 or 6 decimal places on
+  MySQL and MariaDB and about 16 digits elsewhere.
+- `round-half`: ROUND of a floating point half rounds away from zero on
+  SQLite and to even elsewhere, and PostgreSQL has no ROUND(float, n).
+- `group-case`: GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION merge 'x' and
+  'X' on MySQL and MariaDB.
+
+Also: the README links each release archive directly
+(releases/latest/download).
 
 ## 0.1.0
 

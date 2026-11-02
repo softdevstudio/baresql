@@ -34,6 +34,6 @@ Other tests of compare try to get out of its throwaway space, since compare runs
 
 ## The Review Before the Release
 
-Before 0.1.0, an independent review tried to break both lint and compare. For compare it found ways a script could have left the throwaway space, all fixed and now among the tests above. For lint it found differences the catalog doesn't cover yet, such as names that are reserved words on some engines, aggregate FILTER, FROM DUAL and the rounding of floating point halves. Those are listed under Limits in the [README](https://github.com/softdevstudio/baresql#limits-1), and compare shows them when a script runs into one.
+Before 0.1.0, an independent review tried to break both lint and compare. For compare it found ways a script could have left the throwaway space, all fixed and now among the tests above. For lint it found differences the catalog doesn't cover yet, such as names that are reserved words on some engines, aggregate FILTER, FROM DUAL and the rounding of floating point halves. BareSQL 0.2 adds a rule for each of them.
 
 Everything quoted here, from the answers to the demo outputs, is in the code repository, and the [BareSQL Portable page](https://baresql.com/portable/) lists every difference with its own post.

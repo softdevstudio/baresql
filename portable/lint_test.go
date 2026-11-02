@@ -226,6 +226,76 @@ func TestLintRules(t *testing.T) {
 		{"SELECT a IS DISTINCT FROM b FROM t", []string{"operator-not-everywhere"}, nil},
 		{"SELECT a FROM t WHERE a ~ 'x'", []string{"operator-not-everywhere"}, nil},
 		{"SELECT ~5; SELECT a FROM t WHERE a IS NOT NULL; SELECT MOD(7, 3)", nil, []string{"operator-not-everywhere"}},
+		// alter-column
+		{"ALTER TABLE t MODIFY b VARCHAR(40)", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t ALTER COLUMN b SET DATA TYPE TEXT", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t ALTER b SET DEFAULT 1", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t ADD c INTEGER, DROP COLUMN d", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t ADD PRIMARY KEY (a)", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t DROP PRIMARY KEY", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t DROP FOREIGN KEY fk_a", []string{"alter-column:error"}, nil},
+		{"ALTER TABLE t ADD COLUMN c INTEGER; ALTER TABLE t ADD c INTEGER; ALTER TABLE t DROP COLUMN c; ALTER TABLE t DROP c; " +
+			"ALTER TABLE t RENAME COLUMN a TO b; ALTER TABLE t RENAME TO u; ALTER TABLE t RENAME a TO b; ALTER TABLE t ADD COLUMN key VARCHAR(5)",
+			nil, []string{"alter-column"}},
+		// reserved-word
+		{"CREATE TABLE t (id INTEGER, rank INTEGER)", []string{"reserved-word:error"}, nil},
+		{"CREATE TABLE user (id INTEGER)", []string{"reserved-word"}, nil},
+		{"SELECT id AS rank FROM t", []string{"reserved-word"}, nil},
+		{"SELECT r.id FROM rows r", []string{"reserved-word"}, nil},
+		{"SELECT key.id FROM t key", []string{"reserved-word"}, nil},
+		{"INSERT INTO t (id, groups) VALUES (1, 2)", []string{"reserved-word"}, nil},
+		{"CREATE TABLE t (id INTEGER, rank INTEGER); SELECT id FROM t WHERE rank > 1", []string{"reserved-word"}, nil},
+		{"CREATE INDEX i ON t (key)", []string{"reserved-word"}, nil},
+		{"ALTER TABLE t RENAME COLUMN a TO rank", []string{"reserved-word"}, nil},
+		{"CREATE TABLE t (id INTEGER PRIMARY KEY, a INTEGER, KEY k (a), UNIQUE KEY (a), FOREIGN KEY (a) REFERENCES u (id)); " +
+			"SELECT t.rank, t.key FROM t ORDER BY a DESC; " +
+			"SELECT SUM(a) OVER (PARTITION BY id ORDER BY a ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t; " +
+			"SELECT RANK() OVER (ORDER BY a), LEFT('ab', 1), REPLACE('a', 'a', 'b') FROM t LEFT JOIN u ON u.id = t.id; " +
+			"INSERT INTO t VALUES (1, 2); UPDATE t SET a = 1; SELECT 1 FROM DUAL; SELECT CAST(a AS REAL) FROM t; " +
+			"CREATE VIEW v AS SELECT a FROM t; SELECT a FROM t LIMIT 1 OFFSET 2; SELECT \"rank\" FROM t",
+			nil, []string{"reserved-word"}},
+		// aggregate-filter, from-dual
+		{"SELECT COUNT(*) FILTER (WHERE a > 1) FROM t", []string{"aggregate-filter:error"}, nil},
+		{"SELECT SUM(a) FILTER (WHERE a > 1) OVER () FROM t", []string{"aggregate-filter"}, nil},
+		{"SELECT COUNT(CASE WHEN a > 1 THEN 1 END) FROM t; SELECT filter FROM t", nil, []string{"aggregate-filter"}},
+		{"SELECT 1 FROM DUAL", []string{"from-dual:error"}, nil},
+		{"SELECT 1; SELECT * FROM dual_rates; SELECT * FROM s.dual", nil, []string{"from-dual"}},
+		// trim-from, substring-from
+		{"SELECT TRIM(LEADING '0' FROM code) FROM t", []string{"trim-from:error"}, nil},
+		{"SELECT TRIM('x' FROM s) FROM t", []string{"trim-from"}, nil},
+		{"SELECT LTRIM(s, 'x') FROM t", []string{"trim-from:error"}, nil},
+		{"SELECT TRIM(s), LTRIM(s), RTRIM(s), TRIM(BOTH FROM s) FROM t", []string{"trim-from"}, nil},
+		{"SELECT TRIM(s), LTRIM(s), RTRIM(s) FROM t", nil, []string{"trim-from"}},
+		{"SELECT SUBSTRING(s FROM 2 FOR 3) FROM t", []string{"substring-from:error"}, nil},
+		{"SELECT SUBSTRING(s FROM 2) FROM t", []string{"substring-from"}, nil},
+		{"SELECT SUBSTR(s, 2, 3), SUBSTRING(s, 2) FROM t", nil, []string{"substring-from"}},
+		// drop-cascade
+		{"DROP TABLE t CASCADE", []string{"drop-cascade:error"}, nil},
+		{"DROP VIEW IF EXISTS v CASCADE", []string{"drop-cascade:error"}, nil},
+		{"DROP TABLE t; DROP TABLE IF EXISTS t", nil, []string{"drop-cascade"}},
+		// cast-to-float
+		{"SELECT CAST(a AS DOUBLE PRECISION) FROM t", []string{"cast-to-float:error"}, nil},
+		{"SELECT CAST(a AS DOUBLE) FROM t", []string{"cast-to-float:error"}, nil},
+		{"SELECT CAST(a AS FLOAT) FROM t", []string{"cast-to-float:warning"}, nil},
+		{"SELECT CAST(a AS DECIMAL(10, 2)) FROM t; CREATE TABLE f (x DOUBLE PRECISION)", nil, []string{"cast-to-float"}},
+		// avg-digits
+		{"CREATE TABLE t (a INTEGER); SELECT AVG(a) FROM t", []string{"avg-digits:warning"}, nil},
+		{"CREATE TABLE t (a DECIMAL(10, 2)); SELECT AVG(DISTINCT a) FROM t", []string{"avg-digits:warning"}, nil},
+		{"SELECT AVG(a) FROM t", []string{"avg-digits:info"}, nil},
+		{"CREATE TABLE t (a INTEGER, f REAL); SELECT ROUND(AVG(a), 2), AVG(f), CAST(AVG(a) AS INTEGER) FROM t", nil, []string{"avg-digits"}},
+		// round-half
+		{"CREATE TABLE t (x DOUBLE PRECISION); SELECT ROUND(x) FROM t", []string{"round-half:warning"}, nil},
+		{"CREATE TABLE t (x REAL); SELECT ROUND(x, 1) FROM t", []string{"round-half:error"}, nil},
+		{"SELECT ROUND(2.5e0)", []string{"round-half"}, nil},
+		{"CREATE TABLE t (x DECIMAL(10, 2), y DOUBLE PRECISION); SELECT ROUND(x), ROUND(2.5), ROUND(CAST(y AS DECIMAL(10, 2))), ROUND(z) FROM t", nil, []string{"round-half"}},
+		// group-case
+		{"CREATE TABLE t (s VARCHAR(10)); SELECT s, COUNT(*) FROM t GROUP BY s", []string{"group-case:warning"}, nil},
+		{"CREATE TABLE t (s TEXT); SELECT DISTINCT s FROM t", []string{"group-case"}, nil},
+		{"CREATE TABLE t (s TEXT); SELECT COUNT(DISTINCT t.s) FROM t", []string{"group-case"}, nil},
+		{"CREATE TABLE t (s TEXT); SELECT s FROM t UNION SELECT 'a'", []string{"group-case"}, nil},
+		{"CREATE TABLE t (s TEXT, n INTEGER); SELECT LOWER(s) FROM t GROUP BY LOWER(s); SELECT DISTINCT n FROM t; " +
+			"SELECT s FROM t UNION ALL SELECT s FROM t; SELECT COUNT(DISTINCT LOWER(s)) FROM t; SELECT n FROM t GROUP BY n; SELECT x FROM u GROUP BY x",
+			nil, []string{"group-case"}},
 		// ignore comments
 		{"SELECT 7 / 2 -- baresql:ignore integer-division", nil, []string{"integer-division"}},
 		{"-- baresql:ignore\nSELECT 7 / 2", nil, []string{"integer-division"}},
