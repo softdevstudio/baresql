@@ -1,5 +1,5 @@
-example.sql:1:8: error: SUBSTRING(s FROM 2 FOR 3) fails on SQLite; SUBSTR(s, 2, 3) works on all four engines. [substring-from]
+example.sql:1:8: error: SUBSTRING(s FROM a FOR b) works on PostgreSQL, MySQL and MariaDB; SQLite refuses it. [substring-from]
     SUBSTRING('abcdef' FROM 2 FOR 3)
-    Write SUBSTR(s, start, length), counting from 1 (see substring-start).
+    Write SUBSTR(s, 2, 3).
 
 1 problem: 1 error.

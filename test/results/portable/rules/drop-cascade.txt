@@ -33,5 +33,5 @@ Drop what depends on the table first (the tables or foreign keys that refer to
 it and the views that read it), then the table itself, without CASCADE.
 
          SQLite PostgreSQL MySQL MariaDB
-CASCADE  no     yes        no    no
+CASCADE  no     yes        yes   yes
 RESTRICT no     yes        yes   yes     Leave RESTRICT out: dropping a table that others depend on fails without it on PostgreSQL, MySQL and MariaDB.

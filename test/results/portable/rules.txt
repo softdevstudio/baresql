@@ -69,6 +69,6 @@ Answers recorded on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46 and MariaDB 10
   cast-to-float            error    CAST to a floating point type
   avg-digits               warning  Digits of AVG
   round-half               warning  ROUND of a floating point half
-  group-case               warning  GROUP BY and DISTINCT on text in mixed case
+  group-case               info     GROUP BY and DISTINCT on text in mixed case
 
 baresql rules <code> shows the example, each engine's answer and what to write instead.

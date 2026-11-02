@@ -24,8 +24,9 @@ Example:
 
 Keep migrations that change a column in one file per engine. On SQLite, create
 a table with the new definition, copy the rows, drop the old table and rename
-the new one. What works everywhere: ADD COLUMN, DROP COLUMN, RENAME COLUMN ...
-TO and RENAME TO, one per ALTER TABLE.
+the new one. What works everywhere: ADD COLUMN, RENAME COLUMN ... TO and
+RENAME TO, one per ALTER TABLE, and DROP COLUMN, which SQLite refuses for a
+column that is indexed or part of a key.
 
                          SQLite PostgreSQL MySQL MariaDB
 ALTER COLUMN TYPE        no     yes        no    no      MySQL and MariaDB: MODIFY b VARCHAR(40). SQLite: rebuild the table.
@@ -37,8 +38,14 @@ MODIFY                   no     no         yes   yes     PostgreSQL: ALTER COLUM
 CHANGE                   no     no         yes   yes     Rename with RENAME COLUMN b TO c, which all four engines take, and change the type separately.
 several actions          no     yes        yes   yes     Write one ALTER TABLE per action.
 ADD CONSTRAINT           no     yes        yes   yes     SQLite: CREATE UNIQUE INDEX for a unique key; other constraints need a rebuilt table.
+ADD INDEX                no     no         yes   yes     Use CREATE INDEX t_a ON t (a), which all four engines take.
 DROP CONSTRAINT          no     yes        yes   yes     SQLite: rebuild the table.
+DROP CHECK               no     no         yes   no      PostgreSQL and MariaDB: DROP CONSTRAINT t_ck. SQLite: rebuild the table.
 DROP INDEX               no     no         yes   yes     Use DROP CONSTRAINT on PostgreSQL, MySQL and MariaDB, and a rebuilt table on SQLite.
 ADD COLUMN IF NOT EXISTS no     yes        no    yes     Check the catalog for the column in the migration code before adding it.
 DROP COLUMN IF EXISTS    no     yes        no    yes     Check the catalog for the column in the migration code before dropping it.
+DROP COLUMN CASCADE      no     yes        yes   yes     Drop what depends on the column first, then the column.
 RENAME without TO        no     no         yes   yes     Write RENAME TO u.
+RENAME without COLUMN    yes    yes        no    no      Write RENAME COLUMN b TO c.
+IF EXISTS                no     yes        no    yes     Check the catalog for the table in the migration code first.
+AFTER or FIRST           yes    no         yes   yes     Leave the position out: new columns go last on every engine, and queries should name their columns anyway.

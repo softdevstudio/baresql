@@ -1,4 +1,4 @@
-example.sql:3:1: error: DROP TABLE ... CASCADE works on PostgreSQL only; SQLite, MySQL and MariaDB refuse it. [drop-cascade]
+example.sql:3:1: error: DROP TABLE ... CASCADE works on PostgreSQL, MySQL and MariaDB; SQLite refuses it. MySQL and MariaDB ignore CASCADE: a table a foreign key refers to still can't be dropped there, while PostgreSQL drops the foreign keys with it. [drop-cascade]
     DROP TABLE u CASCADE
     Drop what depends on the table first (the tables or foreign keys that refer to it and the views that read it), then the table itself, without CASCADE.
 

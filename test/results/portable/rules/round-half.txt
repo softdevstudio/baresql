@@ -1,13 +1,15 @@
 round-half (warning): ROUND of a floating point half
 
 ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL,
-MySQL and MariaDB.
+MySQL and MariaDB, and ROUND(0.15, 1) is 0.1 on SQLite and 0.2 on the others.
 
-Exact numbers, such as the literal 2.5 or a DECIMAL column, round half away
-from zero on every engine. Floating point values don't. SQLite still rounds
-2.5 up to 3, while PostgreSQL, MySQL and MariaDB round a float that is exactly
-half way to the even neighbour, so 2.5 becomes 2 and 3.5 becomes 4. PostgreSQL
-also has no ROUND(x, digits) for floats.
+PostgreSQL, MySQL and MariaDB round exact numbers, such as the literal 2.5 or
+a DECIMAL column, half away from zero. Floating point values they round to the
+even neighbour, so 2.5 becomes 2 and 3.5 becomes 4, and PostgreSQL has no
+ROUND(x, digits) for them at all. SQLite has no exact decimal type. It rounds
+a float half away from zero, 2.5 to 3, and rounds decimals to some digits
+through the nearest binary float, so ROUND(0.15, 1) is 0.1 there because 0.15
+is stored as 0.1499999.
 
 Given:
     CREATE TABLE t (x DOUBLE PRECISION);
@@ -29,10 +31,12 @@ The same on every engine:
     MySQL 8.0.46         3; 4
     MariaDB 10.11.14     3; 4
 
-Round an exact number: ROUND(CAST(x AS DECIMAL(10, 2))) rounds half away from
-zero everywhere. Amounts that get rounded are better kept in DECIMAL columns
-in the first place.
+To round floats to whole numbers, ROUND(CAST(x AS DECIMAL(10, 2))) gives the
+same answer on every engine. For money, keep whole cents in an INTEGER column
+and divide only to show the amount; rounding to digits on SQLite can't be made
+exact.
 
-            SQLite   PostgreSQL MySQL MariaDB
-ROUND(x)    3.0; 4.0 2; 4       2; 4  2; 4
-ROUND(x, n) 3.0; 4.0 no         2; 4  2; 4
+                  SQLite   PostgreSQL MySQL     MariaDB
+ROUND(x)          3.0; 4.0 2; 4       2; 4      2; 4
+ROUND(x, n)       3.0; 4.0 no         2; 4      2; 4
+ROUND(decimal, n) 0.1, 1.0 0.2, 1.01  0.2, 1.01 0.2, 1.01 Keep whole cents in INTEGER columns, or round in the application.

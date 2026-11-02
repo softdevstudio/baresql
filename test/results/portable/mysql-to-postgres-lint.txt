@@ -34,9 +34,6 @@ queries.sql:17:12: warning: 80.50 / 3 is 26.833333 on MySQL and MariaDB, 26.8333
 queries.sql:20:12: error: DATEDIFF() works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [function-not-everywhere]
     DATEDIFF('2026-06-01', issued_on)
     No form works on all four engines; julianday(a) - julianday(b) on SQLite, a - b on PostgreSQL.
-queries.sql:23:50: warning: GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION treat 'x' and 'X' as one value on MySQL and MariaDB and as two on SQLite and PostgreSQL. [group-case]
-    country
-    Group on LOWER(s) to merge spellings on every engine, as in SELECT LOWER(s), COUNT(*) FROM t GROUP BY LOWER(s). To keep them apart on MySQL and MariaDB instead, give the column a binary collation there.
 queries.sql:26:44: error: LIMIT offset, count works on SQLite, MySQL and MariaDB; PostgreSQL refuses it. [limit-comma]
     LIMIT 2, 2
     Write LIMIT count OFFSET offset, which all four accept: LIMIT 1, 2 becomes LIMIT 2 OFFSET 1.
@@ -47,4 +44,4 @@ queries.sql:34:3: error: ON DUPLICATE KEY UPDATE works on MySQL and MariaDB; SQL
     ON DUPLICATE KEY UPDATE
     Update first, then insert what is missing: UPDATE t SET n = 2 WHERE id = 1, then INSERT INTO t (id, n) SELECT 1, 2 WHERE NOT EXISTS (SELECT 1 FROM t WHERE id = 1). Run both in one transaction.
 
-16 problems: 12 errors, 4 warnings. 6 notes not shown (differences that depend on the data); --all shows them.
+15 problems: 12 errors, 3 warnings. 7 notes not shown (differences that depend on the data); --all shows them.

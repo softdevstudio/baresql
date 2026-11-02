@@ -1,11 +1,15 @@
 substring-from (error): SUBSTRING with FROM and FOR
 
-SUBSTRING(s FROM 2 FOR 3) fails on SQLite; SUBSTR(s, 2, 3) works on all four
-engines.
+SUBSTRING(s FROM 2 FOR 3) fails on SQLite, and the forms with FOR alone or
+with a pattern after FROM fail or mean something else on other engines;
+SUBSTR(s, 2, 3) works on all four.
 
 The FROM ... FOR form is standard SQL, and PostgreSQL, MySQL and MariaDB read
 it. SQLite takes only the form with commas, SUBSTR(s, start, length) or
-SUBSTRING(s, start, length).
+SUBSTRING(s, start, length). PostgreSQL also takes FOR without FROM, which
+MySQL and MariaDB refuse, and reads a text after FROM as a regular expression:
+SUBSTRING(s FROM '[0-9]+') is the first run of digits there and an empty
+string on MySQL and MariaDB.
 
 Example:
     SELECT SUBSTRING('abcdef' FROM 2 FOR 3)
@@ -23,4 +27,12 @@ The same on every engine:
     MySQL 8.0.46         'bcd'
     MariaDB 10.11.14     'bcd'
 
-Write SUBSTR(s, start, length), counting from 1 (see substring-start).
+Write SUBSTR(s, start, length), counting from 1 (see substring-start). For a
+pattern, use REGEXP_SUBSTR on MySQL and MariaDB and SUBSTRING ... FROM on
+PostgreSQL; SQLite has no built-in way.
+
+             SQLite PostgreSQL MySQL MariaDB
+FROM FOR     no     yes        yes   yes     Write SUBSTR(s, 2, 3).
+FOR only     no     yes        no    no      Write SUBSTR(s, 1, 3).
+SUBSTR FROM  no     no         yes   yes     Write SUBSTR(s, 2).
+FROM pattern no     '123'      ''    ''

@@ -1,4 +1,4 @@
-group-case (warning): GROUP BY and DISTINCT on text in mixed case
+group-case (info): GROUP BY and DISTINCT on text in mixed case
 
 GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION treat 'x' and 'X' as one value
 on MySQL and MariaDB and as two on SQLite and PostgreSQL.

@@ -1,6 +1,6 @@
-example.sql:3:8: warning: ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL, MySQL and MariaDB. [round-half]
+example.sql:3:8: warning: ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL, MySQL and MariaDB, and ROUND(0.15, 1) is 0.1 on SQLite and 0.2 on the others. [round-half]
     ROUND(x)
-    Round an exact number: ROUND(CAST(x AS DECIMAL(10, 2))) rounds half away from zero everywhere. Amounts that get rounded are better kept in DECIMAL columns in the first place.
+    To round floats to whole numbers, ROUND(CAST(x AS DECIMAL(10, 2))) gives the same answer on every engine. For money, keep whole cents in an INTEGER column and divide only to show the amount; rounding to digits on SQLite can't be made exact.
 example.sql:3:33: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
     x
     Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
