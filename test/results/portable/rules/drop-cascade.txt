@@ -1,0 +1,37 @@
+drop-cascade (error): DROP TABLE with CASCADE or RESTRICT
+
+SQLite refuses DROP TABLE ... CASCADE, and MySQL and MariaDB accept the word
+and ignore it, so only PostgreSQL drops a table that others refer to.
+
+On PostgreSQL CASCADE drops the foreign keys and views that depend on the
+table along with it. MySQL and MariaDB read CASCADE and RESTRICT for
+compatibility and do nothing with them: a table that a foreign key refers to
+still can't be dropped. SQLite has neither word.
+
+Given:
+    CREATE TABLE u (id INTEGER PRIMARY KEY);
+    CREATE TABLE t (id INTEGER, u_id INTEGER, FOREIGN KEY (u_id) REFERENCES u (id))
+
+Example:
+    DROP TABLE u CASCADE
+
+    SQLite 3.45.1        error: near "CASCADE": syntax error
+    PostgreSQL 16.15     no rows
+    MySQL 8.0.46         error: Cannot drop table 'u' referenced by a foreign key constraint 't_ibfk_1' on table 't'.
+    MariaDB 10.11.14     error: Cannot delete or update a parent row: a foreign key constraint fails
+
+The same on every engine:
+    DROP TABLE t;
+    DROP TABLE u
+
+    SQLite 3.45.1        no rows
+    PostgreSQL 16.15     no rows
+    MySQL 8.0.46         no rows
+    MariaDB 10.11.14     no rows
+
+Drop what depends on the table first (the tables or foreign keys that refer to
+it and the views that read it), then the table itself, without CASCADE.
+
+         SQLite PostgreSQL MySQL MariaDB
+CASCADE  no     yes        no    no
+RESTRICT no     yes        yes   yes     Leave RESTRICT out: dropping a table that others depend on fails without it on PostgreSQL, MySQL and MariaDB.

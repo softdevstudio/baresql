@@ -1,0 +1,8 @@
+example.sql:3:8: warning: ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL, MySQL and MariaDB. [round-half]
+    ROUND(x)
+    Round an exact number: ROUND(CAST(x AS DECIMAL(10, 2))) rounds half away from zero everywhere. Amounts that get rounded are better kept in DECIMAL columns in the first place.
+example.sql:3:33: info: SQLite, MySQL and MariaDB put NULL first in ascending order; PostgreSQL puts it last. [null-order]
+    x
+    Sort on x IS NULL first: ORDER BY x IS NULL, x puts NULL last on every engine, and ORDER BY x IS NOT NULL, x puts it first. NULLS FIRST and NULLS LAST do not work on MySQL and MariaDB.
+
+2 problems: 1 warning, 1 note.

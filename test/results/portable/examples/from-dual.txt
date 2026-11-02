@@ -1,0 +1,5 @@
+example.sql:1:14: error: SELECT ... FROM DUAL runs on MySQL and MariaDB only; SQLite and PostgreSQL have no table called DUAL. [from-dual]
+    FROM DUAL
+    Leave FROM DUAL out: SELECT 1 + 1 runs on every engine.
+
+1 problem: 1 error.

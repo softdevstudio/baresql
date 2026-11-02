@@ -1,0 +1,8 @@
+example.sql:1:30: info: SQLite stores DECIMAL values as floating point numbers, so sums and comparisons can be off in the last digits. [decimal-as-float]
+    DECIMAL(10, 2)
+    Compare rounded values, ROUND(x, 2) = 0.3, or keep amounts as integers in the smallest unit, such as cents.
+example.sql:3:8: warning: AVG of integers or decimals has 4 more decimal places than the values on MySQL and MariaDB, and about 16 significant digits on SQLite and PostgreSQL. [avg-digits]
+    AVG(a)
+    Round the average to the digits you need: ROUND(AVG(a), 2) gives the same answer on every engine.
+
+2 problems: 1 warning, 1 note.

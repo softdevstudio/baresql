@@ -1,0 +1,32 @@
+aggregate-filter (error): FILTER on aggregates
+
+COUNT(*) FILTER (WHERE ...) works on SQLite and PostgreSQL; MySQL and MariaDB
+have no FILTER clause.
+
+FILTER is standard SQL and limits the rows one aggregate sees, so one query
+can count several subsets of a table. SQLite reads it from 3.30 and PostgreSQL
+from 9.4. MySQL and MariaDB refuse it as a syntax error.
+
+Given:
+    CREATE TABLE t (a INTEGER);
+    INSERT INTO t VALUES (1), (2), (3)
+
+Example:
+    SELECT COUNT(*) FILTER (WHERE a > 1) FROM t
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the r...
+    MariaDB 10.11.14     error: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the...
+
+The same on every engine:
+    SELECT COUNT(CASE WHEN a > 1 THEN 1 END) FROM t
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+Move the condition into a CASE inside the aggregate: COUNT(CASE WHEN a > 1
+THEN 1 END) counts the same rows, and SUM(CASE WHEN a > 1 THEN a END) adds the
+same values.

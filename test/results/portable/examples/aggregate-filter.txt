@@ -1,0 +1,5 @@
+example.sql:3:8: error: COUNT(*) FILTER (WHERE ...) works on SQLite and PostgreSQL; MySQL and MariaDB have no FILTER clause. [aggregate-filter]
+    COUNT(*) FILTER (WHERE a > 1)
+    Move the condition into a CASE inside the aggregate: COUNT(CASE WHEN a > 1 THEN 1 END) counts the same rows, and SUM(CASE WHEN a > 1 THEN a END) adds the same values.
+
+1 problem: 1 error.

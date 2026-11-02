@@ -1,0 +1,26 @@
+substring-from (error): SUBSTRING with FROM and FOR
+
+SUBSTRING(s FROM 2 FOR 3) fails on SQLite; SUBSTR(s, 2, 3) works on all four
+engines.
+
+The FROM ... FOR form is standard SQL, and PostgreSQL, MySQL and MariaDB read
+it. SQLite takes only the form with commas, SUBSTR(s, start, length) or
+SUBSTRING(s, start, length).
+
+Example:
+    SELECT SUBSTRING('abcdef' FROM 2 FOR 3)
+
+    SQLite 3.45.1        error: near "FROM": syntax error
+    PostgreSQL 16.15     'bcd'
+    MySQL 8.0.46         'bcd'
+    MariaDB 10.11.14     'bcd'
+
+The same on every engine:
+    SELECT SUBSTR('abcdef', 2, 3)
+
+    SQLite 3.45.1        'bcd'
+    PostgreSQL 16.15     'bcd'
+    MySQL 8.0.46         'bcd'
+    MariaDB 10.11.14     'bcd'
+
+Write SUBSTR(s, start, length), counting from 1 (see substring-start).

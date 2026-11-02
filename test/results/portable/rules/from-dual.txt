@@ -1,0 +1,26 @@
+from-dual (error): FROM DUAL
+
+SELECT ... FROM DUAL runs on MySQL and MariaDB only; SQLite and PostgreSQL
+have no table called DUAL.
+
+DUAL is Oracle's one-row table, which MySQL and MariaDB keep so that code
+written for Oracle runs. SQLite and PostgreSQL don't need a FROM to select
+values, and look for a real table named dual.
+
+Example:
+    SELECT 1 + 1 FROM DUAL
+
+    SQLite 3.45.1        error: no such table: DUAL
+    PostgreSQL 16.15     error: relation "dual" does not exist
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+The same on every engine:
+    SELECT 1 + 1
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+Leave FROM DUAL out: SELECT 1 + 1 runs on every engine.

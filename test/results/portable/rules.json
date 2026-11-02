@@ -7586,6 +7586,2455 @@
           }
         }
       }
+    },
+    {
+      "code": "alter-column",
+      "title": "ALTER TABLE forms",
+      "severity": "error",
+      "summary": "Changing a column takes ALTER COLUMN ... TYPE on PostgreSQL and MODIFY or CHANGE on MySQL and MariaDB, and SQLite has neither.",
+      "detail": "SQLite's ALTER TABLE renames tables and columns and adds and drops columns, one action per statement. It can't change a column's type, default or NULL rule and has no ADD CONSTRAINT. PostgreSQL changes a column piece by piece with ALTER COLUMN ... TYPE, SET DEFAULT and SET NOT NULL. MySQL and MariaDB redefine the whole column with MODIFY or CHANGE, take ALTER COLUMN only for defaults, and refuse ALTER COLUMN ... TYPE. IF NOT EXISTS on ADD COLUMN works on PostgreSQL and MariaDB only.",
+      "advice": "Keep migrations that change a column in one file per engine. On SQLite, create a table with the new definition, copy the rows, drop the old table and rename the new one. What works everywhere: ADD COLUMN, DROP COLUMN, RENAME COLUMN ... TO and RENAME TO, one per ALTER TABLE.",
+      "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+      "example": "ALTER TABLE t MODIFY b VARCHAR(40)",
+      "items": [
+        {
+          "name": "ALTER COLUMN TYPE",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ALTER COLUMN b TYPE VARCHAR(40)",
+          "advice": "MySQL and MariaDB: MODIFY b VARCHAR(40). SQLite: rebuild the table."
+        },
+        {
+          "name": "SET NOT NULL",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ALTER COLUMN a SET NOT NULL",
+          "advice": "MySQL and MariaDB: MODIFY the whole column with NOT NULL. SQLite: rebuild the table."
+        },
+        {
+          "name": "DROP NOT NULL",
+          "setup": "CREATE TABLE t (a INTEGER NOT NULL, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ALTER COLUMN a DROP NOT NULL",
+          "advice": "MySQL and MariaDB: MODIFY the whole column without NOT NULL. SQLite: rebuild the table."
+        },
+        {
+          "name": "SET DEFAULT",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ALTER COLUMN a SET DEFAULT 5",
+          "advice": "SQLite: rebuild the table, or give the default in the INSERT statements."
+        },
+        {
+          "name": "DROP DEFAULT",
+          "setup": "CREATE TABLE t (a INTEGER DEFAULT 5, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ALTER COLUMN a DROP DEFAULT",
+          "advice": "SQLite: rebuild the table."
+        },
+        {
+          "name": "MODIFY",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t MODIFY b VARCHAR(40)",
+          "advice": "PostgreSQL: ALTER COLUMN b TYPE VARCHAR(40), with SET or DROP NOT NULL and DEFAULT as separate actions. SQLite: rebuild the table."
+        },
+        {
+          "name": "CHANGE",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t CHANGE b c VARCHAR(40)",
+          "advice": "Rename with RENAME COLUMN b TO c, which all four engines take, and change the type separately."
+        },
+        {
+          "name": "several actions",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ADD COLUMN c INTEGER, ADD COLUMN d INTEGER",
+          "advice": "Write one ALTER TABLE per action."
+        },
+        {
+          "name": "ADD CONSTRAINT",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ADD CONSTRAINT t_a UNIQUE (a)",
+          "advice": "SQLite: CREATE UNIQUE INDEX for a unique key; other constraints need a rebuilt table."
+        },
+        {
+          "name": "DROP CONSTRAINT",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20), CONSTRAINT t_a UNIQUE (a))",
+          "probe": "ALTER TABLE t DROP CONSTRAINT t_a",
+          "advice": "SQLite: rebuild the table."
+        },
+        {
+          "name": "DROP INDEX",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20), CONSTRAINT t_a UNIQUE (a))",
+          "probe": "ALTER TABLE t DROP INDEX t_a",
+          "advice": "Use DROP CONSTRAINT on PostgreSQL, MySQL and MariaDB, and a rebuilt table on SQLite."
+        },
+        {
+          "name": "ADD COLUMN IF NOT EXISTS",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t ADD COLUMN IF NOT EXISTS c INTEGER",
+          "advice": "Check the catalog for the column in the migration code before adding it."
+        },
+        {
+          "name": "DROP COLUMN IF EXISTS",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t DROP COLUMN IF EXISTS b",
+          "advice": "Check the catalog for the column in the migration code before dropping it."
+        },
+        {
+          "name": "RENAME without TO",
+          "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+          "probe": "ALTER TABLE t RENAME u",
+          "advice": "Write RENAME TO u."
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "syntax error at or near \"MODIFY\""
+          },
+          "sqlite": {
+            "error": "near \"MODIFY\": syntax error"
+          }
+        },
+        "items": {
+          "ADD COLUMN IF NOT EXISTS": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS c INTEGER' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"EXISTS\": syntax error"
+            }
+          },
+          "ADD CONSTRAINT": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"CONSTRAINT\": syntax error"
+            }
+          },
+          "ALTER COLUMN TYPE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'TYPE VARCHAR(40)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TYPE VARCHAR(40)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"ALTER\": syntax error"
+            }
+          },
+          "CHANGE": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"CHANGE\""
+            },
+            "sqlite": {
+              "error": "near \"CHANGE\": syntax error"
+            }
+          },
+          "DROP COLUMN IF EXISTS": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF EXISTS b' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"EXISTS\": syntax error"
+            }
+          },
+          "DROP CONSTRAINT": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"CONSTRAINT\": syntax error"
+            }
+          },
+          "DROP DEFAULT": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"ALTER\": syntax error"
+            }
+          },
+          "DROP INDEX": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"t_a\""
+            },
+            "sqlite": {
+              "error": "near \"INDEX\": syntax error"
+            }
+          },
+          "DROP NOT NULL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'NOT NULL' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT NULL' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"ALTER\": syntax error"
+            }
+          },
+          "MODIFY": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"MODIFY\""
+            },
+            "sqlite": {
+              "error": "near \"MODIFY\": syntax error"
+            }
+          },
+          "RENAME without TO": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at end of input"
+            },
+            "sqlite": {
+              "error": "near \";\": syntax error"
+            }
+          },
+          "SET DEFAULT": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"ALTER\": syntax error"
+            }
+          },
+          "SET NOT NULL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'NOT NULL' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT NULL' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"ALTER\": syntax error"
+            }
+          },
+          "several actions": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {},
+            "sqlite": {
+              "error": "near \",\": syntax error"
+            }
+          }
+        }
+      }
+    },
+    {
+      "code": "reserved-word",
+      "title": "Names that are reserved words on some engines",
+      "severity": "error",
+      "summary": "A column called rank, key or user works on SQLite and fails on MySQL, MariaDB or PostgreSQL, because each engine reserves different words.",
+      "detail": "Every engine keeps a list of words that can't be names without quotes, and the lists differ. PostgreSQL reserves user, only and array; MySQL and MariaDB reserve key, index, range, rows and many more, and MySQL 8 added the names of window functions such as rank, groups and row. SQLite reserves the fewest. The table lists words people often give to tables and columns, each tried as a column name on all four engines.",
+      "advice": "Pick another name, such as user_name, rank_no or sort_key. Quoting the name is no portable way out: double quotes name a column on SQLite and PostgreSQL and make a string on MySQL and MariaDB (see double-quotes), and backticks work on SQLite, MySQL and MariaDB only (see backticks).",
+      "example": "CREATE TABLE t (id INTEGER, rank INTEGER)",
+      "rewrite": "CREATE TABLE t (id INTEGER, rank_no INTEGER)",
+      "items": [
+        {
+          "name": "USER",
+          "probe": "CREATE TABLE t (user INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "KEY",
+          "probe": "CREATE TABLE t (key INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "KEYS",
+          "probe": "CREATE TABLE t (keys INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RANK",
+          "probe": "CREATE TABLE t (rank INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "GROUPS",
+          "probe": "CREATE TABLE t (groups INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "ROW",
+          "probe": "CREATE TABLE t (row INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "ROWS",
+          "probe": "CREATE TABLE t (rows INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RANGE",
+          "probe": "CREATE TABLE t (range INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "FUNCTION",
+          "probe": "CREATE TABLE t (function INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SYSTEM",
+          "probe": "CREATE TABLE t (system INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SCHEMA",
+          "probe": "CREATE TABLE t (schema INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DATABASE",
+          "probe": "CREATE TABLE t (database INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "CHANGE",
+          "probe": "CREATE TABLE t (change INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "CONDITION",
+          "probe": "CREATE TABLE t (condition INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DESCRIBE",
+          "probe": "CREATE TABLE t (describe INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DIV",
+          "probe": "CREATE TABLE t (div INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "MOD",
+          "probe": "CREATE TABLE t (mod INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DUAL",
+          "probe": "CREATE TABLE t (dual INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "INTERVAL",
+          "probe": "CREATE TABLE t (interval INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "READ",
+          "probe": "CREATE TABLE t (read INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "WRITE",
+          "probe": "CREATE TABLE t (write INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RELEASE",
+          "probe": "CREATE TABLE t (release INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RETURN",
+          "probe": "CREATE TABLE t (return INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "USAGE",
+          "probe": "CREATE TABLE t (usage INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SIGNAL",
+          "probe": "CREATE TABLE t (signal INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "OPTION",
+          "probe": "CREATE TABLE t (option INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LOCK",
+          "probe": "CREATE TABLE t (lock INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "MATCH",
+          "probe": "CREATE TABLE t (match INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RENAME",
+          "probe": "CREATE TABLE t (rename INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "REPLACE",
+          "probe": "CREATE TABLE t (replace INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SQL",
+          "probe": "CREATE TABLE t (sql INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "OFFSET",
+          "probe": "CREATE TABLE t (offset INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "WINDOW",
+          "probe": "CREATE TABLE t (window INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LATERAL",
+          "probe": "CREATE TABLE t (lateral INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RETURNING",
+          "probe": "CREATE TABLE t (returning INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "VALUES",
+          "probe": "CREATE TABLE t (values INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "INDEX",
+          "probe": "CREATE TABLE t (index INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SET",
+          "probe": "CREATE TABLE t (set INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "END",
+          "probe": "CREATE TABLE t (end INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "ONLY",
+          "probe": "CREATE TABLE t (only INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "ARRAY",
+          "probe": "CREATE TABLE t (array INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "CAST",
+          "probe": "CREATE TABLE t (cast INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "FULL",
+          "probe": "CREATE TABLE t (full INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LEFT",
+          "probe": "CREATE TABLE t (left INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RIGHT",
+          "probe": "CREATE TABLE t (right INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DESC",
+          "probe": "CREATE TABLE t (desc INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "ASC",
+          "probe": "CREATE TABLE t (asc INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "COLUMN",
+          "probe": "CREATE TABLE t (column INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "BINARY",
+          "probe": "CREATE TABLE t (binary INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "ANALYZE",
+          "probe": "CREATE TABLE t (analyze INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "EMPTY",
+          "probe": "CREATE TABLE t (empty INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "VIRTUAL",
+          "probe": "CREATE TABLE t (virtual INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "STORED",
+          "probe": "CREATE TABLE t (stored INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "GENERATED",
+          "probe": "CREATE TABLE t (generated INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LEAD",
+          "probe": "CREATE TABLE t (lead INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LAG",
+          "probe": "CREATE TABLE t (lag INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "OF",
+          "probe": "CREATE TABLE t (of INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "OVER",
+          "probe": "CREATE TABLE t (over INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "PARTITION",
+          "probe": "CREATE TABLE t (partition INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "PRECISION",
+          "probe": "CREATE TABLE t (precision INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "REAL",
+          "probe": "CREATE TABLE t (real INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "FLOAT",
+          "probe": "CREATE TABLE t (float INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DOUBLE",
+          "probe": "CREATE TABLE t (double INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "TRIGGER",
+          "probe": "CREATE TABLE t (trigger INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "CURSOR",
+          "probe": "CREATE TABLE t (cursor INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "EXIT",
+          "probe": "CREATE TABLE t (exit INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LOOP",
+          "probe": "CREATE TABLE t (loop INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "REPEAT",
+          "probe": "CREATE TABLE t (repeat INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "DO",
+          "probe": "CREATE TABLE t (do INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "CUBE",
+          "probe": "CREATE TABLE t (cube INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "GROUPING",
+          "probe": "CREATE TABLE t (grouping INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RECURSIVE",
+          "probe": "CREATE TABLE t (recursive INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SEPARATOR",
+          "probe": "CREATE TABLE t (separator INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LINES",
+          "probe": "CREATE TABLE t (lines INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "LOAD",
+          "probe": "CREATE TABLE t (load INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "SHOW",
+          "probe": "CREATE TABLE t (show INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "EXPLAIN",
+          "probe": "CREATE TABLE t (explain INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "BEFORE",
+          "probe": "CREATE TABLE t (before INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "EACH",
+          "probe": "CREATE TABLE t (each INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "CASCADE",
+          "probe": "CREATE TABLE t (cascade INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "RESTRICT",
+          "probe": "CREATE TABLE t (restrict INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "IGNORE",
+          "probe": "CREATE TABLE t (ignore INTEGER)",
+          "advice": ""
+        },
+        {
+          "name": "OUT",
+          "probe": "CREATE TABLE t (out INTEGER)",
+          "advice": ""
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {},
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'rank INTEGER)' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
+        },
+        "rewrite": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {},
+          "sqlite": {}
+        },
+        "items": {
+          "ANALYZE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'analyze INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'analyze INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"analyze\""
+            },
+            "sqlite": {}
+          },
+          "ARRAY": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"array\""
+            },
+            "sqlite": {}
+          },
+          "ASC": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'asc INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'asc INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"asc\""
+            },
+            "sqlite": {}
+          },
+          "BEFORE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'before INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'before INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "BINARY": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'binary INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'binary INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"binary\""
+            },
+            "sqlite": {}
+          },
+          "CASCADE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'cascade INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'cascade INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "CAST": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"cast\""
+            },
+            "sqlite": {}
+          },
+          "CHANGE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'change INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'change INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "COLUMN": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'column INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'column INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"column\""
+            },
+            "sqlite": {}
+          },
+          "CONDITION": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'condition INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'condition INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "CUBE": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'cube INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "CURSOR": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'cursor INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'cursor INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "DATABASE": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'database INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "DESC": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'desc INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'desc INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"desc\""
+            },
+            "sqlite": {}
+          },
+          "DESCRIBE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'describe INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'describe INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "DIV": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'div INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'div INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "DO": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"do\""
+            },
+            "sqlite": {}
+          },
+          "DOUBLE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'double INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'double INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "DUAL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'dual INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'dual INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "EACH": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'each INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'each INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "EMPTY": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'empty INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "END": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"end\""
+            },
+            "sqlite": {}
+          },
+          "EXIT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'exit INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'exit INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "EXPLAIN": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'explain INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'explain INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "FLOAT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'float INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'float INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "FULL": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"full\""
+            },
+            "sqlite": {}
+          },
+          "FUNCTION": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'function INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "GENERATED": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'generated INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "GROUPING": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'grouping INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "GROUPS": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'groups INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "IGNORE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'ignore INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'ignore INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "INDEX": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"index\": syntax error"
+            }
+          },
+          "INTERVAL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'interval INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'interval INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "KEY": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "KEYS": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'keys INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'keys INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "LAG": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'lag INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "LATERAL": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'lateral INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"lateral\""
+            },
+            "sqlite": {}
+          },
+          "LEAD": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'lead INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "LEFT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'left INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'left INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"left\""
+            },
+            "sqlite": {}
+          },
+          "LINES": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'lines INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'lines INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "LOAD": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'load INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'load INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "LOCK": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'lock INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'lock INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "LOOP": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'loop INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'loop INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "MATCH": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'match INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'match INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "MOD": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'mod INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'mod INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "OF": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'of INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "OFFSET": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'offset INTEGER)' at line 1"
+            },
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"offset\""
+            },
+            "sqlite": {}
+          },
+          "ONLY": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"only\""
+            },
+            "sqlite": {}
+          },
+          "OPTION": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'option INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "OUT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'out INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'out INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "OVER": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'over INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'over INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "PARTITION": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'partition INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'partition INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "PRECISION": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'precision INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'precision INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RANGE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'range INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'range INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RANK": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'rank INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "READ": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'read INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'read INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "REAL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'real INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'real INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RECURSIVE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'recursive INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'recursive INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RELEASE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'release INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'release INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RENAME": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'rename INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'rename INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "REPEAT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'repeat INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'repeat INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "REPLACE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'replace INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'replace INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RESTRICT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'restrict INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'restrict INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RETURN": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'return INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'return INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "RETURNING": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'returning INTEGER)' at line 1"
+            },
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"returning\""
+            },
+            "sqlite": {
+              "error": "near \"returning\": syntax error"
+            }
+          },
+          "RIGHT": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'right INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'right INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"right\""
+            },
+            "sqlite": {}
+          },
+          "ROW": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'row INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "ROWS": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'rows INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'rows INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "SCHEMA": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'schema INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "SEPARATOR": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'separator INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'separator INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "SET": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'set INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'set INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"set\": syntax error"
+            }
+          },
+          "SHOW": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'show INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'show INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "SIGNAL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'signal INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'signal INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "SQL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'sql INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'sql INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "STORED": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'stored INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "SYSTEM": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'system INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "TRIGGER": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'trigger INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'trigger INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "USAGE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'usage INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'usage INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "USER": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {
+              "error": "syntax error at or near \"user\""
+            },
+            "sqlite": {}
+          },
+          "VALUES": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"values\": syntax error"
+            }
+          },
+          "VIRTUAL": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'virtual INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          },
+          "WINDOW": {
+            "mariadb": {},
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'window INTEGER)' at line 1"
+            },
+            "postgres": {
+              "error": "syntax error at or near \"window\""
+            },
+            "sqlite": {}
+          },
+          "WRITE": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'write INTEGER)' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'write INTEGER)' at line 1"
+            },
+            "postgres": {},
+            "sqlite": {}
+          }
+        }
+      }
+    },
+    {
+      "code": "aggregate-filter",
+      "title": "FILTER on aggregates",
+      "severity": "error",
+      "summary": "COUNT(*) FILTER (WHERE ...) works on SQLite and PostgreSQL; MySQL and MariaDB have no FILTER clause.",
+      "detail": "FILTER is standard SQL and limits the rows one aggregate sees, so one query can count several subsets of a table. SQLite reads it from 3.30 and PostgreSQL from 9.4. MySQL and MariaDB refuse it as a syntax error.",
+      "advice": "Move the condition into a CASE inside the aggregate: COUNT(CASE WHEN a \u003e 1 THEN 1 END) counts the same rows, and SUM(CASE WHEN a \u003e 1 THEN a END) adds the same values.",
+      "setup": "CREATE TABLE t (a INTEGER);\nINSERT INTO t VALUES (1), (2), (3)",
+      "example": "SELECT COUNT(*) FILTER (WHERE a \u003e 1) FROM t",
+      "rewrite": "SELECT COUNT(CASE WHEN a \u003e 1 THEN 1 END) FROM t",
+      "answers": {
+        "example": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '(WHERE a \u003e 1) FROM t' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(WHERE a \u003e 1) FROM t' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "2"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "2"
+            ]
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "2"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "code": "from-dual",
+      "title": "FROM DUAL",
+      "severity": "error",
+      "summary": "SELECT ... FROM DUAL runs on MySQL and MariaDB only; SQLite and PostgreSQL have no table called DUAL.",
+      "detail": "DUAL is Oracle's one-row table, which MySQL and MariaDB keep so that code written for Oracle runs. SQLite and PostgreSQL don't need a FROM to select values, and look for a real table named dual.",
+      "advice": "Leave FROM DUAL out: SELECT 1 + 1 runs on every engine.",
+      "example": "SELECT 1 + 1 FROM DUAL",
+      "rewrite": "SELECT 1 + 1",
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "error": "relation \"dual\" does not exist"
+          },
+          "sqlite": {
+            "error": "no such table: DUAL"
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "2"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "code": "trim-from",
+      "title": "TRIM of characters other than spaces",
+      "severity": "error",
+      "summary": "TRIM(LEADING '0' FROM s) fails on SQLite, and the LTRIM(s, '0') that SQLite offers instead fails on MySQL and MariaDB.",
+      "detail": "Standard SQL removes characters other than spaces with TRIM(LEADING, TRAILING or BOTH chars FROM s), which PostgreSQL, MySQL and MariaDB read. SQLite has only TRIM(s, chars), LTRIM(s, chars) and RTRIM(s, chars). PostgreSQL takes those too, while LTRIM and RTRIM on MySQL and MariaDB take one argument.",
+      "advice": "To remove spaces, TRIM(s), LTRIM(s) and RTRIM(s) work everywhere. For other characters no form runs on all four engines; trim them in the application, or keep one query per engine.",
+      "example": "SELECT TRIM(LEADING '0' FROM '0042')",
+      "items": [
+        {
+          "name": "LEADING",
+          "probe": "SELECT TRIM(LEADING '0' FROM '0042')",
+          "advice": "SQLite: LTRIM(s, '0')."
+        },
+        {
+          "name": "TRAILING",
+          "probe": "SELECT TRIM(TRAILING '0' FROM '4200')",
+          "advice": "SQLite: RTRIM(s, '0')."
+        },
+        {
+          "name": "BOTH",
+          "probe": "SELECT TRIM(BOTH '0' FROM '0420')",
+          "advice": "SQLite: TRIM(s, '0')."
+        },
+        {
+          "name": "chars FROM",
+          "probe": "SELECT TRIM('0' FROM '0420')",
+          "advice": "SQLite: TRIM(s, '0')."
+        },
+        {
+          "name": "TRIM(s, chars)",
+          "probe": "SELECT TRIM('0420', '0')",
+          "advice": "PostgreSQL, MySQL and MariaDB: TRIM(BOTH '0' FROM s)."
+        },
+        {
+          "name": "LTRIM(s, chars)",
+          "probe": "SELECT LTRIM('0042', '0')",
+          "advice": "MySQL and MariaDB: TRIM(LEADING '0' FROM s)."
+        },
+        {
+          "name": "RTRIM(s, chars)",
+          "probe": "SELECT RTRIM('4200', '0')",
+          "advice": "MySQL and MariaDB: TRIM(TRAILING '0' FROM s)."
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "'42'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'42'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'42'"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"'0'\": syntax error"
+          }
+        },
+        "items": {
+          "BOTH": {
+            "mariadb": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "error": "near \"'0'\": syntax error"
+            }
+          },
+          "LEADING": {
+            "mariadb": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "error": "near \"'0'\": syntax error"
+            }
+          },
+          "LTRIM(s, chars)": {
+            "mariadb": {
+              "error": "Incorrect parameter count in the call to native function 'LTRIM'"
+            },
+            "mysql": {
+              "error": "Incorrect parameter count in the call to native function 'LTRIM'"
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "'42'"
+              ]
+            }
+          },
+          "RTRIM(s, chars)": {
+            "mariadb": {
+              "error": "Incorrect parameter count in the call to native function 'RTRIM'"
+            },
+            "mysql": {
+              "error": "Incorrect parameter count in the call to native function 'RTRIM'"
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "'42'"
+              ]
+            }
+          },
+          "TRAILING": {
+            "mariadb": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "error": "near \"'0'\": syntax error"
+            }
+          },
+          "TRIM(s, chars)": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near ' '0')' at line 1"
+            },
+            "mysql": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ', '0')' at line 1"
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "'42'"
+              ]
+            }
+          },
+          "chars FROM": {
+            "mariadb": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "'42'"
+              ]
+            },
+            "sqlite": {
+              "error": "near \"FROM\": syntax error"
+            }
+          }
+        }
+      }
+    },
+    {
+      "code": "substring-from",
+      "title": "SUBSTRING with FROM and FOR",
+      "severity": "error",
+      "summary": "SUBSTRING(s FROM 2 FOR 3) fails on SQLite; SUBSTR(s, 2, 3) works on all four engines.",
+      "detail": "The FROM ... FOR form is standard SQL, and PostgreSQL, MySQL and MariaDB read it. SQLite takes only the form with commas, SUBSTR(s, start, length) or SUBSTRING(s, start, length).",
+      "advice": "Write SUBSTR(s, start, length), counting from 1 (see substring-start).",
+      "example": "SELECT SUBSTRING('abcdef' FROM 2 FOR 3)",
+      "rewrite": "SELECT SUBSTR('abcdef', 2, 3)",
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"FROM\": syntax error"
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "'bcd'"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "code": "drop-cascade",
+      "title": "DROP TABLE with CASCADE or RESTRICT",
+      "severity": "error",
+      "summary": "SQLite refuses DROP TABLE ... CASCADE, and MySQL and MariaDB accept the word and ignore it, so only PostgreSQL drops a table that others refer to.",
+      "detail": "On PostgreSQL CASCADE drops the foreign keys and views that depend on the table along with it. MySQL and MariaDB read CASCADE and RESTRICT for compatibility and do nothing with them: a table that a foreign key refers to still can't be dropped. SQLite has neither word.",
+      "advice": "Drop what depends on the table first (the tables or foreign keys that refer to it and the views that read it), then the table itself, without CASCADE.",
+      "setup": "CREATE TABLE u (id INTEGER PRIMARY KEY);\nCREATE TABLE t (id INTEGER, u_id INTEGER, FOREIGN KEY (u_id) REFERENCES u (id))",
+      "example": "DROP TABLE u CASCADE",
+      "rewrite": "DROP TABLE t;\nDROP TABLE u",
+      "items": [
+        {
+          "name": "CASCADE",
+          "setup": "CREATE TABLE u (id INTEGER PRIMARY KEY);\nCREATE TABLE t (id INTEGER, u_id INTEGER, FOREIGN KEY (u_id) REFERENCES u (id))",
+          "probe": "DROP TABLE u CASCADE",
+          "advice": ""
+        },
+        {
+          "name": "RESTRICT",
+          "setup": "CREATE TABLE u (id INTEGER)",
+          "probe": "DROP TABLE u RESTRICT",
+          "advice": "Leave RESTRICT out: dropping a table that others depend on fails without it on PostgreSQL, MySQL and MariaDB."
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {
+            "error": "Cannot delete or update a parent row: a foreign key constraint fails"
+          },
+          "mysql": {
+            "error": "Cannot drop table 'u' referenced by a foreign key constraint 't_ibfk_1' on table 't'."
+          },
+          "postgres": {},
+          "sqlite": {
+            "error": "near \"CASCADE\": syntax error"
+          }
+        },
+        "rewrite": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {},
+          "sqlite": {}
+        },
+        "items": {
+          "CASCADE": {
+            "mariadb": {
+              "error": "Cannot delete or update a parent row: a foreign key constraint fails"
+            },
+            "mysql": {
+              "error": "Cannot drop table 'u' referenced by a foreign key constraint 't_ibfk_1' on table 't'."
+            },
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"CASCADE\": syntax error"
+            }
+          },
+          "RESTRICT": {
+            "mariadb": {},
+            "mysql": {},
+            "postgres": {},
+            "sqlite": {
+              "error": "near \"RESTRICT\": syntax error"
+            }
+          }
+        }
+      }
+    },
+    {
+      "code": "cast-to-float",
+      "title": "CAST to a floating point type",
+      "severity": "error",
+      "summary": "CAST(x AS DOUBLE PRECISION) fails on MariaDB, CAST(x AS DOUBLE) on PostgreSQL, and CAST(x AS FLOAT) gives a 4-byte float on MySQL and MariaDB.",
+      "detail": "No floating point type name works in CAST on all four engines with the same meaning. MariaDB takes DOUBLE and FLOAT in CAST but not DOUBLE PRECISION or REAL, and PostgreSQL has no type called DOUBLE. FLOAT runs everywhere, but it means an 8-byte float on SQLite and PostgreSQL and a 4-byte one on MySQL and MariaDB, so CAST(0.1 AS FLOAT) * 3 is 0.30000000000000004 on the first two and 0.30000000447034836 on the others.",
+      "advice": "There is no portable CAST to a float. When a fraction is all that's needed, multiply by 1.0 (see integer-division) and round the result to the digits you need.",
+      "example": "SELECT CAST(0.1 AS FLOAT) * 3",
+      "rewrite": "SELECT ROUND(0.1 * 3, 4)",
+      "items": [
+        {
+          "name": "DOUBLE PRECISION",
+          "probe": "SELECT CAST(1 AS DOUBLE PRECISION)",
+          "advice": ""
+        },
+        {
+          "name": "REAL",
+          "probe": "SELECT CAST(1 AS REAL)",
+          "advice": ""
+        },
+        {
+          "name": "DOUBLE",
+          "probe": "SELECT CAST(1 AS DOUBLE)",
+          "advice": ""
+        },
+        {
+          "name": "FLOAT",
+          "probe": "SELECT CAST(0.1 AS FLOAT) * 3",
+          "advice": "",
+          "message": "CAST(x AS FLOAT) is an 8-byte float on SQLite and PostgreSQL and a 4-byte one on MySQL and MariaDB, so the digits differ."
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "0.30000000447034836"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "0.30000000447034836"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "0.30000000000000004"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "0.30000000000000004"
+            ]
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "0.3000"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "0.3"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "0.3000"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "0.3"
+            ]
+          }
+        },
+        "items": {
+          "DOUBLE": {
+            "mariadb": {
+              "rows": [
+                "1"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "1"
+              ]
+            },
+            "postgres": {
+              "error": "type \"double\" does not exist"
+            },
+            "sqlite": {
+              "rows": [
+                "1.0"
+              ]
+            }
+          },
+          "DOUBLE PRECISION": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'PRECISION)' at line 1"
+            },
+            "mysql": {
+              "rows": [
+                "1"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "1"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "1.0"
+              ]
+            }
+          },
+          "FLOAT": {
+            "mariadb": {
+              "rows": [
+                "0.30000000447034836"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "0.30000000447034836"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "0.30000000000000004"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "0.30000000000000004"
+              ]
+            }
+          },
+          "REAL": {
+            "mariadb": {
+              "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'REAL)' at line 1"
+            },
+            "mysql": {
+              "rows": [
+                "1"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "1"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "1.0"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "code": "avg-digits",
+      "title": "Digits of AVG",
+      "severity": "warning",
+      "summary": "AVG of integers or decimals has 4 more decimal places than the values on MySQL and MariaDB, and about 16 significant digits on SQLite and PostgreSQL.",
+      "detail": "MySQL and MariaDB return the average of exact numbers as a decimal with 4 more decimal places than the values have (the div_precision_increment setting), so the average of 1, 2 and 2 is 1.6667. PostgreSQL returns a numeric with about 16 significant digits, 1.6666666666666667, and SQLite a float with the same digits. Averages of floating point columns agree.",
+      "advice": "Round the average to the digits you need: ROUND(AVG(a), 2) gives the same answer on every engine.",
+      "setup": "CREATE TABLE t (a INTEGER, d DECIMAL(10, 2));\nINSERT INTO t VALUES (1, 1.00), (2, 2.00), (2, 2.00)",
+      "example": "SELECT AVG(a) FROM t",
+      "rewrite": "SELECT ROUND(AVG(a), 2) FROM t",
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "1.6667"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1.6667"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "1.6666666666666667"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "1.6666666666666667"
+            ]
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "1.67"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "1.67"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "1.67"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "1.67"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "code": "round-half",
+      "title": "ROUND of a floating point half",
+      "severity": "warning",
+      "summary": "ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL, MySQL and MariaDB.",
+      "detail": "Exact numbers, such as the literal 2.5 or a DECIMAL column, round half away from zero on every engine. Floating point values don't. SQLite still rounds 2.5 up to 3, while PostgreSQL, MySQL and MariaDB round a float that is exactly half way to the even neighbour, so 2.5 becomes 2 and 3.5 becomes 4. PostgreSQL also has no ROUND(x, digits) for floats.",
+      "advice": "Round an exact number: ROUND(CAST(x AS DECIMAL(10, 2))) rounds half away from zero everywhere. Amounts that get rounded are better kept in DECIMAL columns in the first place.",
+      "setup": "CREATE TABLE t (x DOUBLE PRECISION);\nINSERT INTO t VALUES (2.5), (3.5)",
+      "example": "SELECT ROUND(x) FROM t ORDER BY x",
+      "rewrite": "SELECT ROUND(CAST(x AS DECIMAL(10, 2))) FROM t ORDER BY x",
+      "items": [
+        {
+          "name": "ROUND(x)",
+          "setup": "CREATE TABLE t (x DOUBLE PRECISION);\nINSERT INTO t VALUES (2.5), (3.5)",
+          "probe": "SELECT ROUND(x) FROM t ORDER BY x",
+          "advice": ""
+        },
+        {
+          "name": "ROUND(x, n)",
+          "setup": "CREATE TABLE t (x DOUBLE PRECISION);\nINSERT INTO t VALUES (2.5), (3.5)",
+          "probe": "SELECT ROUND(x, 0) FROM t ORDER BY x",
+          "advice": "",
+          "message": "PostgreSQL has no ROUND(x, digits) for floating point values, and the other engines round a float half differently."
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "2",
+              "4"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2",
+              "4"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "2",
+              "4"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "3.0",
+              "4.0"
+            ]
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "3",
+              "4"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "3",
+              "4"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "3",
+              "4"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "3.0",
+              "4.0"
+            ]
+          }
+        },
+        "items": {
+          "ROUND(x)": {
+            "mariadb": {
+              "rows": [
+                "2",
+                "4"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "2",
+                "4"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "2",
+                "4"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "3.0",
+                "4.0"
+              ]
+            }
+          },
+          "ROUND(x, n)": {
+            "mariadb": {
+              "rows": [
+                "2",
+                "4"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "2",
+                "4"
+              ]
+            },
+            "postgres": {
+              "error": "function round(double precision, integer) does not exist"
+            },
+            "sqlite": {
+              "rows": [
+                "3.0",
+                "4.0"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "code": "group-case",
+      "title": "GROUP BY and DISTINCT on text in mixed case",
+      "severity": "warning",
+      "summary": "GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION treat 'x' and 'X' as one value on MySQL and MariaDB and as two on SQLite and PostgreSQL.",
+      "detail": "MySQL and MariaDB compare text with a case-insensitive collation by default (see text-compare-case), and grouping and removing duplicates use the same comparison. The spelling that stands for a group is the one the engine happened to see first. On SQLite and PostgreSQL each spelling is its own group.",
+      "advice": "Group on LOWER(s) to merge spellings on every engine, as in SELECT LOWER(s), COUNT(*) FROM t GROUP BY LOWER(s). To keep them apart on MySQL and MariaDB instead, give the column a binary collation there.",
+      "setup": "CREATE TABLE t (s VARCHAR(10));\nINSERT INTO t VALUES ('x'), ('X'), ('y')",
+      "example": "SELECT COUNT(DISTINCT s) FROM t",
+      "rewrite": "SELECT COUNT(DISTINCT LOWER(s)) FROM t",
+      "items": [
+        {
+          "name": "GROUP BY",
+          "setup": "CREATE TABLE t (s VARCHAR(10));\nINSERT INTO t VALUES ('x'), ('X'), ('y')",
+          "probe": "SELECT COUNT(*) FROM (SELECT s FROM t GROUP BY s) g",
+          "advice": ""
+        },
+        {
+          "name": "DISTINCT",
+          "setup": "CREATE TABLE t (s VARCHAR(10));\nINSERT INTO t VALUES ('x'), ('X'), ('y')",
+          "probe": "SELECT COUNT(*) FROM (SELECT DISTINCT s FROM t) d",
+          "advice": ""
+        },
+        {
+          "name": "COUNT(DISTINCT)",
+          "setup": "CREATE TABLE t (s VARCHAR(10));\nINSERT INTO t VALUES ('x'), ('X'), ('y')",
+          "probe": "SELECT COUNT(DISTINCT s) FROM t",
+          "advice": ""
+        },
+        {
+          "name": "UNION",
+          "setup": "CREATE TABLE t (s VARCHAR(10));\nINSERT INTO t VALUES ('x'), ('X'), ('y')",
+          "probe": "SELECT COUNT(*) FROM (SELECT s FROM t UNION SELECT 'Y') u",
+          "advice": ""
+        }
+      ],
+      "answers": {
+        "example": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "3"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "3"
+            ]
+          }
+        },
+        "rewrite": {
+          "mariadb": {
+            "rows": [
+              "2"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "2"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "2"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "2"
+            ]
+          }
+        },
+        "items": {
+          "COUNT(DISTINCT)": {
+            "mariadb": {
+              "rows": [
+                "2"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "2"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "3"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "3"
+              ]
+            }
+          },
+          "DISTINCT": {
+            "mariadb": {
+              "rows": [
+                "2"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "2"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "3"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "3"
+              ]
+            }
+          },
+          "GROUP BY": {
+            "mariadb": {
+              "rows": [
+                "2"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "2"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "3"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "3"
+              ]
+            }
+          },
+          "UNION": {
+            "mariadb": {
+              "rows": [
+                "2"
+              ]
+            },
+            "mysql": {
+              "rows": [
+                "2"
+              ]
+            },
+            "postgres": {
+              "rows": [
+                "4"
+              ]
+            },
+            "sqlite": {
+              "rows": [
+                "4"
+              ]
+            }
+          }
+        }
+      }
     }
   ]
 }

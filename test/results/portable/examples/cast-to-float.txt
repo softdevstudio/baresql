@@ -1,0 +1,5 @@
+example.sql:1:8: warning: CAST(x AS FLOAT) is an 8-byte float on SQLite and PostgreSQL and a 4-byte one on MySQL and MariaDB, so the digits differ. [cast-to-float]
+    CAST(0.1 AS FLOAT)
+    There is no portable CAST to a float. When a fraction is all that's needed, multiply by 1.0 (see integer-division) and round the result to the digits you need.
+
+1 problem: 1 warning.

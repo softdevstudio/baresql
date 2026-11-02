@@ -1,0 +1,30 @@
+trim-from (error): TRIM of characters other than spaces
+
+TRIM(LEADING '0' FROM s) fails on SQLite, and the LTRIM(s, '0') that SQLite
+offers instead fails on MySQL and MariaDB.
+
+Standard SQL removes characters other than spaces with TRIM(LEADING, TRAILING
+or BOTH chars FROM s), which PostgreSQL, MySQL and MariaDB read. SQLite has
+only TRIM(s, chars), LTRIM(s, chars) and RTRIM(s, chars). PostgreSQL takes
+those too, while LTRIM and RTRIM on MySQL and MariaDB take one argument.
+
+Example:
+    SELECT TRIM(LEADING '0' FROM '0042')
+
+    SQLite 3.45.1        error: near "'0'": syntax error
+    PostgreSQL 16.15     '42'
+    MySQL 8.0.46         '42'
+    MariaDB 10.11.14     '42'
+
+To remove spaces, TRIM(s), LTRIM(s) and RTRIM(s) work everywhere. For other
+characters no form runs on all four engines; trim them in the application, or
+keep one query per engine.
+
+                SQLite PostgreSQL MySQL MariaDB
+LEADING         no     yes        yes   yes     SQLite: LTRIM(s, '0').
+TRAILING        no     yes        yes   yes     SQLite: RTRIM(s, '0').
+BOTH            no     yes        yes   yes     SQLite: TRIM(s, '0').
+chars FROM      no     yes        yes   yes     SQLite: TRIM(s, '0').
+TRIM(s, chars)  yes    yes        no    no      PostgreSQL, MySQL and MariaDB: TRIM(BOTH '0' FROM s).
+LTRIM(s, chars) yes    yes        no    no      MySQL and MariaDB: TRIM(LEADING '0' FROM s).
+RTRIM(s, chars) yes    yes        no    no      MySQL and MariaDB: TRIM(TRAILING '0' FROM s).

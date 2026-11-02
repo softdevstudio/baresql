@@ -1,0 +1,33 @@
+avg-digits (warning): Digits of AVG
+
+AVG of integers or decimals has 4 more decimal places than the values on MySQL
+and MariaDB, and about 16 significant digits on SQLite and PostgreSQL.
+
+MySQL and MariaDB return the average of exact numbers as a decimal with 4 more
+decimal places than the values have (the div_precision_increment setting), so
+the average of 1, 2 and 2 is 1.6667. PostgreSQL returns a numeric with about
+16 significant digits, 1.6666666666666667, and SQLite a float with the same
+digits. Averages of floating point columns agree.
+
+Given:
+    CREATE TABLE t (a INTEGER, d DECIMAL(10, 2));
+    INSERT INTO t VALUES (1, 1.00), (2, 2.00), (2, 2.00)
+
+Example:
+    SELECT AVG(a) FROM t
+
+    SQLite 3.45.1        1.6666666666666667
+    PostgreSQL 16.15     1.6666666666666667
+    MySQL 8.0.46         1.6667
+    MariaDB 10.11.14     1.6667
+
+The same on every engine:
+    SELECT ROUND(AVG(a), 2) FROM t
+
+    SQLite 3.45.1        1.67
+    PostgreSQL 16.15     1.67
+    MySQL 8.0.46         1.67
+    MariaDB 10.11.14     1.67
+
+Round the average to the digits you need: ROUND(AVG(a), 2) gives the same
+answer on every engine.

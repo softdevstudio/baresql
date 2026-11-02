@@ -1,0 +1,5 @@
+example.sql:1:29: error: The name rank works on SQLite, PostgreSQL and MariaDB; MySQL refuses it. [reserved-word]
+    rank
+    Pick another name, such as user_name, rank_no or sort_key. Quoting the name is no portable way out: double quotes name a column on SQLite and PostgreSQL and make a string on MySQL and MariaDB (see double-quotes), and backticks work on SQLite, MySQL and MariaDB only (see backticks).
+
+1 problem: 1 error.

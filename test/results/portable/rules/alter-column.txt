@@ -1,0 +1,44 @@
+alter-column (error): ALTER TABLE forms
+
+Changing a column takes ALTER COLUMN ... TYPE on PostgreSQL and MODIFY or
+CHANGE on MySQL and MariaDB, and SQLite has neither.
+
+SQLite's ALTER TABLE renames tables and columns and adds and drops columns,
+one action per statement. It can't change a column's type, default or NULL
+rule and has no ADD CONSTRAINT. PostgreSQL changes a column piece by piece
+with ALTER COLUMN ... TYPE, SET DEFAULT and SET NOT NULL. MySQL and MariaDB
+redefine the whole column with MODIFY or CHANGE, take ALTER COLUMN only for
+defaults, and refuse ALTER COLUMN ... TYPE. IF NOT EXISTS on ADD COLUMN works
+on PostgreSQL and MariaDB only.
+
+Given:
+    CREATE TABLE t (a INTEGER, b VARCHAR(20))
+
+Example:
+    ALTER TABLE t MODIFY b VARCHAR(40)
+
+    SQLite 3.45.1        error: near "MODIFY": syntax error
+    PostgreSQL 16.15     error: syntax error at or near "MODIFY"
+    MySQL 8.0.46         no rows
+    MariaDB 10.11.14     no rows
+
+Keep migrations that change a column in one file per engine. On SQLite, create
+a table with the new definition, copy the rows, drop the old table and rename
+the new one. What works everywhere: ADD COLUMN, DROP COLUMN, RENAME COLUMN ...
+TO and RENAME TO, one per ALTER TABLE.
+
+                         SQLite PostgreSQL MySQL MariaDB
+ALTER COLUMN TYPE        no     yes        no    no      MySQL and MariaDB: MODIFY b VARCHAR(40). SQLite: rebuild the table.
+SET NOT NULL             no     yes        no    no      MySQL and MariaDB: MODIFY the whole column with NOT NULL. SQLite: rebuild the table.
+DROP NOT NULL            no     yes        no    no      MySQL and MariaDB: MODIFY the whole column without NOT NULL. SQLite: rebuild the table.
+SET DEFAULT              no     yes        yes   yes     SQLite: rebuild the table, or give the default in the INSERT statements.
+DROP DEFAULT             no     yes        yes   yes     SQLite: rebuild the table.
+MODIFY                   no     no         yes   yes     PostgreSQL: ALTER COLUMN b TYPE VARCHAR(40), with SET or DROP NOT NULL and DEFAULT as separate actions. SQLite: rebuild the table.
+CHANGE                   no     no         yes   yes     Rename with RENAME COLUMN b TO c, which all four engines take, and change the type separately.
+several actions          no     yes        yes   yes     Write one ALTER TABLE per action.
+ADD CONSTRAINT           no     yes        yes   yes     SQLite: CREATE UNIQUE INDEX for a unique key; other constraints need a rebuilt table.
+DROP CONSTRAINT          no     yes        yes   yes     SQLite: rebuild the table.
+DROP INDEX               no     no         yes   yes     Use DROP CONSTRAINT on PostgreSQL, MySQL and MariaDB, and a rebuilt table on SQLite.
+ADD COLUMN IF NOT EXISTS no     yes        no    yes     Check the catalog for the column in the migration code before adding it.
+DROP COLUMN IF EXISTS    no     yes        no    yes     Check the catalog for the column in the migration code before dropping it.
+RENAME without TO        no     no         yes   yes     Write RENAME TO u.

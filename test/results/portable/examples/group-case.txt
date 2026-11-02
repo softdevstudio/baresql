@@ -1,0 +1,5 @@
+example.sql:3:8: warning: GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION treat 'x' and 'X' as one value on MySQL and MariaDB and as two on SQLite and PostgreSQL. [group-case]
+    COUNT(DISTINCT s)
+    Group on LOWER(s) to merge spellings on every engine, as in SELECT LOWER(s), COUNT(*) FROM t GROUP BY LOWER(s). To keep them apart on MySQL and MariaDB instead, give the column a binary collation there.
+
+1 problem: 1 warning.

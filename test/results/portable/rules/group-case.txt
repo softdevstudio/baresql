@@ -1,0 +1,40 @@
+group-case (warning): GROUP BY and DISTINCT on text in mixed case
+
+GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION treat 'x' and 'X' as one value
+on MySQL and MariaDB and as two on SQLite and PostgreSQL.
+
+MySQL and MariaDB compare text with a case-insensitive collation by default
+(see text-compare-case), and grouping and removing duplicates use the same
+comparison. The spelling that stands for a group is the one the engine
+happened to see first. On SQLite and PostgreSQL each spelling is its own
+group.
+
+Given:
+    CREATE TABLE t (s VARCHAR(10));
+    INSERT INTO t VALUES ('x'), ('X'), ('y')
+
+Example:
+    SELECT COUNT(DISTINCT s) FROM t
+
+    SQLite 3.45.1        3
+    PostgreSQL 16.15     3
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+The same on every engine:
+    SELECT COUNT(DISTINCT LOWER(s)) FROM t
+
+    SQLite 3.45.1        2
+    PostgreSQL 16.15     2
+    MySQL 8.0.46         2
+    MariaDB 10.11.14     2
+
+Group on LOWER(s) to merge spellings on every engine, as in SELECT LOWER(s),
+COUNT(*) FROM t GROUP BY LOWER(s). To keep them apart on MySQL and MariaDB
+instead, give the column a binary collation there.
+
+                SQLite PostgreSQL MySQL MariaDB
+GROUP BY        3      3          2     2
+DISTINCT        3      3          2     2
+COUNT(DISTINCT) 3      3          2     2
+UNION           4      4          2     2

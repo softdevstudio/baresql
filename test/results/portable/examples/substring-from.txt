@@ -1,0 +1,5 @@
+example.sql:1:8: error: SUBSTRING(s FROM 2 FOR 3) fails on SQLite; SUBSTR(s, 2, 3) works on all four engines. [substring-from]
+    SUBSTRING('abcdef' FROM 2 FOR 3)
+    Write SUBSTR(s, start, length), counting from 1 (see substring-start).
+
+1 problem: 1 error.

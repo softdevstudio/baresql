@@ -1,0 +1,5 @@
+example.sql:2:15: error: ALTER TABLE ... MODIFY works on MySQL and MariaDB; SQLite and PostgreSQL refuse it. [alter-column]
+    MODIFY b VARCHAR(40)
+    PostgreSQL: ALTER COLUMN b TYPE VARCHAR(40), with SET or DROP NOT NULL and DEFAULT as separate actions. SQLite: rebuild the table.
+
+1 problem: 1 error.
