@@ -1,6 +1,6 @@
 {
   "tool": "baresql",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "generated": "2026-10-21T09:00:00Z",
   "server": {
     "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
@@ -473,7 +473,8 @@
             {
               "kind": "column-grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -494,7 +495,8 @@
             {
               "kind": "column-grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -504,7 +506,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -514,7 +517,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -535,7 +539,8 @@
             {
               "kind": "column-grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -545,7 +550,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -555,7 +561,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -601,7 +608,8 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -611,7 +619,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -621,7 +630,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -631,7 +641,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -645,7 +656,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -657,7 +669,8 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -669,7 +682,8 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -681,7 +695,8 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -691,7 +706,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -701,7 +717,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -711,7 +728,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             },
             {
               "kind": "view",
@@ -725,7 +743,8 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -737,7 +756,8 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -749,7 +769,8 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "rows allowed by policy support_read",
+              "rows_where": "tenant_id matches the setting app.tenant_id, which any session can set"
             }
           ]
         },
@@ -988,6 +1009,18 @@
       "severity": "medium",
       "subject": "app.audit_log",
       "message": "Row security on app.audit_log is not forced and its owner saas_migrator can log in: sessions logged in as saas_migrator see every row."
+    },
+    {
+      "code": "rls-session-setting",
+      "severity": "medium",
+      "subject": "app.accounts policy support_read",
+      "message": "Policy support_read on app.accounts picks rows by the setting app.tenant_id, which any session can set to any value: saas_agent can read rows meant for others by changing it."
+    },
+    {
+      "code": "rls-session-setting",
+      "severity": "medium",
+      "subject": "app.tickets policy support_read",
+      "message": "Policy support_read on app.tickets picks rows by the setting app.tenant_id, which any session can set to any value: saas_agent can read rows meant for others by changing it."
     },
     {
       "code": "rls-no-policies",

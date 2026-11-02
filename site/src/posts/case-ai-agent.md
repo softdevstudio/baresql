@@ -42,9 +42,15 @@ A second view, `support.ticket_context_invoker`, was written later with `securit
 
 The agent may not read `app.accounts` itself, and PostgreSQL checks every column a view's query reads, so it refuses every query on this view, even one that selects only the ticket columns. The agent's developers would have met that error on the first test and gone back to the view that works.
 
-## What the Audit Leaves to You
+## Every Tenant's Tickets, Too
 
-The agent reads tickets with "rows allowed by policy support_read". BareSQL names the policy and doesn't judge its condition, so that part is left to a person. Here the condition was `USING (true)`: support could read every tenant's tickets, too.
+The agent reads tickets through the policy `support_read`, and the audit reads its condition:
+
+```
+{{grep:audit/agent/before/lines.txt:^read saas_agent app\.tickets\.body }}
+```
+
+The condition is `USING (true)`, so the policy lets every row through: support can read every tenant's tickets, too.
 
 ## The Fix
 
@@ -60,7 +66,15 @@ And audited again:
 {{file:audit/agent/after/summary.txt}}
 ```
 
-The high finding is gone. The two others are about tables the agent doesn't touch: an audit log whose owner can log in and so skips row security, and a table of API keys with row security on and no policy, which only its owner and roles that bypass row security can read. Every route of the agent to a customer's data now ends in "rows allowed by policy support_read", and the policy now limits rows to the session's tenant.
+The high finding is gone, and so is "all rows". Two findings are about tables the agent doesn't touch: an audit log whose owner can log in and so skips row security, and a table of API keys with row security on and no policy, which only its owner and roles that bypass row security can read. Every route of the agent to a customer's data now ends like this one:
+
+```
+{{grep:audit/agent/after/lines.txt:^read saas_agent app\.tickets\.body }}
+```
+
+## The Fix Still Trusts the Session
+
+The two `rls-session-setting` findings are about the fix itself. The policy picks the tenant from `app.tenant_id`, and the application sets that when it connects. But any session can set it, with a plain `SET app.tenant_id = 7`. For an agent that writes its own SQL, that is one statement away: a prompt that asks it to look at another tenant's tickets would be enough again. The findings stay until the tenant comes from something the session can't change, such as a login per tenant, or a function owned by another role that sets the tenant and is the only way in.
 
 ## Why the Diff Says Reach Grew
 

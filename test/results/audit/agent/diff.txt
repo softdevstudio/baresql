@@ -6,9 +6,15 @@ Reach that grew: 5
   + read saas_agent support.ticket_context_invoker.id (granted to saas_support)
   + read saas_agent support.ticket_context_invoker.subject (granted to saas_support)
 Reach that is gone: 0
-Other changes: 5
+Other changes: 11
+  ~ finding rls-session-setting app.accounts policy support_read (new, medium: Policy support_read on app.accounts picks rows by the setting app.tenant_id, which any session can set to any value: saas_agent can read rows meant for others by changing it.)
+  ~ finding rls-session-setting app.tickets policy support_read (new, medium: Policy support_read on app.tickets picks rows by the setting app.tenant_id, which any session can set to any value: saas_agent can read rows meant for others by changing it.)
   ~ finding view-bypasses-row-security support.ticket_context (gone)
   ~ route saas_agent app.accounts.email (new route: column granted to saas_support; rows allowed by policy support_read | through view support.ticket_context (rights of the reader); rows allowed by policy support_read | through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read)
   ~ route saas_agent app.accounts.full_name (new route: column granted to saas_support; rows allowed by policy support_read | through view support.ticket_context (rights of the reader); rows allowed by policy support_read | through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read)
-  ~ route saas_agent app.tickets.id (new route: through view support.ticket_context (rights of the reader); rows allowed by policy support_read | through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read)
-  ~ route saas_agent app.tickets.subject (new route: through view support.ticket_context (rights of the reader); rows allowed by policy support_read | through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read)
+  ~ route saas_agent app.tickets.account_id (new route: granted to saas_support; rows allowed by policy support_read)
+  ~ route saas_agent app.tickets.body (new route: granted to saas_support; rows allowed by policy support_read)
+  ~ route saas_agent app.tickets.created_at (new route: granted to saas_support; rows allowed by policy support_read)
+  ~ route saas_agent app.tickets.id (new route: granted to saas_support; rows allowed by policy support_read | through view support.ticket_context (rights of the reader); rows allowed by policy support_read | through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read | through view support.ticket_list (rights of the reader); rows allowed by policy support_read | through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read)
+  ~ route saas_agent app.tickets.subject (new route: granted to saas_support; rows allowed by policy support_read | through view support.ticket_context (rights of the reader); rows allowed by policy support_read | through view support.ticket_context_invoker (rights of the reader); rows allowed by policy support_read | through view support.ticket_list (rights of the reader); rows allowed by policy support_read | through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read)
+  ~ route saas_agent app.tickets.tenant_id (new route: granted to saas_support; rows allowed by policy support_read)

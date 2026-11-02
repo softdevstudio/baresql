@@ -1,6 +1,6 @@
 {
   "tool": "baresql",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "generated": "2026-10-20T09:00:00Z",
   "server": {
     "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
@@ -549,7 +549,7 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             },
             {
               "kind": "view",
@@ -569,7 +569,7 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             },
             {
               "kind": "view",
@@ -583,7 +583,7 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             }
           ]
         },
@@ -595,7 +595,7 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             }
           ]
         },
@@ -607,7 +607,7 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             }
           ]
         },
@@ -619,7 +619,7 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             },
             {
               "kind": "view",
@@ -639,7 +639,7 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             },
             {
               "kind": "view",
@@ -653,7 +653,7 @@
                   "owner": "the reader"
                 }
               ],
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             }
           ]
         },
@@ -665,7 +665,7 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             }
           ]
         },
@@ -677,7 +677,7 @@
             {
               "kind": "grant",
               "role": "saas_support",
-              "rows": "rows allowed by policy support_read"
+              "rows": "all rows (policy support_read lets every row through)"
             }
           ]
         },
@@ -919,7 +919,7 @@
       "code": "view-bypasses-row-security",
       "severity": "high",
       "subject": "support.ticket_context",
-      "message": "View support.ticket_context reads app.accounts, app.tickets with rights that skip row security, so these logins see every row: saas_agent."
+      "message": "View support.ticket_context reads app.accounts with rights that skip row security, so these logins see every row: saas_agent."
     },
     {
       "code": "rls-owner-login",

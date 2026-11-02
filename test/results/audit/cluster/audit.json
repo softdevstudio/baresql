@@ -1,0 +1,768 @@
+{
+  "tool": "baresql",
+  "version": "0.3.0",
+  "generated": "2026-10-26T12:00:00Z",
+  "server": {
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "version_num": 160015,
+    "database": "baresql_fx_cluster, baresql_fx_cluster_b",
+    "databases": [
+      "baresql_fx_cluster",
+      "baresql_fx_cluster_b"
+    ],
+    "target": "postgres://postgres@127.0.0.1:5432/baresql_fx_cluster",
+    "tls": false,
+    "auth": "md5",
+    "auditor": "postgres",
+    "auditor_is_superuser": true
+  },
+  "settings": {
+    "sampled": true,
+    "sample_rows": 200,
+    "schemas": [
+      "baresql_fx_cluster.app",
+      "baresql_fx_cluster.hidden",
+      "baresql_fx_cluster.public",
+      "baresql_fx_cluster_b.crm",
+      "baresql_fx_cluster_b.public"
+    ],
+    "logins": [
+      "cluster_analyst",
+      "cluster_app"
+    ],
+    "databases": [
+      "baresql_fx_cluster",
+      "baresql_fx_cluster_b"
+    ]
+  },
+  "relations": [
+    {
+      "name": "baresql_fx_cluster.app.archive",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "closed",
+          "command": "SELECT",
+          "permissive": true,
+          "roles": [
+            "cluster_analyst"
+          ],
+          "using": "false"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster.app.drafts",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "editors",
+          "command": "SELECT",
+          "permissive": true,
+          "roles": [
+            "cluster_analyst"
+          ],
+          "using": "pg_has_role(CURRENT_USER, 'cluster_owner'::name, 'member'::text)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "title",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster.app.ledger",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "ledger_tenant",
+          "command": "ALL",
+          "permissive": false,
+          "roles": [
+            "cluster_app"
+          ],
+          "using": "(tenant_id = (current_setting('app.tenant'::text))::integer)"
+        },
+        {
+          "name": "open_all",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "cluster_app"
+          ],
+          "using": "true"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "amount",
+          "type": "numeric(10,2)"
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster.app.notes",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "own_notes",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "cluster_app"
+          ],
+          "using": "(author = CURRENT_USER)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "author",
+          "type": "name"
+        },
+        {
+          "name": "body",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster.app.orders",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "eu_only",
+          "command": "ALL",
+          "permissive": false,
+          "roles": [
+            "cluster_app"
+          ],
+          "using": "(region = 'eu'::text)"
+        },
+        {
+          "name": "tenant",
+          "command": "ALL",
+          "permissive": true,
+          "roles": [
+            "cluster_app"
+          ],
+          "using": "(tenant_id = (current_setting('app.tenant'::text))::integer)"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "tenant_id",
+          "type": "integer"
+        },
+        {
+          "name": "region",
+          "type": "text"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster.app.reports",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "all_reports",
+          "command": "SELECT",
+          "permissive": true,
+          "roles": [
+            "cluster_analyst"
+          ],
+          "using": "true"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "title",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster.hidden.people",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "row_security": "on",
+      "policies": [
+        {
+          "name": "everyone",
+          "command": "SELECT",
+          "permissive": true,
+          "roles": [
+            "cluster_analyst"
+          ],
+          "using": "true"
+        }
+      ],
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "baresql_fx_cluster_b.crm.contacts",
+      "kind": "table",
+      "owner": "cluster_owner",
+      "sampled": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer"
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          }
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "logins": [
+    {
+      "name": "cluster_analyst",
+      "attributes": [],
+      "member_of": [],
+      "password": "scram-sha-256",
+      "read": [
+        {
+          "relation": "baresql_fx_cluster.app.archive",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst",
+              "rows": "no rows (policy closed lets no row through)"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.archive",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst",
+              "rows": "no rows (policy closed lets no row through)"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.drafts",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst",
+              "rows": "rows allowed by policy editors"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.drafts",
+          "kind": "table",
+          "column": "title",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst",
+              "rows": "rows allowed by policy editors"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.reports",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst",
+              "rows": "all rows (policy all_reports lets every row through)"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.reports",
+          "kind": "table",
+          "column": "title",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst",
+              "rows": "all rows (policy all_reports lets every row through)"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster_b.crm.contacts",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster_b.crm.contacts",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster_b.crm.contacts",
+          "kind": "table",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_analyst"
+            }
+          ]
+        }
+      ],
+      "write": [],
+      "functions": [],
+      "server": [],
+      "foreign_servers": [],
+      "summary": {
+        "relations": 3,
+        "columns": 7,
+        "personal_columns": 2,
+        "personal_tables": 1,
+        "categories": [
+          "email",
+          "name"
+        ],
+        "writable_tables": 0,
+        "personal_writable": 0
+      }
+    },
+    {
+      "name": "cluster_app",
+      "cannot_connect_to": [
+        "baresql_fx_cluster_b"
+      ],
+      "attributes": [],
+      "member_of": [],
+      "password": "scram-sha-256",
+      "read": [
+        {
+          "relation": "baresql_fx_cluster.app.ledger",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy open_all and restricted by ledger_tenant",
+              "rows_where": "open_all: every row; and always ledger_tenant: tenant_id matches the setting app.tenant, which any session can set"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.ledger",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy open_all and restricted by ledger_tenant",
+              "rows_where": "open_all: every row; and always ledger_tenant: tenant_id matches the setting app.tenant, which any session can set"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.ledger",
+          "kind": "table",
+          "column": "amount",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy open_all and restricted by ledger_tenant",
+              "rows_where": "open_all: every row; and always ledger_tenant: tenant_id matches the setting app.tenant, which any session can set"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.notes",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy own_notes",
+              "rows_where": "author is the name of the current role"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.notes",
+          "kind": "table",
+          "column": "author",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy own_notes",
+              "rows_where": "author is the name of the current role"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.notes",
+          "kind": "table",
+          "column": "body",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy own_notes",
+              "rows_where": "author is the name of the current role"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.orders",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy tenant and restricted by eu_only",
+              "rows_where": "tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu'"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.orders",
+          "kind": "table",
+          "column": "tenant_id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy tenant and restricted by eu_only",
+              "rows_where": "tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu'"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.orders",
+          "kind": "table",
+          "column": "region",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy tenant and restricted by eu_only",
+              "rows_where": "tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu'"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster.app.orders",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy tenant and restricted by eu_only",
+              "rows_where": "tenant: tenant_id matches the setting app.tenant, which any session can set; and always eu_only: region is 'eu'"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster_b.crm.contacts",
+          "kind": "table",
+          "column": "id",
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "cannot connect: no CONNECT privilege on database baresql_fx_cluster_b"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster_b.crm.contacts",
+          "kind": "table",
+          "column": "email",
+          "personal": {
+            "categories": [
+              "email"
+            ],
+            "confidence": "high",
+            "evidence": [
+              "30 of 30 sampled values are email addresses"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "cannot connect: no CONNECT privilege on database baresql_fx_cluster_b"
+            }
+          ]
+        },
+        {
+          "relation": "baresql_fx_cluster_b.crm.contacts",
+          "kind": "table",
+          "column": "full_name",
+          "personal": {
+            "categories": [
+              "name"
+            ],
+            "confidence": "medium",
+            "evidence": [
+              "the column name suggests person's name"
+            ]
+          },
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "cannot connect: no CONNECT privilege on database baresql_fx_cluster_b"
+            }
+          ]
+        }
+      ],
+      "write": [
+        {
+          "relation": "baresql_fx_cluster.app.notes",
+          "kind": "table",
+          "privilege": "INSERT",
+          "personal": false,
+          "routes": [
+            {
+              "kind": "grant",
+              "role": "cluster_app",
+              "rows": "rows allowed by policy own_notes",
+              "rows_where": "author is the name of the current role"
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "server": [],
+      "foreign_servers": [],
+      "summary": {
+        "relations": 3,
+        "columns": 10,
+        "personal_columns": 1,
+        "personal_tables": 1,
+        "categories": [
+          "email"
+        ],
+        "writable_tables": 1,
+        "personal_writable": 0
+      }
+    }
+  ],
+  "public": {
+    "name": "PUBLIC",
+    "attributes": [],
+    "member_of": [],
+    "read": [],
+    "write": [],
+    "functions": [],
+    "server": [],
+    "foreign_servers": [],
+    "summary": {
+      "relations": 0,
+      "columns": 0,
+      "personal_columns": 0,
+      "personal_tables": 0,
+      "categories": [],
+      "writable_tables": 0,
+      "personal_writable": 0
+    }
+  },
+  "default_privileges": [],
+  "findings": [
+    {
+      "code": "rls-session-setting",
+      "severity": "medium",
+      "subject": "baresql_fx_cluster.app.ledger policy ledger_tenant",
+      "message": "Policy ledger_tenant on baresql_fx_cluster.app.ledger picks rows by the setting app.tenant, which any session can set to any value: cluster_app can read rows meant for others by changing it."
+    },
+    {
+      "code": "rls-session-setting",
+      "severity": "medium",
+      "subject": "baresql_fx_cluster.app.orders policy tenant",
+      "message": "Policy tenant on baresql_fx_cluster.app.orders picks rows by the setting app.tenant, which any session can set to any value: cluster_app can read rows meant for others by changing it."
+    }
+  ],
+  "not_seen": [
+    {
+      "what": "other databases",
+      "why": "only the 2 databases named with --database were audited, of 9 on the server"
+    }
+  ],
+  "mismatches": []
+}

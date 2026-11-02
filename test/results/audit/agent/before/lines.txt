@@ -5,18 +5,18 @@ read saas_agent app.accounts.email [email] through view support.ticket_context (
 read saas_agent app.accounts.full_name [name] through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)
 read saas_agent app.invoices.amount [-] through view support.invoice_summary (rights of saas_owner); no rows (row security on, no policy lets this role read)
 read saas_agent app.invoices.id [-] through view support.invoice_summary (rights of saas_owner); no rows (row security on, no policy lets this role read)
-read saas_agent app.tickets.account_id [-] granted to saas_support; rows allowed by policy support_read
-read saas_agent app.tickets.body [-] granted to saas_support; rows allowed by policy support_read
-read saas_agent app.tickets.created_at [-] granted to saas_support; rows allowed by policy support_read
-read saas_agent app.tickets.id [-] granted to saas_support; rows allowed by policy support_read
+read saas_agent app.tickets.account_id [-] granted to saas_support; all rows (policy support_read lets every row through)
+read saas_agent app.tickets.body [-] granted to saas_support; all rows (policy support_read lets every row through)
+read saas_agent app.tickets.created_at [-] granted to saas_support; all rows (policy support_read lets every row through)
+read saas_agent app.tickets.id [-] granted to saas_support; all rows (policy support_read lets every row through)
 read saas_agent app.tickets.id [-] through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)
-read saas_agent app.tickets.id [-] through view support.ticket_list (rights of the reader); rows allowed by policy support_read
-read saas_agent app.tickets.id [-] through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read
-read saas_agent app.tickets.subject [-] granted to saas_support; rows allowed by policy support_read
+read saas_agent app.tickets.id [-] through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)
+read saas_agent app.tickets.id [-] through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)
+read saas_agent app.tickets.subject [-] granted to saas_support; all rows (policy support_read lets every row through)
 read saas_agent app.tickets.subject [-] through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)
-read saas_agent app.tickets.subject [-] through view support.ticket_list (rights of the reader); rows allowed by policy support_read
-read saas_agent app.tickets.subject [-] through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read
-read saas_agent app.tickets.tenant_id [-] granted to saas_support; rows allowed by policy support_read
+read saas_agent app.tickets.subject [-] through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)
+read saas_agent app.tickets.subject [-] through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)
+read saas_agent app.tickets.tenant_id [-] granted to saas_support; all rows (policy support_read lets every row through)
 read saas_agent support.invoice_summary.amount [-] granted to saas_support
 read saas_agent support.invoice_summary.id [-] granted to saas_support
 read saas_agent support.ticket_context.email [email] granted to saas_support

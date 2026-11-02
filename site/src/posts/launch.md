@@ -6,7 +6,7 @@ tags: ["BareSQL", "BareSQL Audit", "BareSQL Portable"]
 featured_image: "https://baresql.com/images/launch.png"
 ---
 
-BareSQL is a free, open-source command-line program with two tools in it. BareSQL Audit lists every column each PostgreSQL login can read, with the route that gets it there, and marks the ones that hold personal data. BareSQL Portable finds the SQL that fails or answers differently on SQLite, PostgreSQL, MySQL and MariaDB. Version {{v:version}} is the first release.
+BareSQL is a free, open-source command-line program with two tools in it. BareSQL Audit lists every column each PostgreSQL login can read, with the route that gets it there, and marks the ones that hold personal data. BareSQL Portable finds the SQL that fails or answers differently on SQLite, PostgreSQL, MySQL and MariaDB. The first release was 0.1.0; the latest is {{v:version}}.
 
 Who can read the customers' email addresses? In a PostgreSQL database the answer is spread over role memberships, grants made years ago, views that read tables with their owner's rights, default privileges and row security policies. Working it out by hand means an afternoon with the system catalogs, and the answer is out of date the next time someone runs a GRANT. BareSQL Audit logs in, reads the catalogs inside a read-only transaction and writes the answer down: a report for people and a JSON file for the next audit to be compared with.
 

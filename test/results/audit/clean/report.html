@@ -32,7 +32,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 <body>
 <main>
 <h1>Access audit of baresql_fx_clean</h1>
-<p class="sub">26 October 2026, 12:00 UTC · PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) · 2 logins · BareSQL 0.2.0</p>
+<p class="sub">26 October 2026, 12:00 UTC · PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) · 2 logins · BareSQL 0.3.0</p>
 
 <div class="tiles">
 <div class="tile sev-high"><b>0</b><span>high</span></div>
@@ -75,6 +75,7 @@ For every login, the server's own privilege checks were asked about every table 
 <p class="meta">member of no role · password stored as a SCRAM hash</p>
 
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">app.customers.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr><tr><td class="mono">app.customers.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to clean_app</li></ul></td></tr>
@@ -95,6 +96,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <h3 id="login-clean_reports">clean_reports</h3>
 <p class="meta">member of no role · no password set</p>
+
 
 <p>Reads no personal data.</p>
 <details><summary>5 other columns it can read</summary>
@@ -124,7 +126,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>
-<footer>Made with BareSQL 0.2.0 · baresql.com · 2026-10-26T12:00:00Z</footer>
+<footer>Made with BareSQL 0.3.0 · baresql.com · 2026-10-26T12:00:00Z</footer>
 </main>
 </body>
 </html>

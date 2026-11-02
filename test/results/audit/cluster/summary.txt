@@ -1,0 +1,7 @@
+BareSQL Audit of 2 databases (baresql_fx_cluster, baresql_fx_cluster_b) (PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)) as postgres
+2 logins, 2 of them can read personal data; 5 columns hold personal data.
+Findings: 0 high, 2 medium, 0 low
+  medium rls-session-setting          baresql_fx_cluster.app.ledger policy ledger_tenant
+  medium rls-session-setting          baresql_fx_cluster.app.orders policy tenant
+Not seen: other databases: only the 2 databases named with --database were audited, of 9 on the server
+Wrote baresql-report/report.html and baresql-report/audit.json

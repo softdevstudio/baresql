@@ -32,7 +32,7 @@ footer{margin-top:40px;color:var(--muted);font-size:12.5px}
 <body>
 <main>
 <h1>Access audit of baresql_fx_saas</h1>
-<p class="sub">20 October 2026, 09:00 UTC · PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) · 1 login · BareSQL 0.2.0</p>
+<p class="sub">20 October 2026, 09:00 UTC · PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) · 1 login · BareSQL 0.3.0</p>
 
 <div class="tiles">
 <div class="tile sev-high"><b>1</b><span>high</span></div>
@@ -52,7 +52,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 
 <div class="finding sev-high">
-<p><span class="badge sev-high">HIGH</span>View support.ticket_context reads app.accounts, app.tickets with rights that skip row security, so these logins see every row: saas_agent.</p>
+<p><span class="badge sev-high">HIGH</span>View support.ticket_context reads app.accounts with rights that skip row security, so these logins see every row: saas_agent.</p>
 <div class="meta"><code>view-bypasses-row-security</code> · support.ticket_context</div>
 
 </div>
@@ -93,6 +93,7 @@ For every login, the server's own privilege checks were asked about every table 
 <p class="meta">member of saas_support · no password set</p>
 
 
+
 <div class="wrap"><table>
 <tr><th>Personal data it can read</th><th>Holds</th><th>How</th></tr>
 <tr><td class="mono">app.accounts.email<div class="meta">table</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)</li></ul></td></tr><tr><td class="mono">app.accounts.full_name<div class="meta">table</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)</li></ul></td></tr><tr><td class="mono">support.ticket_context.email<div class="meta">view</div></td><td><span class="cat">email address</span></td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context.full_name<div class="meta">view</div></td><td><span class="cat">person&#39;s name</span></td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr>
@@ -100,7 +101,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 <details><summary>14 other columns it can read</summary>
 <div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
-<tr><td class="mono">app.tickets.id</td><td><ul class="routes"><li>granted to saas_support; rows allowed by policy support_read</li><li>through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)</li><li>through view support.ticket_list (rights of the reader); rows allowed by policy support_read</li><li>through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">app.tickets.tenant_id</td><td><ul class="routes"><li>granted to saas_support; rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">app.tickets.account_id</td><td><ul class="routes"><li>granted to saas_support; rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">app.tickets.subject</td><td><ul class="routes"><li>granted to saas_support; rows allowed by policy support_read</li><li>through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)</li><li>through view support.ticket_list (rights of the reader); rows allowed by policy support_read</li><li>through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">app.tickets.body</td><td><ul class="routes"><li>granted to saas_support; rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">app.tickets.created_at</td><td><ul class="routes"><li>granted to saas_support; rows allowed by policy support_read</li></ul></td></tr><tr><td class="mono">support.invoice_summary.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.invoice_summary.amount</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context.subject</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_list.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_list.subject</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_overview.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_overview.subject</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr>
+<tr><td class="mono">app.tickets.id</td><td><ul class="routes"><li>granted to saas_support; all rows (policy support_read lets every row through)</li><li>through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)</li><li>through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)</li><li>through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)</li></ul></td></tr><tr><td class="mono">app.tickets.tenant_id</td><td><ul class="routes"><li>granted to saas_support; all rows (policy support_read lets every row through)</li></ul></td></tr><tr><td class="mono">app.tickets.account_id</td><td><ul class="routes"><li>granted to saas_support; all rows (policy support_read lets every row through)</li></ul></td></tr><tr><td class="mono">app.tickets.subject</td><td><ul class="routes"><li>granted to saas_support; all rows (policy support_read lets every row through)</li><li>through view support.ticket_context (rights of saas_owner); all rows (owner; row security not forced)</li><li>through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)</li><li>through view support.ticket_overview (rights of saas_owner), then through view support.ticket_list (rights of the reader); all rows (policy support_read lets every row through)</li></ul></td></tr><tr><td class="mono">app.tickets.body</td><td><ul class="routes"><li>granted to saas_support; all rows (policy support_read lets every row through)</li></ul></td></tr><tr><td class="mono">app.tickets.created_at</td><td><ul class="routes"><li>granted to saas_support; all rows (policy support_read lets every row through)</li></ul></td></tr><tr><td class="mono">support.invoice_summary.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.invoice_summary.amount</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_context.subject</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_list.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_list.subject</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_overview.id</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr><tr><td class="mono">support.ticket_overview.subject</td><td><ul class="routes"><li>granted to saas_support</li></ul></td></tr>
 </table></div></details>
 <details><summary>6 columns it may select that give it nothing today</summary>
 <div class="wrap"><table><tr><th>Column</th><th>How</th></tr>
@@ -125,7 +126,7 @@ For every login, the server's own privilege checks were asked about every table 
 
 
 <p>Every fact in this report is also in <code>audit.json</code>, which <code>baresql diff</code> and <code>baresql audit --baseline</code> compare with a later audit.</p>
-<footer>Made with BareSQL 0.2.0 · baresql.com · 2026-10-20T09:00:00Z</footer>
+<footer>Made with BareSQL 0.3.0 · baresql.com · 2026-10-20T09:00:00Z</footer>
 </main>
 </body>
 </html>
