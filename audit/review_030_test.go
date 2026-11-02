@@ -75,7 +75,9 @@ func TestReview030BaselineAcrossVersions(t *testing.T) {
 		return &Result{Logins: []LoginReport{{Name: "app", Read: []ColumnReach{{Relation: "s.t", Column: "email",
 			Routes: []Route{{Kind: "grant", Role: "app", Rows: rows, RowsWhere: where}}}}}}}
 	}
-	cmp := Compare(login("rows allowed by policy p", ""), login("all rows (policy p lets every row through)", ""))
+	old := login("rows allowed by policy p", "")
+	old.Version = "0.2.0"
+	cmp := Compare(old, login("all rows (policy p lets every row through)", ""))
 	if cmp.GrewAny() || len(cmp.Other) != 0 {
 		t.Errorf("grew %v, other %v", cmp.Grew, cmp.Other)
 	}
@@ -117,5 +119,69 @@ func TestReview030MergeFindings(t *testing.T) {
 	}
 	if n != 2 || sup != 1 {
 		t.Errorf("%d default-grants findings (want 2), %d superuser findings (want 1)", n, sup)
+	}
+}
+
+// The second round of the review: each case failed on 55cb363.
+
+func TestReview2OwnInsideOr(t *testing.T) {
+	m := policyMeaning("((((owner = CURRENT_USER) OR (region = 'eu'::text))) AND (tenant_id = (current_setting('app.t'::text))::integer))")
+	if len(m.settings) == 0 {
+		t.Errorf("kind %d %q: settings dropped", m.kind, m.text)
+	}
+	m = policyMeaning("((owner = CURRENT_USER) OR (region = 'eu'::text))")
+	if m.kind == rowsOwn {
+		t.Errorf("own OR constant ranked as own rows only: %q", m.text)
+	}
+}
+
+func TestReview2Grouping(t *testing.T) {
+	m := policyMeaning("(((owner = CURRENT_USER) OR (region = 'eu'::text)) AND (tenant_id = 1))")
+	if !strings.ContainsAny(m.text, "()") {
+		t.Errorf("ambiguous text %q", m.text)
+	}
+}
+
+func TestReview2MergeServerWide(t *testing.T) {
+	md5 := Finding{Code: "md5-passwords", Severity: "medium", Subject: "logins", Message: "3 logins have MD5 password hashes, which are weak and deprecated."}
+	part := func(db string) *Result {
+		return &Result{Server: ServerReport{Database: db}, Findings: []Finding{md5,
+			{Code: "connection-not-encrypted", Severity: "low", Subject: "postgres://u@db.example:5432/" + db, Message: "The audit connection was not encrypted (TLS)."}}}
+	}
+	m := Merge([]*Result{part("a"), part("b")})
+	n := map[string]int{}
+	for _, f := range m.Findings {
+		n[f.Code]++
+	}
+	if n["md5-passwords"] != 1 || n["connection-not-encrypted"] != 1 {
+		t.Errorf("server-wide findings repeated per database: %v", n)
+	}
+}
+
+func TestReview2DiffPolicyBecameTrue(t *testing.T) {
+	mk := func(rows string) *Result {
+		return &Result{Version: "0.3.0", Logins: []LoginReport{{Name: "app", Read: []ColumnReach{{Relation: "s.o", Column: "email",
+			Routes: []Route{{Kind: "grant", Role: "app", Rows: rows}}}}}}}
+	}
+	c := Compare(mk("rows allowed by policy p"), mk("all rows (policy p lets every row through)"))
+	if !c.GrewAny() {
+		t.Errorf("policy p now lets every row through, diff sees no growth")
+	}
+}
+
+func TestReview2DiffDatabaseAdded(t *testing.T) {
+	mk := func(dbs ...string) *Result {
+		return &Result{Version: "0.3.0", Server: ServerReport{Databases: dbs}, Settings: Settings{AllDatabases: true}}
+	}
+	c := Compare(mk("a"), mk("a", "b"))
+	if c.Databases != "" {
+		t.Errorf("all-databases audits refused: %s", c.Databases)
+	}
+	found := false
+	for _, o := range c.Other {
+		found = found || (o.Kind == "database" && o.Detail == "new database")
+	}
+	if !found {
+		t.Errorf("new database not reported: %v", c.Other)
 	}
 }

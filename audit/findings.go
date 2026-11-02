@@ -247,7 +247,7 @@ func (a *analysis) findings(res *Result) []Finding {
 	for _, k := range keys {
 		names := who[k]
 		sort.Strings(names)
-		add("rls-session-setting", "medium", k.rel, fmt.Sprintf(
+		add("rls-session-setting", "medium", k.rel+" policy "+k.policy, fmt.Sprintf(
 			"Policy %s on %s picks rows by the setting %s, which any session can set to any value: %s can read rows meant for others by changing it.",
 			k.policy, k.rel, strings.Join(settingOf[k], " and "), andList(names)))
 	}

@@ -11,8 +11,10 @@ release; what it found is fixed with tests (audit/review_030_test.go).
   every relation, function and foreign server after its database
   (`shop.app.orders`). Each login appears once; `cannot_connect_to` lists
   the databases it may not connect to. Findings about one database's
-  objects or grants name the database. `diff` and `--baseline` refuse to
-  compare audits of different databases (exit 2).
+  objects or grants name the database; findings about roles and the server
+  appear once. `diff` and `--baseline` refuse to compare audits of
+  different databases (exit 2), except two `--all-databases` audits, where
+  a database created or dropped is reported as a change.
 - Policy conditions are read when they are true, false, or a column
   compared with `current_user`, `session_user`, constants or
   `current_setting()`, joined with AND and OR. True gives `all rows (policy
@@ -23,7 +25,8 @@ release; what it found is fixed with tests (audit/review_030_test.go).
 - New finding `rls-session-setting`: a permissive or restrictive policy
   picks rows by a setting such as `app.tenant_id`, which any session can
   change, so the logins it covers can read rows meant for others, unless a
-  restrictive policy ties the rows to the role's own name.
+  restrictive policy ties the rows to the role's own name. Its subject
+  names the table and the policy.
 - A policy that lets every row through no longer counts as "statistics
   only" for a schema the login can't use: pg_stats hides such tables.
 - On PostgreSQL 17 and later, a superuser auditor's connections for

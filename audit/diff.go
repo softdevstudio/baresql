@@ -120,7 +120,9 @@ func (s rowScope) widened(old rowScope) string {
 	return strings.Join(more, "; ")
 }
 
-func facts(r *Result) map[string]fact {
+// facts reads the reach of an audit; asBefore03 reads a 0.3 audit as an
+// older one would have written it, to compare with one.
+func facts(r *Result, asBefore03 bool) map[string]fact {
 	out := map[string]fact{}
 	// Routes that give nothing today aren't reach (row security with no
 	// policy, a view that fails, a schema the login can't use, a login that
@@ -129,7 +131,7 @@ func facts(r *Result) map[string]fact {
 		var out []Route
 		for _, r := range rs {
 			if r.GivesRows() {
-				out = append(out, diffRoute(r))
+				out = append(out, diffRoute(r, asBefore03))
 			}
 		}
 		return out
@@ -180,8 +182,11 @@ func facts(r *Result) map[string]fact {
 // conditions, and a policy whose condition is true named as the policy it
 // is ("rows allowed by policy p"), as audits before 0.3 wrote it. diff
 // sees which policies apply, not what their conditions say.
-func diffRoute(r Route) Route {
+func diffRoute(r Route, asBefore03 bool) Route {
 	r.RowsWhere = ""
+	if !asBefore03 {
+		return r
+	}
 	if rest, ok := strings.CutPrefix(r.Rows, "all rows (policy "); ok {
 		if names, ok := strings.CutSuffix(rest, " lets every row through)"); ok {
 			r.Rows = "rows allowed by policy " + names
@@ -204,10 +209,22 @@ func databaseSet(r *Result) string {
 
 func Compare(old, new *Result) *Comparison {
 	c := &Comparison{Old: old.Generated, New: new.Generated}
-	if (len(old.Server.Databases) > 0 || len(new.Server.Databases) > 0) && databaseSet(old) != databaseSet(new) {
+	bothAll := old.Settings.AllDatabases && new.Settings.AllDatabases
+	if (len(old.Server.Databases) > 0 || len(new.Server.Databases) > 0) && databaseSet(old) != databaseSet(new) && !bothAll {
 		c.Databases = "the older audit covers " + databaseSet(old) + ", the newer " + databaseSet(new)
 	}
-	of, nf := facts(old), facts(new)
+	if bothAll {
+		// Every database both times: a new database's reach shows as
+		// grown, a dropped one's as gone, and the change itself here.
+		for _, d := range minus(new.Server.Databases, old.Server.Databases) {
+			c.Other = append(c.Other, Change{Kind: "database", Object: quoteIdent(d), Detail: "new database"})
+		}
+		for _, d := range minus(old.Server.Databases, new.Server.Databases) {
+			c.Other = append(c.Other, Change{Kind: "database", Object: quoteIdent(d), Detail: "database gone"})
+		}
+	}
+	before := before03(old.Version)
+	of, nf := facts(old, false), facts(new, before)
 	detail := func(f fact) string {
 		d := strings.Join(f.routes, " | ")
 		if len(f.cats) > 0 {
@@ -297,4 +314,10 @@ func (c *Comparison) Write(w io.Writer) {
 	section("Reach that grew", "+", c.Grew)
 	section("Reach that is gone", "-", c.Shrank)
 	section("Other changes", "~", c.Other)
+}
+
+// before03 reports whether an audit was written by BareSQL before 0.3,
+// which named a policy whose condition is true as any other policy.
+func before03(version string) bool {
+	return strings.HasPrefix(version, "0.1.") || strings.HasPrefix(version, "0.2.")
 }

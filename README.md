@@ -154,7 +154,9 @@ login can't connect to, and with `--database` the databases left out, are
 listed under what wasn't seen. `baresql diff` and `--baseline` compare only
 audits of the same databases and exit 2 otherwise: a single-database report
 and one of several name their tables differently, and a database missing
-from the newer audit would hide what grew there.
+from the newer audit would hide what grew there. Two `--all-databases`
+audits always compare: a new database's reach shows as grown, a dropped
+one's as gone, and each appears as a `database` change.
 
 ### Flags
 

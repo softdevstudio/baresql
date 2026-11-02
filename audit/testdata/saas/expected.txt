@@ -4,8 +4,8 @@
 finding high view-bypasses-row-security support.ticket_context
 finding low rls-no-policies app.api_keys
 finding medium rls-owner-login app.audit_log
-finding medium rls-session-setting app.accounts
-finding medium rls-session-setting app.tickets
+finding medium rls-session-setting app.accounts policy tenant_isolation
+finding medium rls-session-setting app.tickets policy tenant_isolation
 read saas_admin_app app.accounts.email [email] granted to saas_admin_app; all rows (BYPASSRLS)
 read saas_admin_app app.accounts.full_name [name] granted to saas_admin_app; all rows (BYPASSRLS)
 read saas_admin_app app.accounts.id [-] granted to saas_admin_app; all rows (BYPASSRLS)

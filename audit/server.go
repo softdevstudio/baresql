@@ -161,6 +161,11 @@ func Merge(parts []*Result) *Result {
 				f.Details = d
 			}
 			k := f.Code + "\x00" + f.Subject + "\x00" + f.Message
+			if serverWide[f.Code] {
+				// About roles or the server: one finding whatever the
+				// database (connection-not-encrypted names each target).
+				k = f.Code + "\x00" + f.Message
+			}
 			if i, ok := seenFinding[k]; ok {
 				// The same server-wide finding: keep every detail once.
 				for _, d := range f.Details {
@@ -227,6 +232,7 @@ func Merge(parts []*Result) *Result {
 var serverWide = map[string]bool{
 	"superuser-login": true, "set-role-superuser": true, "read-all-data": true, "createrole-escalation": true,
 	"see-all-queries": true, "admin-option": true, "connection-not-encrypted": true, "cleartext-password-login": true,
+	"md5-passwords": true, "server-file-access": true,
 }
 
 // mergeLogin adds what a login reaches in database db to m.

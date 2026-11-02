@@ -31,6 +31,7 @@ const (
 type rowMeaning struct {
 	kind     rowKind
 	text     string
+	op       string   // AND or OR, for a chain of parts, to bracket it inside another
 	settings []string // the session settings it depends on
 }
 
@@ -101,7 +102,7 @@ func (p *condParser) chain(word string, part func() (rowMeaning, bool)) (rowMean
 			// One unread part leaves the whole unread, except that false
 			// in an AND and true in an OR decide it anyway.
 			out.kind = rowsUnknown
-		case word == "AND" && andRank[m.kind] < andRank[out.kind], word == "OR" && m.kind > out.kind:
+		case word == "AND" && andRank[m.kind] < andRank[out.kind], word == "OR" && orRank[m.kind] > orRank[out.kind]:
 			out.kind = m.kind
 		}
 	}
@@ -121,7 +122,13 @@ func (p *condParser) chain(word string, part func() (rowMeaning, bool)) (rowMean
 	if out.kind == rowsUnknown {
 		return rowMeaning{}, true
 	}
+	for i, m := range parts {
+		if m.op != "" && m.op != word {
+			texts[i] = "(" + texts[i] + ")"
+		}
+	}
 	out.text = strings.Join(texts, strings.ToLower(" "+word+" "))
+	out.op = word
 	return out, true
 }
 
@@ -129,6 +136,10 @@ func (p *condParser) chain(word string, part func() (rowMeaning, bool)) (rowMean
 // role's own rows narrow the most; a setting decides which rows whatever
 // constants sit beside it.
 var andRank = map[rowKind]int{rowsNone: 0, rowsOwn: 1, rowsSetting: 2, rowsFixed: 3, rowsEvery: 4}
+
+// orRank orders kinds for OR by how much they let through: the role's own
+// rows OR rows with a constant reach other roles' rows too.
+var orRank = map[rowKind]int{rowsNone: 0, rowsOwn: 1, rowsFixed: 2, rowsSetting: 3, rowsEvery: 4}
 
 // term is a parenthesized condition, true, false, or a comparison.
 func (p *condParser) term() (rowMeaning, bool) {

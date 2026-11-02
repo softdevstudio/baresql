@@ -1,8 +1,8 @@
 # Two databases audited in one run (--database), and the row security
 # conditions BareSQL reads.
 cannot-connect cluster_app baresql_fx_cluster_b
-finding medium rls-session-setting baresql_fx_cluster.app.ledger
-finding medium rls-session-setting baresql_fx_cluster.app.orders
+finding medium rls-session-setting baresql_fx_cluster.app.ledger policy ledger_tenant
+finding medium rls-session-setting baresql_fx_cluster.app.orders policy tenant
 read cluster_analyst baresql_fx_cluster.app.archive.email [email] granted to cluster_analyst; no rows (policy closed lets no row through)
 read cluster_analyst baresql_fx_cluster.app.archive.id [-] granted to cluster_analyst; no rows (policy closed lets no row through)
 read cluster_analyst baresql_fx_cluster.app.drafts.id [-] granted to cluster_analyst; rows allowed by policy editors
