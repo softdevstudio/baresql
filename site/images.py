@@ -242,7 +242,7 @@ def release_02():
     for l in lines_of("portable/rules.txt"):
         f = l.split()
         if f and f[0] in NEW_IN_02:
-            rows.append(("err" if f[1] == "error" else "warn", l))
+            rows.append(("err" if f[1] == "error" else "warn" if f[1] == "warning" else "out", l))
     return terminal("baresql rules", rows, size=17)
 
 
