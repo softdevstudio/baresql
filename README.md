@@ -30,12 +30,24 @@ program you have installed.
 
 ## Install
 
-Download the archive for your system from the
-[releases page](https://github.com/softdevstudio/baresql/releases), unpack
-it and put `baresql` (or `baresql.exe`) on your PATH. Each release lists
-SHA-256 checksums for its files.
+Download the archive for your system from the latest release, unpack it
+and put `baresql` (or `baresql.exe`) on your PATH:
 
-Or build it yourself with Go 1.24 or later:
+| System | Archive |
+|---|---|
+| Linux, x86-64 | [baresql_linux_amd64.tar.gz](https://github.com/softdevstudio/baresql/releases/latest/download/baresql_linux_amd64.tar.gz) |
+| Linux, ARM64 | [baresql_linux_arm64.tar.gz](https://github.com/softdevstudio/baresql/releases/latest/download/baresql_linux_arm64.tar.gz) |
+| macOS, Apple silicon | [baresql_darwin_arm64.tar.gz](https://github.com/softdevstudio/baresql/releases/latest/download/baresql_darwin_arm64.tar.gz) |
+| macOS, Intel | [baresql_darwin_amd64.tar.gz](https://github.com/softdevstudio/baresql/releases/latest/download/baresql_darwin_amd64.tar.gz) |
+| Windows, x86-64 | [baresql_windows_amd64.zip](https://github.com/softdevstudio/baresql/releases/latest/download/baresql_windows_amd64.zip) |
+
+[SHA256SUMS](https://github.com/softdevstudio/baresql/releases/latest/download/SHA256SUMS)
+holds the checksums of all five, and the
+[releases page](https://github.com/softdevstudio/baresql/releases) has
+every version.
+
+Or build it yourself with Go 1.24 or later (the release archives are built
+with the current stable Go):
 
 ```
 go install github.com/softdevstudio/baresql/cmd/baresql@latest

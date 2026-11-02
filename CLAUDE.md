@@ -161,44 +161,59 @@ the domain. softdevstudio.com lists BareSQL with a launch note.
 - Answers recorded on one version per engine; CI checks the others and
   version keys are added from its annotations.
 
-## Next
+## In progress: 0.2 (Phase A, Portable) and 0.3 (Phase B, Audit)
 
-Approved by the owner on 2026-10-26: build 0.1.0 with both tools, in this
-order, pushing after each step:
+Approved by the owner on 2026-11-02 ("#6 abc and upkeep"), item 6 of
+softdev-plan.md in photozeitgeist/jollyroger.biz: Phases A, B and C and
+the upkeep. Each phase is its own release.
 
-1. Repo setup, CI and the release workflow. (done)
-2. PostgreSQL and MySQL wire clients, with tests against real servers.
-   (done)
-3. BareSQL Audit for PostgreSQL: `baresql audit <dsn>` writes report.html
-   and audit.json; routes through direct and column grants, group roles
-   (inherit and SET ROLE), PUBLIC, ownership, superuser and
-   pg_read_all_data, views and materialized views with owner rights,
-   security-definer functions (flagged, never called), row security,
-   default privileges, foreign server mappings, server file and program
-   access, and write rights. Personal data by column names and up to 200
-   sampled values per column (values never appear in reports;
-   `--no-sample` turns sampling off). `baresql diff old.json new.json`, and
-   `--baseline audit.json` to fail when reach grows. Planted fixture
-   databases with exact expectations, near misses, PostgreSQL 13 and later,
-   fuzzing, a 1,000-table and 50-login timing run. (done)
-4. BareSQL Portable for SQLite, PostgreSQL, MySQL and MariaDB: `baresql
-   lint` (static rules with portable rewrites), `baresql compare` (each
-   engine in a throwaway space: a rolled-back transaction on PostgreSQL, a
-   scratch database on MySQL and MariaDB, a temporary file on SQLite;
-   answers compared by meaning), `baresql rules` (catalog with a minimal
-   example, recorded answers per engine and the portable rewrite; CI
-   re-runs the catalog). (done)
-5. Record results, independent review, fixes, re-record. (done)
-6. baresql.com: pages Audit, Portable, Quick Start, Sample Reports,
-   Reference, Download, About (with the name), Contact
-   (info@baresql.com); posts: launch, the name, an explainer per tool, how
-   each was tested, case studies and use scenarios, one post per catalog
-   difference; sample report gallery including a correctly set up
-   database. (done)
-7. Release 0.1.0 through the workflow, check the downloaded binary, add
-   BareSQL to softdevstudio.com with a short note. The owner connects the
-   domain at the end. (done)
+Phase A, 0.2.0: a rule for every difference the README listed without one.
+Probed on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46 and MariaDB
+10.11.14 first; the catalog records them.
 
-Nothing after 0.1.0 is approved yet. Waiting for the owner: 0.2 (the
-Portable differences without a rule, above), and PostgreSQL 19 in CI once
-it is out.
+- `alter-column` (error), rows per form: ALTER COLUMN ... TYPE and SET/DROP
+  NOT NULL (PostgreSQL only), MODIFY and CHANGE (MySQL and MariaDB only),
+  ALTER COLUMN SET/DROP DEFAULT (not SQLite), several actions in one ALTER
+  TABLE, ADD/DROP CONSTRAINT and ADD PRIMARY KEY (not SQLite), ADD/DROP
+  COLUMN IF (NOT) EXISTS, RENAME without TO.
+- `reserved-word` (error): names in name positions (column definitions,
+  table names, aliases after AS, qualified names, INSERT column lists,
+  known columns as bare items) that some engine reserves; one row per word,
+  from a probe of every PostgreSQL and MySQL reserved word as a column name.
+- `aggregate-filter` (error): COUNT(*) FILTER (WHERE ...); rewrite with CASE.
+- `from-dual` (error): FROM DUAL; rewrite without it.
+- `trim-from` (error): TRIM(LEADING/TRAILING/BOTH ... FROM ...) and
+  TRIM(x FROM y) fail on SQLite; LTRIM/RTRIM with two arguments fail on
+  MySQL and MariaDB.
+- `substring-from` (error): SUBSTRING(x FROM a FOR b) fails on SQLite;
+  rewrite SUBSTR(x, a, b).
+- `drop-cascade` (error): DROP TABLE ... CASCADE/RESTRICT fail on SQLite;
+  MySQL and MariaDB accept CASCADE and ignore it.
+- cast-to-number gains rows DOUBLE PRECISION and REAL (MariaDB refuses),
+  DOUBLE (PostgreSQL refuses) and FLOAT (4-byte on MySQL and MariaDB).
+- `avg-digits` (warning): AVG over integers or decimals gives 4 or 6
+  digits on MySQL and MariaDB and 16 elsewhere; rewrite ROUND(AVG(x), n).
+- `round-half` (warning): ROUND of a float half rounds away from zero on
+  SQLite and to even elsewhere; rewrite via CAST(x AS DECIMAL(p, s)).
+- `group-case` (warning): GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION
+  over text fold case on MySQL and MariaDB; rewrite with LOWER().
+
+Phase B, 0.3.0: `baresql audit` checks every database of a server in one
+run (merged report, a database column), and evaluates row security
+policies whose condition is a simple comparison with current_user, a
+role or current_setting(), naming the policy that applies to each login.
+Done when Audit runs on a two-database server and names the policy.
+
+Phase C: PostgreSQL 19 in CI once it ships (due 2026-11-19).
+
+Upkeep: README install links to releases/latest/download (done); this
+section replaces the 0.1.0 plan; go.mod stays at go 1.24 (the sandbox has
+only Go 1.24.7; release builds use the current stable Go).
+
+Steps:
+1. [x] upkeep
+2. [ ] Phase A rules, catalog, answers, tests; README; record
+3. [ ] independent review, fixes; release 0.2.0; site; note; plan
+4. [ ] Phase B: multi-database audit, RLS evaluation, fixtures, tests
+5. [ ] independent review, fixes; release 0.3.0; site; note; plan
+6. [ ] Phase C: PostgreSQL 19 in CI after 2026-11-19
