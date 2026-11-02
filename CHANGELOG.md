@@ -6,31 +6,44 @@ BareSQL Portable gets a rule for every difference the 0.1.0 README listed
 without one: 11 new rules, 69 in all. Each was run on SQLite, PostgreSQL,
 MySQL and MariaDB, and CI runs them again on every engine version it tests.
 
-- `alter-column`: ALTER COLUMN ... TYPE and SET/DROP NOT NULL (PostgreSQL
-  only), MODIFY and CHANGE (MySQL and MariaDB only), ALTER COLUMN ... SET or
-  DROP DEFAULT, several actions in one statement, ADD/DROP CONSTRAINT,
-  DROP INDEX/PRIMARY KEY/FOREIGN KEY, ADD COLUMN IF NOT EXISTS, DROP COLUMN
-  IF EXISTS and RENAME without TO, each with the engines that refuse it.
+- `alter-column`: 20 forms of ALTER TABLE, each with the engines that
+  refuse it: ALTER COLUMN ... TYPE and SET/DROP NOT NULL (PostgreSQL only),
+  MODIFY and CHANGE (MySQL and MariaDB only), ALTER COLUMN ... SET or DROP
+  DEFAULT, several actions in one statement, ADD/DROP CONSTRAINT, ADD
+  INDEX, DROP CHECK, DROP INDEX/PRIMARY KEY/FOREIGN KEY, ADD COLUMN IF NOT
+  EXISTS, DROP COLUMN IF EXISTS or CASCADE, ALTER TABLE IF EXISTS, AFTER
+  and FIRST, RENAME without TO and RENAME a TO b without COLUMN.
 - `reserved-word`: names that are reserved words on some engines (rank,
   key, user, groups, row and 78 more), wherever lint can tell a word is a
-  name.
+  name. After AS in a select list, where PostgreSQL takes any word, only
+  the other engines count.
 - `aggregate-filter`: COUNT(*) FILTER (WHERE ...), which MySQL and MariaDB
   lack.
 - `from-dual`: FROM DUAL, which SQLite and PostgreSQL lack.
 - `trim-from`: TRIM(LEADING/TRAILING/BOTH ... FROM ...) and TRIM(x FROM s),
   which SQLite lacks, and the two-argument TRIM, LTRIM and RTRIM, which
   MySQL and MariaDB lack.
-- `substring-from`: SUBSTRING(s FROM a FOR b), which SQLite lacks.
+- `substring-from`: SUBSTRING(s FROM a FOR b), which SQLite lacks, the
+  FOR-only form and SUBSTR ... FROM, and SUBSTRING(s FROM 'pattern'), a
+  regular expression on PostgreSQL only.
 - `drop-cascade`: DROP TABLE ... CASCADE or RESTRICT; SQLite refuses both,
   and MySQL and MariaDB ignore CASCADE.
 - `cast-to-float`: CAST to DOUBLE PRECISION or REAL (MariaDB refuses),
   DOUBLE (PostgreSQL refuses) and FLOAT (4 bytes on MySQL and MariaDB).
-- `avg-digits`: AVG of integers or decimals has 4 or 6 decimal places on
-  MySQL and MariaDB and about 16 digits elsewhere.
+- `avg-digits`: AVG of integers or decimals has 4 more decimal places than
+  the values on MySQL and MariaDB and about 16 digits elsewhere; averages
+  that are rounded or compared aren't flagged.
 - `round-half`: ROUND of a floating point half rounds away from zero on
-  SQLite and to even elsewhere, and PostgreSQL has no ROUND(float, n).
-- `group-case`: GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION merge 'x' and
-  'X' on MySQL and MariaDB.
+  SQLite and to even elsewhere, PostgreSQL has no ROUND(float, n), and
+  SQLite rounds decimals to digits through a binary float (ROUND(0.15, 1)
+  is 0.1 there and 0.2 elsewhere).
+- `group-case` (a note, as it depends on the data): GROUP BY, DISTINCT,
+  COUNT(DISTINCT), UNION, INTERSECT and EXCEPT over text columns merge 'x'
+  and 'X' on MySQL and MariaDB.
+
+Fixed in older rules: table-options no longer flags ON UPDATE CASCADE
+after a REFERENCES clause in a column definition, and lint looks up a
+column correctly when a statement names the same table twice.
 
 Also: the README links each release archive directly
 (releases/latest/download).

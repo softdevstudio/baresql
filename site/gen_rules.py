@@ -314,11 +314,12 @@ def alt_answer(text):
 
 def post(code, alt):
     e = CAT[code]
-    title, topic, intro = RULES[code]
+    title, topic, intro = RULES[code][:3]
+    date = RULES[code][3] if len(RULES[code]) > 3 else DATE
     n = len(e.get("items") or [])
     intro = intro.replace("{forms}", str(n))
     imgurl = "https://baresql.com/images/rule-%s.png" % code
-    out = ["---", 'title: "%s"' % title, "date: %s" % DATE, "draft: false",
+    out = ["---", 'title: "%s"' % title, "date: %s" % date, "draft: false",
            'tags: ["SQL differences", "%s"]' % topic, 'featured_image: "%s"' % imgurl, "---", ""]
     # The summary is lint's message, quoted further down, so the opening is
     # the hand-written intro and the catalog's explanation.

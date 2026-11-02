@@ -589,7 +589,7 @@ Rule codes never change.
 | `cast-to-float` | error | CAST to a floating point type |
 | `avg-digits` | warning | Digits of AVG |
 | `round-half` | warning | ROUND of a floating point half |
-| `group-case` | warning | GROUP BY and DISTINCT on text in mixed case |
+| `group-case` | info | GROUP BY and DISTINCT on text in mixed case |
 
 ### Limits
 
@@ -606,8 +606,8 @@ Rule codes never change.
   at AVG over expressions of unknown type, as a note).
 - Some differences have no rule yet: GROUP BY and DISTINCT over accented
   letters (MySQL's default collation also ignores accents), MariaDB's
-  trailing-space equality, and MySQL ignoring a REFERENCES clause written
-  inside a column definition. compare shows them when they come up.
+  trailing-space equality, and MySQL 8.0 and 8.4 ignoring a REFERENCES
+  clause written inside a column definition. compare shows them when they come up.
 - JSON is covered only where it decides whether a statement runs at all
   (JSON_EXTRACT, `->>`, the JSONB type). The rest of the JSON functions and
   operators, stored procedures and triggers are left out: their syntax

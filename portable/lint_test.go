@@ -235,7 +235,7 @@ func TestLintRules(t *testing.T) {
 		{"ALTER TABLE t DROP PRIMARY KEY", []string{"alter-column:error"}, nil},
 		{"ALTER TABLE t DROP FOREIGN KEY fk_a", []string{"alter-column:error"}, nil},
 		{"ALTER TABLE t ADD COLUMN c INTEGER; ALTER TABLE t ADD c INTEGER; ALTER TABLE t DROP COLUMN c; ALTER TABLE t DROP c; " +
-			"ALTER TABLE t RENAME COLUMN a TO b; ALTER TABLE t RENAME TO u; ALTER TABLE t RENAME a TO b; ALTER TABLE t ADD COLUMN key VARCHAR(5)",
+			"ALTER TABLE t RENAME COLUMN a TO b; ALTER TABLE t RENAME TO u; ALTER TABLE t ADD COLUMN key VARCHAR(5)",
 			nil, []string{"alter-column"}},
 		// reserved-word
 		{"CREATE TABLE t (id INTEGER, rank INTEGER)", []string{"reserved-word:error"}, nil},
@@ -289,7 +289,7 @@ func TestLintRules(t *testing.T) {
 		{"SELECT ROUND(2.5e0)", []string{"round-half"}, nil},
 		{"CREATE TABLE t (x DECIMAL(10, 2), y DOUBLE PRECISION); SELECT ROUND(x), ROUND(2.5), ROUND(CAST(y AS DECIMAL(10, 2))), ROUND(z) FROM t", nil, []string{"round-half"}},
 		// group-case
-		{"CREATE TABLE t (s VARCHAR(10)); SELECT s, COUNT(*) FROM t GROUP BY s", []string{"group-case:warning"}, nil},
+		{"CREATE TABLE t (s VARCHAR(10)); SELECT s, COUNT(*) FROM t GROUP BY s", []string{"group-case:info"}, nil},
 		{"CREATE TABLE t (s TEXT); SELECT DISTINCT s FROM t", []string{"group-case"}, nil},
 		{"CREATE TABLE t (s TEXT); SELECT COUNT(DISTINCT t.s) FROM t", []string{"group-case"}, nil},
 		{"CREATE TABLE t (s TEXT); SELECT s FROM t UNION SELECT 'a'", []string{"group-case"}, nil},

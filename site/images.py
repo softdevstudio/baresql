@@ -232,6 +232,20 @@ def launch():
     return terminal("baresql", rows)
 
 
+# The rules added in 0.2, for the release post's image.
+NEW_IN_02 = ["alter-column", "reserved-word", "aggregate-filter", "from-dual", "trim-from", "substring-from",
+             "drop-cascade", "cast-to-float", "avg-digits", "round-half", "group-case"]
+
+
+def release_02():
+    rows = [("cmd", "baresql rules"), ("dim", lines_of("portable/rules.txt")[0]), ("gap", "")]
+    for l in lines_of("portable/rules.txt"):
+        f = l.split()
+        if f and f[0] in NEW_IN_02:
+            rows.append(("err" if f[1] == "error" else "warn", l))
+    return terminal("baresql rules", rows, size=17)
+
+
 def portable_explained():
     rows = [("cmd", "baresql compare --sqlite --postgres postgres://dev@localhost/scratch \\"),
             ("cont", "    --mysql mysql://dev@localhost:3306/ --mariadb mariadb://dev@localhost:3307/ shop.sql")]
@@ -309,6 +323,7 @@ def main():
         (audit_tested(), OUT + "/audit-tested.png"),
         (portable_tested(), OUT + "/portable-tested.png"),
         (launch(), OUT + "/launch.png"),
+        (release_02(), OUT + "/release-0-2.png"),
         (portable_explained(), OUT + "/portable-explained.png"),
         (quarterly(), OUT + "/case-quarterly-review.png"),
         (compare_case("baresql compare", ["baresql compare --sqlite --postgres postgres://dev@localhost/scratch schema.sql queries.sql"],

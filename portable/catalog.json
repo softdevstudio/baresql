@@ -1712,7 +1712,7 @@
     "severity": "error",
     "summary": "Changing a column takes ALTER COLUMN ... TYPE on PostgreSQL and MODIFY or CHANGE on MySQL and MariaDB, and SQLite has neither.",
     "detail": "SQLite's ALTER TABLE renames tables and columns and adds and drops columns, one action per statement. It can't change a column's type, default or NULL rule and has no ADD CONSTRAINT. PostgreSQL changes a column piece by piece with ALTER COLUMN ... TYPE, SET DEFAULT and SET NOT NULL. MySQL and MariaDB redefine the whole column with MODIFY or CHANGE, take ALTER COLUMN only for defaults, and refuse ALTER COLUMN ... TYPE. IF NOT EXISTS on ADD COLUMN works on PostgreSQL and MariaDB only.",
-    "advice": "Keep migrations that change a column in one file per engine. On SQLite, create a table with the new definition, copy the rows, drop the old table and rename the new one. What works everywhere: ADD COLUMN, DROP COLUMN, RENAME COLUMN ... TO and RENAME TO, one per ALTER TABLE.",
+    "advice": "Keep migrations that change a column in one file per engine. On SQLite, create a table with the new definition, copy the rows, drop the old table and rename the new one. What works everywhere: ADD COLUMN, RENAME COLUMN ... TO and RENAME TO, one per ALTER TABLE, and DROP COLUMN, which SQLite refuses for a column that is indexed or part of a key.",
     "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
     "example": "ALTER TABLE t MODIFY b VARCHAR(40)",
     "items": [
@@ -1771,10 +1771,22 @@
         "advice": "SQLite: CREATE UNIQUE INDEX for a unique key; other constraints need a rebuilt table."
       },
       {
+        "name": "ADD INDEX",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+        "probe": "ALTER TABLE t ADD INDEX t_a (a)",
+        "advice": "Use CREATE INDEX t_a ON t (a), which all four engines take."
+      },
+      {
         "name": "DROP CONSTRAINT",
         "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20), CONSTRAINT t_a UNIQUE (a))",
         "probe": "ALTER TABLE t DROP CONSTRAINT t_a",
         "advice": "SQLite: rebuild the table."
+      },
+      {
+        "name": "DROP CHECK",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20), CONSTRAINT t_ck CHECK (a > 0))",
+        "probe": "ALTER TABLE t DROP CHECK t_ck",
+        "advice": "PostgreSQL and MariaDB: DROP CONSTRAINT t_ck. SQLite: rebuild the table."
       },
       {
         "name": "DROP INDEX",
@@ -1795,10 +1807,34 @@
         "advice": "Check the catalog for the column in the migration code before dropping it."
       },
       {
+        "name": "DROP COLUMN CASCADE",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+        "probe": "ALTER TABLE t DROP COLUMN b CASCADE",
+        "advice": "Drop what depends on the column first, then the column."
+      },
+      {
         "name": "RENAME without TO",
         "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
         "probe": "ALTER TABLE t RENAME u",
         "advice": "Write RENAME TO u."
+      },
+      {
+        "name": "RENAME without COLUMN",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+        "probe": "ALTER TABLE t RENAME b TO c",
+        "advice": "Write RENAME COLUMN b TO c."
+      },
+      {
+        "name": "IF EXISTS",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+        "probe": "ALTER TABLE IF EXISTS t ADD COLUMN c INTEGER",
+        "advice": "Check the catalog for the table in the migration code first."
+      },
+      {
+        "name": "AFTER or FIRST",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+        "probe": "ALTER TABLE t ADD COLUMN c INTEGER AFTER a",
+        "advice": "Leave the position out: new columns go last on every engine, and queries should name their columns anyway."
       }
     ]
   },
@@ -1807,7 +1843,7 @@
     "title": "Names that are reserved words on some engines",
     "severity": "error",
     "summary": "A column called rank, key or user works on SQLite and fails on MySQL, MariaDB or PostgreSQL, because each engine reserves different words.",
-    "detail": "Every engine keeps a list of words that can't be names without quotes, and the lists differ. PostgreSQL reserves user, only and array; MySQL and MariaDB reserve key, index, range, rows and many more, and MySQL 8 added the names of window functions such as rank, groups and row. SQLite reserves the fewest. The table lists words people often give to tables and columns, each tried as a column name on all four engines.",
+    "detail": "Every engine keeps a list of words that can't be names without quotes, and the lists differ. PostgreSQL reserves user, only and array; MySQL and MariaDB reserve key, index, range, rows and many more, and MySQL 8 added rank, groups, row and other words of window functions and grouping. SQLite reserves the fewest. The table lists words people often give to tables and columns, each tried as a column name on all four engines. As a column label after AS, PostgreSQL takes any word, so there only MySQL, MariaDB and SQLite matter.",
     "advice": "Pick another name, such as user_name, rank_no or sort_key. Quoting the name is no portable way out: double quotes name a column on SQLite and PostgreSQL and make a string on MySQL and MariaDB (see double-quotes), and backticks work on SQLite, MySQL and MariaDB only (see backticks).",
     "example": "CREATE TABLE t (id INTEGER, rank INTEGER)",
     "rewrite": "CREATE TABLE t (id INTEGER, rank_no INTEGER)",
@@ -2300,11 +2336,34 @@
     "code": "substring-from",
     "title": "SUBSTRING with FROM and FOR",
     "severity": "error",
-    "summary": "SUBSTRING(s FROM 2 FOR 3) fails on SQLite; SUBSTR(s, 2, 3) works on all four engines.",
-    "detail": "The FROM ... FOR form is standard SQL, and PostgreSQL, MySQL and MariaDB read it. SQLite takes only the form with commas, SUBSTR(s, start, length) or SUBSTRING(s, start, length).",
-    "advice": "Write SUBSTR(s, start, length), counting from 1 (see substring-start).",
+    "summary": "SUBSTRING(s FROM 2 FOR 3) fails on SQLite, and the forms with FOR alone or with a pattern after FROM fail or mean something else on other engines; SUBSTR(s, 2, 3) works on all four.",
+    "detail": "The FROM ... FOR form is standard SQL, and PostgreSQL, MySQL and MariaDB read it. SQLite takes only the form with commas, SUBSTR(s, start, length) or SUBSTRING(s, start, length). PostgreSQL also takes FOR without FROM, which MySQL and MariaDB refuse, and reads a text after FROM as a regular expression: SUBSTRING(s FROM '[0-9]+') is the first run of digits there and an empty string on MySQL and MariaDB.",
+    "advice": "Write SUBSTR(s, start, length), counting from 1 (see substring-start). For a pattern, use REGEXP_SUBSTR on MySQL and MariaDB and SUBSTRING ... FROM on PostgreSQL; SQLite has no built-in way.",
     "example": "SELECT SUBSTRING('abcdef' FROM 2 FOR 3)",
-    "rewrite": "SELECT SUBSTR('abcdef', 2, 3)"
+    "rewrite": "SELECT SUBSTR('abcdef', 2, 3)",
+    "items": [
+      {
+        "name": "FROM FOR",
+        "probe": "SELECT SUBSTRING('abcdef' FROM 2 FOR 3)",
+        "advice": "Write SUBSTR(s, 2, 3)."
+      },
+      {
+        "name": "FOR only",
+        "probe": "SELECT SUBSTRING('abcdef' FOR 3)",
+        "advice": "Write SUBSTR(s, 1, 3)."
+      },
+      {
+        "name": "SUBSTR FROM",
+        "probe": "SELECT SUBSTR('abcdef' FROM 2)",
+        "advice": "Write SUBSTR(s, 2)."
+      },
+      {
+        "name": "FROM pattern",
+        "probe": "SELECT SUBSTRING('abc123' FROM '[0-9]+')",
+        "advice": "",
+        "message": "SUBSTRING(s FROM 'pattern') is a regular expression match on PostgreSQL; MySQL and MariaDB read the pattern as a start position and SQLite refuses it."
+      }
+    ]
   },
   {
     "code": "drop-cascade",
@@ -2319,9 +2378,10 @@
     "items": [
       {
         "name": "CASCADE",
-        "setup": "CREATE TABLE u (id INTEGER PRIMARY KEY);\nCREATE TABLE t (id INTEGER, u_id INTEGER, FOREIGN KEY (u_id) REFERENCES u (id))",
+        "setup": "CREATE TABLE u (id INTEGER)",
         "probe": "DROP TABLE u CASCADE",
-        "advice": ""
+        "advice": "",
+        "note": "MySQL and MariaDB ignore CASCADE: a table a foreign key refers to still can't be dropped there, while PostgreSQL drops the foreign keys with it."
       },
       {
         "name": "RESTRICT",
@@ -2379,9 +2439,9 @@
     "code": "round-half",
     "title": "ROUND of a floating point half",
     "severity": "warning",
-    "summary": "ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL, MySQL and MariaDB.",
-    "detail": "Exact numbers, such as the literal 2.5 or a DECIMAL column, round half away from zero on every engine. Floating point values don't. SQLite still rounds 2.5 up to 3, while PostgreSQL, MySQL and MariaDB round a float that is exactly half way to the even neighbour, so 2.5 becomes 2 and 3.5 becomes 4. PostgreSQL also has no ROUND(x, digits) for floats.",
-    "advice": "Round an exact number: ROUND(CAST(x AS DECIMAL(10, 2))) rounds half away from zero everywhere. Amounts that get rounded are better kept in DECIMAL columns in the first place.",
+    "summary": "ROUND of the floating point value 2.5 is 3 on SQLite and 2 on PostgreSQL, MySQL and MariaDB, and ROUND(0.15, 1) is 0.1 on SQLite and 0.2 on the others.",
+    "detail": "PostgreSQL, MySQL and MariaDB round exact numbers, such as the literal 2.5 or a DECIMAL column, half away from zero. Floating point values they round to the even neighbour, so 2.5 becomes 2 and 3.5 becomes 4, and PostgreSQL has no ROUND(x, digits) for them at all. SQLite has no exact decimal type. It rounds a float half away from zero, 2.5 to 3, and rounds decimals to some digits through the nearest binary float, so ROUND(0.15, 1) is 0.1 there because 0.15 is stored as 0.1499999.",
+    "advice": "To round floats to whole numbers, ROUND(CAST(x AS DECIMAL(10, 2))) gives the same answer on every engine. For money, keep whole cents in an INTEGER column and divide only to show the amount; rounding to digits on SQLite can't be made exact.",
     "setup": "CREATE TABLE t (x DOUBLE PRECISION);\nINSERT INTO t VALUES (2.5), (3.5)",
     "example": "SELECT ROUND(x) FROM t ORDER BY x",
     "rewrite": "SELECT ROUND(CAST(x AS DECIMAL(10, 2))) FROM t ORDER BY x",
@@ -2398,13 +2458,19 @@
         "probe": "SELECT ROUND(x, 0) FROM t ORDER BY x",
         "advice": "",
         "message": "PostgreSQL has no ROUND(x, digits) for floating point values, and the other engines round a float half differently."
+      },
+      {
+        "name": "ROUND(decimal, n)",
+        "probe": "SELECT ROUND(0.15, 1), ROUND(1.005, 2)",
+        "advice": "Keep whole cents in INTEGER columns, or round in the application.",
+        "message": "{what} rounds through a binary float on SQLite, so a 5 in the last place can round down there and up on the other engines."
       }
     ]
   },
   {
     "code": "group-case",
     "title": "GROUP BY and DISTINCT on text in mixed case",
-    "severity": "warning",
+    "severity": "info",
     "summary": "GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION treat 'x' and 'X' as one value on MySQL and MariaDB and as two on SQLite and PostgreSQL.",
     "detail": "MySQL and MariaDB compare text with a case-insensitive collation by default (see text-compare-case), and grouping and removing duplicates use the same comparison. The spelling that stands for a group is the one the engine happened to see first. On SQLite and PostgreSQL each spelling is its own group.",
     "advice": "Group on LOWER(s) to merge spellings on every engine, as in SELECT LOWER(s), COUNT(*) FROM t GROUP BY LOWER(s). To keep them apart on MySQL and MariaDB instead, give the column a binary collation there.",

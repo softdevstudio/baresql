@@ -456,6 +456,19 @@ func (c *lintCtx) column(s, e int) (colInfo, bool) {
 // UPDATE, INTO and TABLE, with their aliases.
 func (c *lintCtx) findTables() {
 	c.aliases = map[string]string{}
+	defer func() {
+		// A table named twice (a self-join, both sides of UNION) counts
+		// once.
+		seen := map[string]bool{}
+		out := c.tables[:0]
+		for _, t := range c.tables {
+			if !seen[strings.ToLower(t)] {
+				seen[strings.ToLower(t)] = true
+				out = append(out, t)
+			}
+		}
+		c.tables = out
+	}()
 	for i, t := range c.ts {
 		if !(t.Is("FROM") || t.Is("JOIN") || t.Is("UPDATE") || t.Is("INTO") || t.Is("TABLE")) {
 			continue

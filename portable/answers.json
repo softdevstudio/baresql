@@ -162,6 +162,24 @@
             "error": "near \"CONSTRAINT\": syntax error"
           }
         },
+        "ADD INDEX": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "type \"t_a\" does not exist"
+          },
+          "sqlite": {
+            "error": "near \"INDEX\": syntax error"
+          }
+        },
+        "AFTER or FIRST": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "syntax error at or near \"AFTER\""
+          },
+          "sqlite": {}
+        },
         "ALTER COLUMN TYPE": {
           "mariadb": {
             "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'TYPE VARCHAR(40)' at line 1"
@@ -182,6 +200,26 @@
           },
           "sqlite": {
             "error": "near \"CHANGE\": syntax error"
+          }
+        },
+        "DROP CHECK": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'CHECK t_ck' at line 1"
+          },
+          "mysql": {},
+          "postgres": {
+            "error": "syntax error at or near \"CHECK\""
+          },
+          "sqlite": {
+            "error": "near \"CHECK\": syntax error"
+          }
+        },
+        "DROP COLUMN CASCADE": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {},
+          "sqlite": {
+            "error": "near \"CASCADE\": syntax error"
           }
         },
         "DROP COLUMN IF EXISTS": {
@@ -232,6 +270,16 @@
             "error": "near \"ALTER\": syntax error"
           }
         },
+        "IF EXISTS": {
+          "mariadb": {},
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF EXISTS t ADD COLUMN c INTEGER' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {
+            "error": "near \"EXISTS\": syntax error"
+          }
+        },
         "MODIFY": {
           "mariadb": {},
           "mysql": {},
@@ -241,6 +289,16 @@
           "sqlite": {
             "error": "near \"MODIFY\": syntax error"
           }
+        },
+        "RENAME without COLUMN": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'TO c' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'TO c' at line 1"
+          },
+          "postgres": {},
+          "sqlite": {}
         },
         "RENAME without TO": {
           "mariadb": {},
@@ -2030,12 +2088,8 @@
       },
       "items": {
         "CASCADE": {
-          "mariadb": {
-            "error": "Cannot delete or update a parent row: a foreign key constraint fails"
-          },
-          "mysql": {
-            "error": "Cannot drop table 'u' referenced by a foreign key constraint 't_ibfk_1' on table 't'."
-          },
+          "mariadb": {},
+          "mysql": {},
           "postgres": {},
           "sqlite": {
             "error": "near \"CASCADE\": syntax error"
@@ -5993,6 +6047,28 @@
         }
       },
       "items": {
+        "ROUND(decimal, n)": {
+          "mariadb": {
+            "rows": [
+              "0.2, 1.01"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "0.2, 1.01"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "0.2, 1.01"
+            ]
+          },
+          "sqlite": {
+            "rows": [
+              "0.1, 1.0"
+            ]
+          }
+        },
         "ROUND(x)": {
           "mariadb": {
             "rows": [
@@ -6085,6 +6161,82 @@
           "rows": [
             "'bcd'"
           ]
+        }
+      },
+      "items": {
+        "FOR only": {
+          "mariadb": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'FOR 3)' at line 1"
+          },
+          "mysql": {
+            "error": "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FOR 3)' at line 1"
+          },
+          "postgres": {
+            "rows": [
+              "'abc'"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"FOR\": syntax error"
+          }
+        },
+        "FROM FOR": {
+          "mariadb": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'bcd'"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"FROM\": syntax error"
+          }
+        },
+        "FROM pattern": {
+          "mariadb": {
+            "rows": [
+              "''"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "''"
+            ]
+          },
+          "postgres": {
+            "rows": [
+              "'123'"
+            ]
+          },
+          "sqlite": {
+            "error": "near \"FROM\": syntax error"
+          }
+        },
+        "SUBSTR FROM": {
+          "mariadb": {
+            "rows": [
+              "'bcdef'"
+            ]
+          },
+          "mysql": {
+            "rows": [
+              "'bcdef'"
+            ]
+          },
+          "postgres": {
+            "error": "syntax error at or near \"FROM\""
+          },
+          "sqlite": {
+            "error": "near \"FROM\": syntax error"
+          }
         }
       }
     },

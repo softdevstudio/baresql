@@ -1395,7 +1395,11 @@ func ruleTypeNotEverywhere(r *rule, c *lintCtx) {
 // itemMessage says where an item of a table entry works, from the
 // recorded answers.
 func itemMessage(code string, it *Item, what string) string {
-	rec := RecordedAnswers(code).Items[it.Name]
+	return itemMessageFrom(RecordedAnswers(code).Items[it.Name], it, what)
+}
+
+// itemMessageFrom says where an item works, from the answers given.
+func itemMessageFrom(rec map[string]Recorded, it *Item, what string) string {
 	notes := VersionNotes(rec, it.Since, it.Requires)
 	named := func(eng string) string {
 		if n := notes[eng]; len(n) > 0 {
@@ -1502,7 +1506,7 @@ func ruleTableOptions(r *rule, c *lintCtx) {
 				c.hitForm(r, k, k, "CHARACTER SET", "A character set on a column", "")
 			case t.Is("COMMENT") && c.at(k+1).Kind == sqltext.String:
 				c.hitForm(r, k, k+1, "COMMENT", "COMMENT on a column", "")
-			case t.Is("ON") && c.at(k+1).Is("UPDATE"):
+			case t.Is("ON") && c.at(k+1).Is("UPDATE") && !c.has(d.typEnd+1, k, "REFERENCES"):
 				c.hitForm(r, k, k+1, "ON UPDATE", "ON UPDATE for a column", "")
 			case t.Is("COLLATE"):
 				c.hitForm(r, k, k+1, "COLLATE", "", "")
@@ -1845,7 +1849,17 @@ func ruleAlterColumn(r *rule, c *lintCtx) {
 	if start < 0 || start >= len(c.ts) {
 		return
 	}
-	acts := c.items(start, len(c.ts), 0)
+	if c.at(2).Is("IF") && c.at(3).Is("EXISTS") {
+		c.hitForm(r, 0, 3, "IF EXISTS", "ALTER TABLE IF EXISTS", "")
+	}
+	var acts [][2]int
+	for _, a := range c.items(start, len(c.ts), 0) {
+		// MySQL's ALGORITHM = INPLACE and LOCK = NONE are options, not actions.
+		if c.at(a[0]+1).IsOp("=") && (c.ts[a[0]].Is("ALGORITHM") || c.ts[a[0]].Is("LOCK")) {
+			continue
+		}
+		acts = append(acts, a)
+	}
 	if len(acts) > 1 {
 		c.hitForm(r, 0, len(c.ts)-1, "several actions", "More than one action in one ALTER TABLE", "")
 	}
@@ -1883,23 +1897,43 @@ func ruleAlterColumn(r *rule, c *lintCtx) {
 			switch {
 			case c.at(k).Is("IF") && c.at(k+1).Is("NOT") && c.at(k+2).Is("EXISTS"):
 				c.hitForm(r, s, e, "ADD COLUMN IF NOT EXISTS", "ADD COLUMN IF NOT EXISTS", "")
+			case k == s+1 && k <= e && (c.ts[k].Is("INDEX") || c.ts[k].Is("KEY") || c.ts[k].Is("FULLTEXT") || c.ts[k].Is("SPATIAL")) && c.constraintStart(k):
+				c.hitForm(r, s, e, "ADD INDEX", "ALTER TABLE ... ADD "+c.ts[k].Upper(), "")
 			case k == s+1 && k <= e && c.constraintStart(k):
-				c.hitForm(r, s, e, "ADD CONSTRAINT", "ALTER TABLE ... ADD "+c.ts[k].Upper(), "")
+				what := c.ts[k].Upper()
+				if c.at(k + 1).Is("KEY") {
+					what += " KEY"
+				}
+				c.hitForm(r, s, e, "ADD CONSTRAINT", "ALTER TABLE ... ADD "+what, "")
+			default:
+				for j := k; j <= e; j++ {
+					if (c.ts[j].Is("AFTER") || c.ts[j].Is("FIRST")) && c.depth[j] == 0 {
+						c.hitForm(r, j, min(j+1, e), "AFTER or FIRST", c.ts[j].Upper()+" in ADD COLUMN", "")
+						break
+					}
+				}
 			}
 		case w.Is("DROP"):
 			k := s + 1
 			switch {
-			case c.at(k).Is("CONSTRAINT") || c.at(k).Is("CHECK"):
-				c.hitForm(r, s, e, "DROP CONSTRAINT", "ALTER TABLE ... DROP "+c.ts[k].Upper(), "")
+			case c.at(k).Is("CONSTRAINT"):
+				c.hitForm(r, s, e, "DROP CONSTRAINT", "ALTER TABLE ... DROP CONSTRAINT", "")
+			case c.at(k).Is("CHECK"):
+				c.hitForm(r, s, e, "DROP CHECK", "ALTER TABLE ... DROP CHECK", "")
 			case c.at(k).Is("PRIMARY"), c.at(k).Is("FOREIGN"), c.at(k).Is("INDEX"), c.at(k).Is("KEY") && k < e:
 				c.hitForm(r, s, e, "DROP INDEX", "ALTER TABLE ... "+c.span(s, min(e, k+1)), "")
 			case c.at(k).Is("COLUMN") && c.at(k+1).Is("IF"), c.at(k).Is("IF") && c.at(k+1).Is("EXISTS"):
 				c.hitForm(r, s, e, "DROP COLUMN IF EXISTS", "DROP COLUMN IF EXISTS", "")
+			case c.ts[e].Is("CASCADE") || c.ts[e].Is("RESTRICT"):
+				c.hitForm(r, s, e, "DROP COLUMN CASCADE", "DROP COLUMN ... "+c.ts[e].Upper(), "")
 			}
 		case w.Is("RENAME"):
 			n := c.at(s + 1)
 			if !(n.Is("TO") || n.Is("COLUMN") || n.Is("INDEX") || n.Is("KEY") || n.Is("CONSTRAINT")) && (isName(n) || n.Is("AS")) {
-				if !(isName(n) && c.at(s+2).Is("TO")) { // RENAME a TO b renames a column on PostgreSQL
+				if isName(n) && c.at(s+2).Is("TO") {
+					// RENAME a TO b renames a column on SQLite and PostgreSQL.
+					c.hitForm(r, s, e, "RENAME without COLUMN", "RENAME a TO b without COLUMN", "")
+				} else {
 					c.hitForm(r, s, e, "RENAME without TO", "ALTER TABLE ... RENAME without TO", "")
 				}
 			}
@@ -1924,24 +1958,56 @@ var reservedWords = sync.OnceValue(func() map[string]*Item {
 // definitions, tables and their aliases, aliases after AS, qualifiers,
 // column lists, and words that are columns of the tables named. Words
 // after a period are left out: every engine takes a reserved word there.
+// The value is true for a column label (AS in a select list), where
+// PostgreSQL takes any word.
 func (c *lintCtx) nameTokens() map[int]bool {
 	out := map[int]bool{}
 	word := func(i int) bool { return i >= 0 && i < len(c.ts) && c.ts[i].Kind == sqltext.Word }
 	add := func(i int) {
 		if word(i) && !c.at(i-1).IsOp(".") {
-			out[i] = true
+			out[i] = out[i] || false
 		}
 	}
 	for _, d := range c.columnDefs() {
-		if !d.constraint {
+		// ALTER COLUMN a ADD GENERATED ... is no column definition.
+		if !d.constraint && !(c.ts[d.name].Is("GENERATED") && (c.at(d.name+1).Is("ALWAYS") || c.at(d.name+1).Is("BY"))) {
 			add(d.name)
 		}
 	}
 	casts := map[int]bool{}
+	labels := map[int]bool{} // AS inside a select list
 	for i := range c.ts {
 		if _, as, _ := c.castTarget(i); as > 0 {
 			casts[as] = true
 		}
+	}
+	for _, b := range c.selectBlocks() {
+		for _, it := range c.selectItems(b) {
+			for k := it[0]; k <= it[1]; k++ {
+				if c.ts[k].Is("AS") && c.depth[k] == c.depth[b[0]] {
+					labels[k] = true
+				}
+			}
+		}
+	}
+	// open[i] is the "(" around token i, or -1, so inCall needn't search.
+	open := make([]int, len(c.ts))
+	var stack []int
+	for i, t := range c.ts {
+		open[i] = -1
+		if len(stack) > 0 {
+			open[i] = stack[len(stack)-1]
+		}
+		if t.IsOp("(") {
+			stack = append(stack, i)
+		} else if t.IsOp(")") && len(stack) > 0 {
+			stack = stack[:len(stack)-1]
+		}
+	}
+	// inCall reports whether token i sits in the parentheses of a call,
+	// as FROM does in EXTRACT(YEAR FROM d) and TRIM(LEADING 'x' FROM s).
+	inCall := func(i int) bool {
+		return open[i] > 0 && c.isCall(open[i]-1)
 	}
 	for i, t := range c.ts {
 		switch {
@@ -1954,12 +2020,21 @@ func (c *lintCtx) nameTokens() map[int]bool {
 				}
 				k++
 			}
+			if c.at(k).Is("ONLY") {
+				k++
+			}
 			if !c.at(k + 1).IsOp(".") {
 				add(k)
 			}
+		case t.Is("UPDATE") && i != 0, t.Is("FROM") && (c.at(i-1).Is("DISTINCT") || inCall(i)):
+			// ON UPDATE CASCADE, FOR UPDATE OF, BEFORE UPDATE OF; IS
+			// DISTINCT FROM x, EXTRACT(... FROM x): no table follows.
 		case t.Is("FROM") || t.Is("JOIN") || t.Is("UPDATE") || t.Is("INTO") || t.Is("REFERENCES") || t.Is("ON") && c.ts[0].Is("CREATE"):
 			k := i + 1
-			for word(k) {
+			for c.at(k).Is("ONLY") || c.at(k).Is("IGNORE") || c.at(k).Is("LOW_PRIORITY") {
+				k++
+			}
+			for word(k) && !c.at(k+1).IsOp("(") {
 				if c.at(k + 1).IsOp(".") {
 					add(k)
 					k += 2
@@ -1974,7 +2049,7 @@ func (c *lintCtx) nameTokens() map[int]bool {
 			switch c.ts[i+1].Upper() {
 			case "SELECT", "WITH", "VALUES", "TABLE", "IDENTITY":
 			default:
-				add(i + 1)
+				out[i+1] = labels[i]
 			}
 		case t.IsOp(".") && word(i-1):
 			add(i - 1)
@@ -2045,9 +2120,31 @@ func ruleReservedWord(r *rule, c *lintCtx) {
 	}
 	sort.Ints(idx)
 	for _, i := range idx {
-		w := c.ts[i].Upper()
-		if it := words[w]; it != nil {
+		it := words[c.ts[i].Upper()]
+		if it == nil {
+			continue
+		}
+		if !names[i] {
 			c.hitForm(r, i, i, it.Name, "The name "+strings.ToLower(c.ts[i].Text), "")
+			continue
+		}
+		// A column label: PostgreSQL takes any word after AS there.
+		rec := map[string]Recorded{}
+		refused := false
+		for eng, a := range RecordedAnswers(r.code).Items[it.Name] {
+			if eng == Postgres || strings.HasPrefix(eng, Postgres+" ") {
+				a = Recorded{}
+			}
+			rec[eng] = a
+			refused = refused || a.Error != ""
+		}
+		if !refused {
+			continue
+		}
+		n := len(c.out)
+		c.hitMsg(r, i, i, "", itemMessageFrom(rec, it, "The column label "+strings.ToLower(c.ts[i].Text)), it.Advice)
+		if len(c.out) > n {
+			c.out[len(c.out)-1].Item = it.Name
 		}
 	}
 }
@@ -2075,7 +2172,7 @@ func ruleFromDual(r *rule, c *lintCtx) {
 
 func ruleTrimFrom(r *rule, c *lintCtx) {
 	for i, t := range c.ts {
-		if !c.isCall(i) {
+		if !(t.Is("TRIM") || t.Is("LTRIM") || t.Is("RTRIM")) || !c.isCall(i) {
 			continue
 		}
 		open := i + 1
@@ -2117,11 +2214,28 @@ func ruleSubstringFrom(r *rule, c *lintCtx) {
 		}
 		open := i + 1
 		end := c.close(open)
+		from, forAt := -1, -1
 		for k := open + 1; k < end; k++ {
-			if (c.ts[k].Is("FROM") || c.ts[k].Is("FOR")) && c.depth[k] == c.depth[open]+1 {
-				c.hit(r, i, end, "")
-				break
+			if c.depth[k] != c.depth[open]+1 {
+				continue
 			}
+			if c.ts[k].Is("FROM") && from < 0 {
+				from = k
+			}
+			if c.ts[k].Is("FOR") && forAt < 0 {
+				forAt = k
+			}
+		}
+		switch {
+		case from < 0 && forAt < 0:
+		case t.Is("SUBSTR"):
+			c.hitForm(r, i, end, "SUBSTR FROM", "SUBSTR(s FROM ...)", "")
+		case from < 0:
+			c.hitForm(r, i, end, "FOR only", "SUBSTRING(s FOR n)", "")
+		case c.at(from+1).Kind == sqltext.String && (forAt < 0 || forAt == from+2):
+			c.hitForm(r, i, end, "FROM pattern", "SUBSTRING(s FROM 'pattern')", "")
+		default:
+			c.hitForm(r, i, end, "FROM FOR", "SUBSTRING(s FROM a FOR b)", "")
 		}
 	}
 }
@@ -2156,15 +2270,24 @@ func ruleCastToFloat(r *rule, c *lintCtx) {
 	}
 }
 
-// roundedOutside reports whether the call at i is the first argument of
-// ROUND, TRUNCATE or TRUNC, or is cast to another type.
+// roundedOutside reports whether the call at i sits inside ROUND,
+// TRUNCATE, TRUNC, FLOOR, CEIL or CAST, or is compared with something, so
+// its last digits don't reach the answer.
 func (c *lintCtx) roundedOutside(i int) bool {
-	if !c.at(i-1).IsOp("(") || !c.isCall(i-2) {
-		return false
-	}
-	switch c.ts[i-2].Upper() {
-	case "ROUND", "TRUNCATE", "TRUNC", "CAST":
+	cmp := []string{"=", "<", ">", "<=", ">=", "<>", "!="}
+	if c.at(i-1).IsOp(cmp...) || c.at(c.close(i+1)+1).IsOp(cmp...) {
 		return true
+	}
+	for k := i - 1; k >= 0; k-- {
+		if !c.ts[k].IsOp("(") || c.pair[k] < i {
+			continue
+		}
+		if c.isCall(k - 1) {
+			switch c.ts[k-1].Upper() {
+			case "ROUND", "TRUNCATE", "TRUNC", "FLOOR", "CEIL", "CEILING", "CAST":
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -2197,15 +2320,52 @@ func ruleRoundHalf(r *rule, c *lintCtx) {
 			continue
 		}
 		a := c.args(i + 1)
-		if len(a) == 0 || c.kindOf(a[0][0], a[0][1]) != kFloat {
+		if len(a) == 0 {
 			continue
 		}
-		if len(a) == 1 {
-			c.hitForm(r, i, c.close(i+1), "ROUND(x)", "ROUND(x)", "")
-		} else {
-			c.hitForm(r, i, c.close(i+1), "ROUND(x, n)", "ROUND(x, n)", "")
+		s, e := a[0][0], a[0][1]
+		switch c.kindOf(s, e) {
+		case kFloat:
+			if len(a) == 1 {
+				c.hitForm(r, i, c.close(i+1), "ROUND(x)", "ROUND(x)", "")
+			} else {
+				c.hitForm(r, i, c.close(i+1), "ROUND(x, n)", "ROUND(x, n)", "")
+			}
+		case kDecimal:
+			// ROUND(decimal, n): a literal with a 5 just past the digits
+			// kept is a sure difference, a DECIMAL column a possible one.
+			if len(a) != 2 || a[1][0] != a[1][1] || c.ts[a[1][0]].Kind != sqltext.Number {
+				continue
+			}
+			n, err := strconv.Atoi(c.ts[a[1][0]].Text)
+			if err != nil || n < 1 {
+				continue
+			}
+			lit := c.ts[s]
+			switch {
+			case s == e && lit.Kind == sqltext.Number:
+				_, frac, _ := strings.Cut(lit.Text, ".")
+				if len(frac) > n && frac[n] == '5' && strings.Trim(frac[n+1:], "0") == "" {
+					c.hitForm(r, i, c.close(i+1), "ROUND(decimal, n)", "ROUND("+lit.Text+", "+strconv.Itoa(n)+")", "")
+				}
+			case c.plainColumn(s, e):
+				n0 := len(c.out)
+				c.hitForm(r, i, c.close(i+1), "ROUND(decimal, n)", "ROUND of a DECIMAL column to digits", "")
+				if len(c.out) > n0 {
+					c.out[len(c.out)-1].Severity = "info"
+				}
+			}
 		}
 	}
+}
+
+// plainColumn reports whether tokens s..e are a known column reference.
+func (c *lintCtx) plainColumn(s, e int) bool {
+	if !(s == e && isName(c.ts[s]) || e == s+2 && c.ts[s+1].IsOp(".")) {
+		return false
+	}
+	_, ok := c.column(s, e)
+	return ok
 }
 
 // textColumn reports whether tokens s..e are a plain reference to a text
@@ -2218,16 +2378,39 @@ func (c *lintCtx) textColumn(s, e int) bool {
 }
 
 func ruleGroupCase(r *rule, c *lintCtx) {
-	for _, b := range c.selectBlocks() {
+	blocks := c.selectBlocks()
+	byEnd, byStart := map[int][2]int{}, map[int][2]int{}
+	for _, b := range blocks {
+		byEnd[b[1]], byStart[b[0]] = b, b
+	}
+	// keyed: with a primary key column among the items, every group is
+	// one row, whatever the case of the text beside it.
+	keyed := func(items [][2]int) bool {
+		for _, it := range items {
+			_, _, end := c.alias(it)
+			if ci, ok := c.column(it[0], end); ok && ci.pk {
+				return true
+			}
+		}
+		return false
+	}
+	for _, b := range blocks {
 		if gs, ge := c.clause(b, "GROUP", "BY"); gs >= 0 {
-			for _, it := range c.items(gs, ge, c.depth[b[0]]) {
-				if c.textColumn(it[0], it[1]) {
-					c.hitForm(r, it[0], it[1], "GROUP BY", "GROUP BY on a text column", "")
+			items := c.items(gs, ge, c.depth[b[0]])
+			if !keyed(items) {
+				for _, it := range items {
+					if c.textColumn(it[0], it[1]) {
+						c.hitForm(r, it[0], it[1], "GROUP BY", "GROUP BY on a text column", "")
+					}
 				}
 			}
 		}
 		if c.at(b[0]+1).Is("DISTINCT") && !c.at(b[0]+2).Is("ON") {
-			for _, it := range c.selectItems(b) {
+			items := c.selectItems(b)
+			if keyed(items) {
+				continue
+			}
+			for _, it := range items {
 				_, _, end := c.alias(it)
 				if c.textColumn(it[0], end) {
 					c.hitForm(r, b[0], b[0]+1, "DISTINCT", "SELECT DISTINCT on a text column", "")
@@ -2242,20 +2425,26 @@ func ruleGroupCase(r *rule, c *lintCtx) {
 			if a := c.args(i + 1); len(a) == 1 && c.textColumn(i+3, a[0][1]) {
 				c.hitForm(r, i, c.close(i+1), "COUNT(DISTINCT)", "COUNT(DISTINCT) on a text column", "")
 			}
-		case t.Is("UNION") && !c.at(i+1).Is("ALL"):
-			for _, b := range c.selectBlocks() {
-				if b[1] != i && !(b[0] == i+1 && c.depth[b[0]] == c.depth[i]) {
-					continue
+		case (t.Is("UNION") || t.Is("INTERSECT") || t.Is("EXCEPT")) && !c.at(i+1).Is("ALL"):
+			var sides [][2]int
+			if b, ok := byEnd[i]; ok {
+				sides = append(sides, b)
+			}
+			for _, k := range []int{i + 1, i + 2} {
+				if b, ok := byStart[k]; ok && c.depth[k] == c.depth[i] && (k == i+1 || c.at(i+1).Is("DISTINCT")) {
+					sides = append(sides, b)
 				}
+			}
+			for _, b := range sides {
 				hit := false
 				for _, it := range c.selectItems(b) {
 					_, _, end := c.alias(it)
-					if c.textColumn(it[0], end) || c.letterLiteral(it[0], end) {
+					if c.textColumn(it[0], end) {
 						hit = true
 					}
 				}
 				if hit {
-					c.hitForm(r, i, i, "UNION", "UNION of text", "")
+					c.hitForm(r, i, i, "UNION", t.Upper()+" of text", "")
 					break
 				}
 			}

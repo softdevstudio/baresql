@@ -189,13 +189,13 @@ Probed on SQLite 3.45.1, PostgreSQL 16.15, MySQL 8.0.46 and MariaDB
   rewrite SUBSTR(x, a, b).
 - `drop-cascade` (error): DROP TABLE ... CASCADE/RESTRICT fail on SQLite;
   MySQL and MariaDB accept CASCADE and ignore it.
-- cast-to-number gains rows DOUBLE PRECISION and REAL (MariaDB refuses),
+- `cast-to-float` (error): DOUBLE PRECISION and REAL (MariaDB refuses),
   DOUBLE (PostgreSQL refuses) and FLOAT (4-byte on MySQL and MariaDB).
 - `avg-digits` (warning): AVG over integers or decimals gives 4 or 6
   digits on MySQL and MariaDB and 16 elsewhere; rewrite ROUND(AVG(x), n).
 - `round-half` (warning): ROUND of a float half rounds away from zero on
   SQLite and to even elsewhere; rewrite via CAST(x AS DECIMAL(p, s)).
-- `group-case` (warning): GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION
+- `group-case` (info): GROUP BY, DISTINCT, COUNT(DISTINCT) and UNION
   over text fold case on MySQL and MariaDB; rewrite with LOWER().
 
 Phase B, 0.3.0: `baresql audit` checks every database of a server in one
