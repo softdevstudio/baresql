@@ -16,7 +16,7 @@ The catalog now holds {{v:rows}} rows and {{v:answers}} recorded answers. CI run
 
 ## Schema Changes
 
-[ALTER TABLE forms](https://baresql.com/{{slug:alter-column}}/) is the rule most migrations will meet. PostgreSQL changes a column with `ALTER COLUMN ... TYPE` and `SET NOT NULL`, MySQL and MariaDB with `MODIFY` and `CHANGE`, and SQLite can do neither. The rule knows twenty forms, among them several actions in one statement, which SQLite refuses, `ADD COLUMN IF NOT EXISTS`, which MySQL refuses, and `RENAME a TO b` without the word COLUMN, which MySQL and MariaDB refuse.
+[ALTER TABLE forms](https://baresql.com/{{slug:alter-column}}/) is the rule most migrations will meet. PostgreSQL changes a column with `ALTER COLUMN ... TYPE` and `SET NOT NULL`, MySQL and MariaDB with `MODIFY` and `CHANGE`, and SQLite can do neither. The rule knows 21 forms, among them several actions in one statement, which SQLite refuses, `ADD COLUMN IF NOT EXISTS`, which MySQL refuses, and `RENAME a TO b` without the word COLUMN, which MySQL and MariaDB refuse.
 
 [Reserved words](https://baresql.com/{{slug:reserved-word}}/) covers names. A column called `rank` works on SQLite, PostgreSQL and MariaDB and fails on MySQL 8. `user` fails on PostgreSQL, `key` on MySQL and MariaDB. The rule has a row for each of 83 words people give to tables and columns, each tried as a column name on all four engines. After AS in a select list PostgreSQL takes any word, and lint knows that too.
 

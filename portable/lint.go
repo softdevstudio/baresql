@@ -49,6 +49,7 @@ type colInfo struct {
 	length  int    // n of CHAR(n) and VARCHAR(n)
 	notNull bool
 	pk      bool
+	scale   int // s of DECIMAL(p, s), -1 when not given
 }
 
 // column finds a column by name, in the given table or, without one, in
@@ -130,9 +131,12 @@ func (s *Schema) addColumn(table string, c *lintCtx, d columnDef) {
 		return
 	}
 	col := strings.ToLower(identName(c.ts[d.name]))
-	ci := colInfo{typ: d.typeName}
+	ci := colInfo{typ: d.typeName, scale: -1}
 	if open := d.typ + 1; open <= d.typEnd && c.ts[open].IsOp("(") {
 		ci.length, _ = strconv.Atoi(c.at(open + 1).Text)
+		if c.at(open+2).IsOp(",") && c.at(open+3).Kind == sqltext.Number {
+			ci.scale, _ = strconv.Atoi(c.at(open + 3).Text)
+		}
 	}
 	for k := d.typEnd + 1; k <= d.end; k++ {
 		switch {

@@ -1835,6 +1835,12 @@
         "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
         "probe": "ALTER TABLE t ADD COLUMN c INTEGER AFTER a",
         "advice": "Leave the position out: new columns go last on every engine, and queries should name their columns anyway."
+      },
+      {
+        "name": "ALGORITHM or LOCK",
+        "setup": "CREATE TABLE t (a INTEGER, b VARCHAR(20))",
+        "probe": "ALTER TABLE t ADD COLUMN c INTEGER, ALGORITHM = INPLACE",
+        "advice": "Leave ALGORITHM and LOCK out, or keep them in the MySQL and MariaDB migration only."
       }
     ]
   },

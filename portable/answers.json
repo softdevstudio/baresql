@@ -180,6 +180,16 @@
           },
           "sqlite": {}
         },
+        "ALGORITHM or LOCK": {
+          "mariadb": {},
+          "mysql": {},
+          "postgres": {
+            "error": "syntax error at or near \"ALGORITHM\""
+          },
+          "sqlite": {
+            "error": "near \",\": syntax error"
+          }
+        },
         "ALTER COLUMN TYPE": {
           "mariadb": {
             "error": "You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'TYPE VARCHAR(40)' at line 1"

@@ -6,13 +6,14 @@ BareSQL Portable gets a rule for every difference the 0.1.0 README listed
 without one: 11 new rules, 69 in all. Each was run on SQLite, PostgreSQL,
 MySQL and MariaDB, and CI runs them again on every engine version it tests.
 
-- `alter-column`: 20 forms of ALTER TABLE, each with the engines that
+- `alter-column`: 21 forms of ALTER TABLE, each with the engines that
   refuse it: ALTER COLUMN ... TYPE and SET/DROP NOT NULL (PostgreSQL only),
   MODIFY and CHANGE (MySQL and MariaDB only), ALTER COLUMN ... SET or DROP
   DEFAULT, several actions in one statement, ADD/DROP CONSTRAINT, ADD
   INDEX, DROP CHECK, DROP INDEX/PRIMARY KEY/FOREIGN KEY, ADD COLUMN IF NOT
   EXISTS, DROP COLUMN IF EXISTS or CASCADE, ALTER TABLE IF EXISTS, AFTER
-  and FIRST, RENAME without TO and RENAME a TO b without COLUMN.
+  and FIRST, RENAME without TO, RENAME a TO b without COLUMN, and the
+  ALGORITHM and LOCK options.
 - `reserved-word`: names that are reserved words on some engines (rank,
   key, user, groups, row and 78 more), wherever lint can tell a word is a
   name. After AS in a select list, where PostgreSQL takes any word, only
@@ -38,7 +39,7 @@ MySQL and MariaDB, and CI runs them again on every engine version it tests.
   SQLite rounds decimals to digits through a binary float (ROUND(0.15, 1)
   is 0.1 there and 0.2 elsewhere).
 - `group-case` (a note, as it depends on the data): GROUP BY, DISTINCT,
-  COUNT(DISTINCT), UNION, INTERSECT and EXCEPT over text columns merge 'x'
+  COUNT(DISTINCT), UNION, INTERSECT and EXCEPT over text merge 'x'
   and 'X' on MySQL and MariaDB.
 
 Fixed in older rules: table-options no longer flags ON UPDATE CASCADE

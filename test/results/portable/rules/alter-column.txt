@@ -49,3 +49,4 @@ RENAME without TO        no     no         yes   yes     Write RENAME TO u.
 RENAME without COLUMN    yes    yes        no    no      Write RENAME COLUMN b TO c.
 IF EXISTS                no     yes        no    yes     Check the catalog for the table in the migration code first.
 AFTER or FIRST           yes    no         yes   yes     Leave the position out: new columns go last on every engine, and queries should name their columns anyway.
+ALGORITHM or LOCK        no     no         yes   yes     Leave ALGORITHM and LOCK out, or keep them in the MySQL and MariaDB migration only.

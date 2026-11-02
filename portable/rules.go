@@ -1856,6 +1856,7 @@ func ruleAlterColumn(r *rule, c *lintCtx) {
 	for _, a := range c.items(start, len(c.ts), 0) {
 		// MySQL's ALGORITHM = INPLACE and LOCK = NONE are options, not actions.
 		if c.at(a[0]+1).IsOp("=") && (c.ts[a[0]].Is("ALGORITHM") || c.ts[a[0]].Is("LOCK")) {
+			c.hitForm(r, a[0], a[1], "ALGORITHM or LOCK", c.ts[a[0]].Upper()+" in ALTER TABLE", "")
 			continue
 		}
 		acts = append(acts, a)
@@ -1899,6 +1900,8 @@ func ruleAlterColumn(r *rule, c *lintCtx) {
 				c.hitForm(r, s, e, "ADD COLUMN IF NOT EXISTS", "ADD COLUMN IF NOT EXISTS", "")
 			case k == s+1 && k <= e && (c.ts[k].Is("INDEX") || c.ts[k].Is("KEY") || c.ts[k].Is("FULLTEXT") || c.ts[k].Is("SPATIAL")) && c.constraintStart(k):
 				c.hitForm(r, s, e, "ADD INDEX", "ALTER TABLE ... ADD "+c.ts[k].Upper(), "")
+			case k <= e && c.has(k, e, "UNIQUE") && (c.has(k, e, "KEY") || c.has(k, e, "INDEX")) && c.constraintStart(k):
+				c.hitForm(r, s, e, "ADD INDEX", "ALTER TABLE ... ADD UNIQUE KEY", "")
 			case k == s+1 && k <= e && c.constraintStart(k):
 				what := c.ts[k].Upper()
 				if c.at(k + 1).Is("KEY") {
@@ -2284,8 +2287,12 @@ func (c *lintCtx) roundedOutside(i int) bool {
 		}
 		if c.isCall(k - 1) {
 			switch c.ts[k-1].Upper() {
-			case "ROUND", "TRUNCATE", "TRUNC", "FLOOR", "CEIL", "CEILING", "CAST":
+			case "ROUND", "TRUNCATE", "TRUNC", "FLOOR", "CEIL", "CEILING":
 				return true
+			case "CAST":
+				if typ, _, _ := c.castTarget(k - 1); typeKind(typ).numeric() {
+					return true
+				}
 			}
 		}
 	}
@@ -2341,6 +2348,9 @@ func ruleRoundHalf(r *rule, c *lintCtx) {
 			if err != nil || n < 1 {
 				continue
 			}
+			if c.ts[s].IsOp("-") && e == s+1 {
+				s++
+			}
 			lit := c.ts[s]
 			switch {
 			case s == e && lit.Kind == sqltext.Number:
@@ -2349,6 +2359,9 @@ func ruleRoundHalf(r *rule, c *lintCtx) {
 					c.hitForm(r, i, c.close(i+1), "ROUND(decimal, n)", "ROUND("+lit.Text+", "+strconv.Itoa(n)+")", "")
 				}
 			case c.plainColumn(s, e):
+				if ci, _ := c.column(s, e); ci.scale >= 0 && ci.scale <= n {
+					continue // nothing past the digits kept
+				}
 				n0 := len(c.out)
 				c.hitForm(r, i, c.close(i+1), "ROUND(decimal, n)", "ROUND of a DECIMAL column to digits", "")
 				if len(c.out) > n0 {
@@ -2386,6 +2399,12 @@ func ruleGroupCase(r *rule, c *lintCtx) {
 	// keyed: with a primary key column among the items, every group is
 	// one row, whatever the case of the text beside it.
 	keyed := func(items [][2]int) bool {
+		// Only a one-column key of the one table the statement reads: a
+		// column of a composite key, or the key of one side of a join,
+		// leaves room for rows that differ in case alone.
+		if len(c.tables) != 1 || c.schema == nil || len(c.schema.pk[strings.ToLower(c.tables[0])]) != 1 {
+			return false
+		}
 		for _, it := range items {
 			_, _, end := c.alias(it)
 			if ci, ok := c.column(it[0], end); ok && ci.pk {
@@ -2441,6 +2460,22 @@ func ruleGroupCase(r *rule, c *lintCtx) {
 					_, _, end := c.alias(it)
 					if c.textColumn(it[0], end) {
 						hit = true
+					}
+				}
+				// Literals on both sides that differ only in case.
+				if !hit && len(sides) == 2 && b == sides[0] {
+					lits := map[string]string{}
+					for _, sd := range sides {
+						for _, it := range c.selectItems(sd) {
+							_, _, end := c.alias(it)
+							if c.letterLiteral(it[0], end) {
+								v := c.ts[it[0]].StringValue()
+								if w, ok := lits[strings.ToLower(v)]; ok && w != v {
+									hit = true
+								}
+								lits[strings.ToLower(v)] = v
+							}
+						}
 					}
 				}
 				if hit {

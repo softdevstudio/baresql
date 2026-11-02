@@ -22,7 +22,7 @@ func TestReview020Lint(t *testing.T) {
 		{"ALTER TABLE IF EXISTS t ADD COLUMN c INTEGER", []string{"alter-column:error"}, nil},
 		{"ALTER TABLE t ADD COLUMN c INTEGER AFTER a", []string{"alter-column:error"}, nil},
 		{"ALTER TABLE t DROP COLUMN c CASCADE", []string{"alter-column:error"}, nil},
-		{"ALTER TABLE t ADD COLUMN c INTEGER, ALGORITHM = INPLACE", nil, []string{"alter-column"}},
+		{"ALTER TABLE t ADD COLUMN c INTEGER, ALGORITHM = INPLACE; ALTER TABLE t ADD COLUMN d INTEGER", []string{"alter-column"}, nil},
 		{"CREATE TABLE t (a INTEGER); SELECT ROUND(100 * AVG(a), 1), FLOOR(AVG(a)) FROM t", nil, []string{"avg-digits"}},
 		{"CREATE TABLE t (a INTEGER, s INTEGER); SELECT s FROM t GROUP BY s HAVING AVG(a) > 1", nil, []string{"avg-digits"}},
 		{"SELECT 'active' AS status UNION SELECT 'inactive'", nil, []string{"group-case"}},
@@ -88,5 +88,44 @@ func TestReview020Messages(t *testing.T) {
 	}
 	if ps := FilterEngines(LintScript("t.sql", "SELECT SUBSTRING(s FOR 3) FROM t"), []string{"postgres", "mysql"}); len(ps) == 0 {
 		t.Errorf("SUBSTRING(s FOR 3) dropped by --engines postgres,mysql")
+	}
+}
+
+// The second round of the review: each case failed on 50f50b2.
+func TestReview020Round2(t *testing.T) {
+	cases := []lintCase{
+		{"CREATE TABLE m (a INTEGER, b INTEGER, s VARCHAR(10), PRIMARY KEY (a, b)); SELECT DISTINCT a, s FROM m", []string{"group-case"}, nil},
+		{"CREATE TABLE u (id INTEGER PRIMARY KEY); CREATE TABLE g (uid INTEGER, tag VARCHAR(10)); " +
+			"SELECT u.id, g.tag FROM u JOIN g ON g.uid = u.id GROUP BY u.id, g.tag", []string{"group-case"}, nil},
+		{"SELECT 'X' UNION SELECT 'x'", []string{"group-case"}, nil},
+		{"SELECT ROUND(-0.15, 1)", []string{"round-half"}, nil},
+		{"CREATE TABLE d (x DECIMAL(10, 2)); SELECT ROUND(x, 2) FROM d", nil, []string{"round-half"}},
+		{"CREATE TABLE d (x DECIMAL(10, 3)); SELECT ROUND(x, 2) FROM d", []string{"round-half"}, nil},
+		{"ALTER TABLE t ADD COLUMN c INTEGER, ALGORITHM = INPLACE", []string{"alter-column"}, nil},
+		{"CREATE TABLE t (a INTEGER); SELECT CAST(AVG(a) AS CHAR(20)) FROM t", []string{"avg-digits"}, nil},
+		{"CREATE TABLE t (a INTEGER); SELECT CAST(AVG(a) AS DECIMAL(10, 2)) FROM t", nil, []string{"avg-digits"}},
+	}
+	for _, tc := range cases {
+		got := map[string]bool{}
+		for _, p := range LintScript("t.sql", tc.sql) {
+			got[p.Code] = true
+		}
+		for _, w := range tc.want {
+			if !got[w] {
+				t.Errorf("%q: no %s", tc.sql, w)
+			}
+		}
+		for _, n := range tc.not {
+			if got[n] {
+				t.Errorf("%q: unexpected %s", tc.sql, n)
+			}
+		}
+	}
+	for _, sql := range []string{"ALTER TABLE t ADD UNIQUE KEY uk (a)", "ALTER TABLE t ADD CONSTRAINT uk UNIQUE KEY (a)"} {
+		for _, p := range LintScript("t.sql", sql) {
+			if p.Code == "alter-column" && strings.Contains(p.Message, "works on PostgreSQL") {
+				t.Errorf("%q: %s", sql, p.Message)
+			}
+		}
 	}
 }
