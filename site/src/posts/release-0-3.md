@@ -18,7 +18,7 @@ BareSQL 0.3 closes both.
 
 `baresql audit --database shop --database crm` audits both, and `--all-databases` audits every database that accepts connections. Each database is read over its own connection, in its own read-only transaction, and the report names every table after its database first: `crm.public.contacts`. Each login appears once, with what it reaches everywhere, and the report lists the databases it may not connect to.
 
-Findings about a role, such as a superuser login, appear once. Findings about one database's tables, functions or default privileges say which database they're about. `baresql diff` and `--baseline` compare only audits of the same databases, because a database that drops out of the newer audit would otherwise hide whatever grew there.
+Findings about a role, such as a superuser login, appear once. Findings about one database's tables, functions or default privileges say which database they're about. `baresql diff` and `--baseline` compare only audits of the same databases, because a database that drops out of the newer audit would otherwise hide whatever grew there. Two `--all-databases` audits always compare, and a database created or dropped in between shows up as a change.
 
 ## Row Security in Words
 
@@ -28,6 +28,6 @@ That last clause matters. A setting such as `app.tenant_id` is the usual way to 
 
 ## Checked Twice
 
-An independent review went through the new code before the release and found ten problems. Among them: a 0.2 report used as a baseline would have reported growth after the upgrade with no change in the database, two of the three common shapes of tenant policies slipped past the new finding, and findings from two databases could merge into one that named neither. All of them are fixed, each with a test. The test database for this release has two databases and a policy of every shape BareSQL reads, and the audit of it is checked line by line.
+An independent review went through the new code twice before the release. The first round found ten problems, the second five more. Among them: a 0.2 report used as a baseline would have reported growth after the upgrade with no change in the database, two of the three common shapes of tenant policies slipped past the new finding, findings from two databases could merge into one that named neither, and a policy that let a role's own rows or one region's through read as the role's own rows only. All of them are fixed, each with a test. The test database for this release has two databases and a policy of every shape BareSQL reads, and the audit of it is checked line by line.
 
 The [download page](https://baresql.com/download/) has the release, and the [changelog](https://github.com/softdevstudio/baresql/blob/main/CHANGELOG.md) lists every change.

@@ -144,6 +144,14 @@ group-case's key check too broad (composite keys, joins), UNIQUE KEY
 messages, negative literals in round-half. All fixed with tests
 (portable/review_020_test.go).
 
+0.3.0 (2026-11-02): BareSQL Audit audits several databases in one run
+(`--database`, `--all-databases`; merged report, `cannot_connect_to`) and
+reads simple row security conditions (true, false, current_user, constants,
+current_setting(), AND/OR) into `rows_where`; new finding
+`rls-session-setting`. Two independent review rounds (10, then 5 defects),
+all fixed with tests (audit/review_030_test.go). The AI agent case study
+now shows the tenant fix itself flagged by rls-session-setting.
+
 ## Gaps and to-do
 
 - PostgreSQL 19 is due on 2026-11-19: add it to the CI list after release.
@@ -152,8 +160,9 @@ messages, negative literals in round-half. All fixed with tests
   columns (SELECT a.id, b.name FROM t a JOIN t b ... GROUP BY a.id passes;
   PostgreSQL and MySQL refuse it). round-half doesn't look into
   expressions such as ROUND(x * 1.1, 2).
-- Audit: one database per run; row security is judged per table (policy
-  conditions are not evaluated); write access through views and functions
+- Audit: databases of one run are read in separate transactions; policy
+  conditions beyond simple comparisons (subqueries, function calls) are
+  named, not read; write access through views and functions
   is not traced; passwords outside ASCII are sent without SASLprep. From
   the review, left for later: a child table read only through its parent
   gets no line of its own (the parent's line carries its data); phone
@@ -229,5 +238,5 @@ Steps:
 2. [x] Phase A rules, catalog, answers, tests; README; record
 3. [x] independent review, fixes; release 0.2.0; site; note; plan (v0.2.0 on 4221d78)
 4. [x] Phase B: multi-database audit, RLS evaluation, fixtures, tests
-5. [ ] independent review, fixes; release 0.3.0; site; note; plan
+5. [x] independent review (two rounds: 10 defects, then 5), fixes; release 0.3.0; site; note; plan
 6. [ ] Phase C: PostgreSQL 19 in CI after 2026-11-19
