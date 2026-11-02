@@ -139,6 +139,19 @@ attach a function of their own to its cast to text. Types whose output
 function isn't built in are left out, and so are binary columns and
 virtual generated columns.
 
+### Several databases
+
+Roles belong to the whole server, and tables to one database. With
+`--database NAME` (repeat it) or `--all-databases`, BareSQL audits each
+database over its own connection and read-only transaction and writes one
+report: every relation, function and foreign server is named after its
+database first (`shop.app.orders`), each login appears once with what it
+reaches everywhere, and the databases a login may not connect to are listed
+(`cannot_connect_to` in audit.json, `cannot-connect` lines). A database the
+auditing login can't connect to is listed under what wasn't seen. Compare
+reports of the same kind with `baresql diff`: a single-database report and
+one of several name their tables differently.
+
 ### Flags
 
 | Flag | Meaning |
@@ -146,6 +159,8 @@ virtual generated columns.
 | `--out DIR` | where to write report.html and audit.json (default `baresql-report`) |
 | `--login NAME` | audit only these logins (repeat, or separate with commas) |
 | `--schema NAME` | audit only these schemas (repeat, or separate with commas) |
+| `--database NAME` | audit these databases of the server, in one report (repeat, or separate with commas) |
+| `--all-databases` | audit every database of the server that accepts connections, in one report |
 | `--no-sample` | read no table data: find personal data by column names only |
 | `--sample-rows N` | rows to read per table when sampling, 1 to 10000 (default 200) |
 | `--baseline FILE` | an earlier audit.json: exit 1 if any login can now reach more |
@@ -310,8 +325,9 @@ grows. `--format json` gives the comparison as JSON.
 
 ### Limits
 
-- One database per run. Roles belong to the whole server; tables are
-  audited one database at a time.
+- Without `--database` or `--all-databases`, one database per run. With
+  them, each database is read in its own transaction, so the databases are
+  not seen at one single moment.
 - Row security conditions are read, not run: BareSQL understands true,
   false, comparisons of a column with current_user, session_user, constants
   and current_setting(), and AND and OR of those. For other conditions it

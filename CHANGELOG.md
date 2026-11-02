@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+Not released yet.
+
 ## 0.2.0
 
 BareSQL Portable gets a rule for every difference the 0.1.0 README listed
