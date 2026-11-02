@@ -30,6 +30,10 @@ type Route struct {
 	// grant in a schema the role may not use, "statistics only ..."; for a
 	// login that may not connect to the database, "cannot connect ...".
 	Rows string `json:"rows,omitempty"`
+	// RowsWhere says in words which rows the policies named in Rows let
+	// through, for the conditions BareSQL reads: "tenant_id matches the
+	// setting app.tenant_id", or with several policies, each by name.
+	RowsWhere string `json:"rows_where,omitempty"`
 
 	// The role holding the grant or ownership, by OID (0 with public set
 	// for the PUBLIC pseudo-role); names can't tell a real role called
@@ -116,6 +120,9 @@ func (r Route) String() string {
 	}
 	if r.Rows != "" {
 		b.WriteString("; " + r.Rows)
+	}
+	if r.RowsWhere != "" {
+		b.WriteString(" (where " + r.RowsWhere + ")")
 	}
 	return b.String()
 }

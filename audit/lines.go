@@ -14,6 +14,7 @@ import (
 //	server <login> <capability> <route>
 //	foreign-server <login> <server> <route>
 //	default <creator> <schema or *> <objects> <PRIVILEGE> to <grantee>
+//	cannot-connect <login> <database> (an audit of several databases)
 //	finding <severity> <code> <subject>
 func (r *Result) Lines() []string {
 	var out []string
@@ -65,7 +66,19 @@ func (r *Result) Lines() []string {
 		if schema == "" {
 			schema = "*"
 		}
+		if d.Database != "" {
+			if d.Schema == "" {
+				schema = quoteIdent(d.Database) + ".*"
+			} else {
+				schema = quoteIdent(d.Database) + "." + schema
+			}
+		}
 		out = append(out, "default "+d.Creator+" "+schema+" "+d.Objects+" "+d.Privilege+" to "+d.Grantee)
+	}
+	for _, l := range r.Logins {
+		for _, db := range l.CannotConnectTo {
+			out = append(out, "cannot-connect "+l.Name+" "+quoteIdent(db))
+		}
 	}
 	for _, f := range r.Findings {
 		out = append(out, "finding "+f.Severity+" "+f.Code+" "+f.Subject)

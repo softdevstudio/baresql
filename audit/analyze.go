@@ -198,7 +198,10 @@ func (a *analysis) rowsForCmd(role uint32, rel *Relation, cmd string) string {
 		return "all rows (owner; row security not forced)"
 	}
 	var permissive, restrictive []string
-	for _, p := range a.s.Policies {
+	var every, none []string // permissive policies whose condition is true, or false
+	narrowed := false        // a restrictive policy that isn't plainly true
+	for i := range a.s.Policies {
+		p := &a.s.Policies[i]
 		if p.Rel != rel.OID || (p.Cmd != "ALL" && p.Cmd != cmd) {
 			continue
 		}
@@ -212,20 +215,49 @@ func (a *analysis) rowsForCmd(role uint32, rel *Relation, cmd string) string {
 		if !applies {
 			continue
 		}
+		kind := policyCondition(p, cmd).kind
 		if p.Permissive {
 			permissive = append(permissive, quoteIdent(p.Name))
+			switch kind {
+			case rowsEvery:
+				every = append(every, quoteIdent(p.Name))
+			case rowsNone:
+				none = append(none, quoteIdent(p.Name))
+			}
 		} else {
 			restrictive = append(restrictive, quoteIdent(p.Name))
+			if kind != rowsEvery {
+				narrowed = true
+			}
 		}
 	}
 	if len(permissive) == 0 {
 		return "no rows (row security on, no policy lets this role " + cmdVerb[cmd] + ")"
+	}
+	if len(every) > 0 && !narrowed {
+		return "all rows (policy " + strings.Join(every, ", ") + " lets every row through)"
+	}
+	if len(none) == len(permissive) {
+		return "no rows (policy " + strings.Join(none, ", ") + " lets no row through)"
 	}
 	out := "rows allowed by policy " + strings.Join(permissive, ", ")
 	if len(restrictive) > 0 {
 		out += " and restricted by " + strings.Join(restrictive, ", ")
 	}
 	return out
+}
+
+// policyCondition reads the condition a policy applies to a command:
+// WITH CHECK for new rows when the policy has one, USING otherwise.
+func policyCondition(p *Policy, cmd string) rowMeaning {
+	expr := p.Using
+	if cmd == "INSERT" && p.Check != "" {
+		expr = p.Check
+	}
+	if expr == "" {
+		return rowMeaning{}
+	}
+	return policyMeaning(expr)
 }
 
 // bypassesRLS reports whether a role reads every row of rel.

@@ -23,6 +23,9 @@ func runAudit(ctx context.Context, args []string, stdout, stderr io.Writer) int 
 	var logins, schemas listFlag
 	fs.Var(&logins, "login", "audit only this login (repeat or separate with commas)")
 	fs.Var(&schemas, "schema", "audit only this schema (repeat or separate with commas)")
+	var databases listFlag
+	fs.Var(&databases, "database", "audit this database of the server too (repeat or separate with commas); the report names objects db.schema.name")
+	allDBs := fs.Bool("all-databases", false, "audit every database of the server that accepts connections, in one report")
 	noSample := fs.Bool("no-sample", false, "read no table data: find personal data by column names only")
 	rows := fs.Int("sample-rows", 200, "rows to read per table when sampling (at most 10000)")
 	baseline := fs.String("baseline", "", "an earlier audit.json: exit 1 if any login can now reach more")
@@ -60,8 +63,12 @@ func runAudit(ctx context.Context, args []string, stdout, stderr io.Writer) int 
 		fmt.Fprintf(stderr, "baresql audit: %v\n", err)
 		return 2
 	}
+	if *allDBs && len(databases) > 0 {
+		fmt.Fprintln(stderr, "baresql audit: give --all-databases or --database, not both")
+		return 2
+	}
 	res, err := audit.Run(ctx, cfg, audit.RunOptions{Schemas: schemas, Logins: logins, Sample: !*noSample,
-		SampleRows: *rows, StatementTimeout: *timeout})
+		SampleRows: *rows, StatementTimeout: *timeout, AllDatabases: *allDBs, Databases: databases})
 	if err != nil {
 		fmt.Fprintf(stderr, "baresql audit: %v\n", audit.CleanText(err.Error()))
 		return 2

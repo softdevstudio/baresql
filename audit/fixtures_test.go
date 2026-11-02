@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/softdevstudio/baresql/internal/pgwire"
 	"github.com/softdevstudio/baresql/internal/testenv"
@@ -20,6 +21,33 @@ func TestFixtureSaaS(t *testing.T) {
 	f := loadFixture(t, "saas")
 	res := auditFixture(t, f, true)
 	checkLines(t, f, res, "expected.txt")
+}
+
+// TestFixtureCluster audits two databases of one server in one run, and
+// the row security conditions BareSQL reads.
+func TestFixtureCluster(t *testing.T) {
+	f := loadFixture(t, "cluster")
+	db := "baresql_fx_cluster"
+	res, err := Run(context.Background(), f.admin, RunOptions{Logins: f.logins, Sample: true,
+		Databases: []string{db + "_b", db}, Now: time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkLines(t, f, res, "expected.txt")
+	if got := strings.Join(res.Server.Databases, " "); got != db+" "+db+"_b" {
+		t.Errorf("databases: %s", got)
+	}
+	if !strings.Contains(res.Server.Database, db+"_b") {
+		t.Errorf("database: %s", res.Server.Database)
+	}
+	for _, l := range res.Logins {
+		if l.Name == "cluster_app" && (l.CannotConnect || len(l.CannotConnectTo) != 1) {
+			t.Errorf("cluster_app: cannot connect %v, to %v", l.CannotConnect, l.CannotConnectTo)
+		}
+	}
+	if _, err := Run(context.Background(), f.admin, RunOptions{Databases: []string{"baresql_no_such_db"}}); err == nil {
+		t.Error("a database that doesn't exist was audited")
+	}
 }
 
 func TestFixtureClinic(t *testing.T) {

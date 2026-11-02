@@ -25,11 +25,15 @@ type ServerReport struct {
 	Version    string `json:"version"`
 	VersionNum int    `json:"version_num"`
 	Database   string `json:"database"`
-	Target     string `json:"target"` // connection without the password
-	TLS        bool   `json:"tls"`
-	Auth       string `json:"auth"`
-	Auditor    string `json:"auditor"`
-	Superuser  bool   `json:"auditor_is_superuser"`
+	// Databases lists the databases of an audit of several, which then
+	// name every relation, function and foreign server after the database
+	// first (shop.app.orders). Database holds them separated by commas.
+	Databases []string `json:"databases,omitempty"`
+	Target    string   `json:"target"` // connection without the password
+	TLS       bool     `json:"tls"`
+	Auth      string   `json:"auth"`
+	Auditor   string   `json:"auditor"`
+	Superuser bool     `json:"auditor_is_superuser"`
 }
 
 type Settings struct {
@@ -37,6 +41,10 @@ type Settings struct {
 	SampleRows int      `json:"sample_rows"`
 	Schemas    []string `json:"schemas"`
 	Logins     []string `json:"logins,omitempty"` // when limited with --login
+	// Databases: the databases audited, in an audit of several;
+	// AllDatabases when that was every database of the server.
+	Databases    []string `json:"databases,omitempty"`
+	AllDatabases bool     `json:"all_databases,omitempty"`
 }
 
 type RelationReport struct {
@@ -73,11 +81,14 @@ type LoginReport struct {
 	// CannotConnect: the login may not connect to the audited database (no
 	// CONNECT privilege, or a connection limit of 0); its routes say so and
 	// give it nothing here.
-	CannotConnect bool     `json:"cannot_connect,omitempty"`
-	Attributes    []string `json:"attributes"` // superuser, createrole, bypassrls ...
-	MemberOf      []string `json:"member_of"`  // direct memberships, with their options
-	CanSetRole    []string `json:"can_set_role,omitempty"`
-	Password      string   `json:"password,omitempty"` // md5, scram-sha-256, none (superuser auditors only)
+	CannotConnect bool `json:"cannot_connect,omitempty"`
+	// CannotConnectTo: in an audit of several databases, the ones it may
+	// not connect to (CannotConnect is then set when that is all of them).
+	CannotConnectTo []string `json:"cannot_connect_to,omitempty"`
+	Attributes      []string `json:"attributes"` // superuser, createrole, bypassrls ...
+	MemberOf        []string `json:"member_of"`  // direct memberships, with their options
+	CanSetRole      []string `json:"can_set_role,omitempty"`
+	Password        string   `json:"password,omitempty"` // md5, scram-sha-256, none (superuser auditors only)
 
 	Read      []ColumnReach    `json:"read"`
 	Write     []TableWrite     `json:"write"`
@@ -137,6 +148,7 @@ type MappingAccess struct {
 }
 
 type DefaultPriv struct {
+	Database  string `json:"database,omitempty"` // in an audit of several databases
 	Creator   string `json:"creator"`
 	Schema    string `json:"schema"` // "" for every schema
 	Objects   string `json:"objects"`

@@ -31,6 +31,16 @@ type RunOptions struct {
 	StatementTimeout time.Duration
 	// Now stamps the result; zero means time.Now (tests fix it).
 	Now time.Time
+	// AllDatabases audits every database of the server that accepts
+	// connections; Databases audits the ones named. Either way the result
+	// is one report, with every relation, function and foreign server
+	// named after its database first (shop.app.orders).
+	AllDatabases bool
+	Databases    []string
+
+	// prefix: name objects after their database (set for each database of
+	// a server-wide audit).
+	prefix bool
 }
 
 // Run connects, audits and returns the result.
@@ -39,6 +49,9 @@ func Run(ctx context.Context, cfg pgwire.Config, opt RunOptions) (*Result, error
 		cfg.Params = map[string]string{}
 	}
 	cfg.Params["application_name"] = "baresql audit"
+	if opt.AllDatabases || len(opt.Databases) > 0 {
+		return runServer(ctx, cfg, opt)
+	}
 	c, err := pgwire.Connect(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -75,6 +88,9 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 	snap, err := Load(ctx, c, Options{Schemas: opt.Schemas})
 	if err != nil {
 		return nil, err
+	}
+	if opt.prefix {
+		snap.prefixDatabase()
 	}
 	a := &analysis{ctx: ctx, c: c, s: snap, evals: map[uint32]map[uint32]map[string]*grantSet{},
 		personal: map[colRef]*Personal{}, sampled: map[uint32]bool{}, throughParent: map[uint32]uint32{}}
@@ -147,7 +163,7 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 	}
 	res.Public = a.publicReport()
 	res.DefaultPrivileges = a.defaultPrivileges()
-	if !snap.Auditor.Superuser {
+	if !snap.Auditor.Superuser && !opt.prefix {
 		snap.NotSeen = append(snap.NotSeen, NotSeen{What: "other databases",
 			Why: "roles are shared by the whole server, but tables are audited one database at a time"})
 	}
@@ -160,6 +176,7 @@ func RunOn(ctx context.Context, c *pgwire.Conn, opt RunOptions) (*Result, error)
 	if res.NotSeen == nil {
 		res.NotSeen = []NotSeen{}
 	}
+	a.fillRowsWhere(res)
 	res.Findings = a.findings(res)
 	if res.Findings == nil {
 		res.Findings = []Finding{}

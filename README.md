@@ -176,7 +176,14 @@ words:
   view reads it.
 - `; all rows (...)`, `; rows allowed by policy ...` or `; no rows (...)`:
   what row security lets the login see on that route, or for INSERT, UPDATE
-  and DELETE, change.
+  and DELETE, change. BareSQL reads the simple shapes of a policy's
+  condition: `true` gives `all rows (policy p lets every row through)`,
+  `false` gives no rows, and a column compared with `current_user`,
+  `session_user`, constants or a setting read with `current_setting()`,
+  joined with AND and OR, adds the condition in words, as in `rows allowed
+  by policy tenant_isolation (where tenant_id matches the setting
+  app.tenant_id, which any session can set)`. Other conditions
+  (subqueries, function calls) are named by the policy only.
 - A partitioned table or a parent table holds what its partitions and
   child tables hold, since reading the parent returns their rows (with the
   parent's row security, not theirs).
@@ -272,6 +279,7 @@ login, a table, a function).
 | `secdef-executable` | medium | a security-definer function runs with the rights of an owner who reads personal data |
 | `rls-no-policies` | low | row security is on for a table without any policy (its rows may still be read through a parent table) |
 | `rls-owner-login` | medium | row security is not forced and the table's owner can log in |
+| `rls-session-setting` | medium | a policy picks rows by a setting such as `app.tenant_id`, which any session can change with SET, so the logins it covers can read rows meant for others |
 | `view-bypasses-row-security` | high | a view reads a row-security table with rights that skip its policies |
 | `default-grants-to-public` | medium | default privileges grant future tables or functions to PUBLIC |
 | `md5-passwords` | medium | logins have MD5 password hashes |
@@ -304,8 +312,11 @@ grows. `--format json` gives the comparison as JSON.
 
 - One database per run. Roles belong to the whole server; tables are
   audited one database at a time.
-- Row security is judged per table: the report says whether policies apply
-  on a route, and does not evaluate the policies' conditions.
+- Row security conditions are read, not run: BareSQL understands true,
+  false, comparisons of a column with current_user, session_user, constants
+  and current_setting(), and AND and OR of those. For other conditions it
+  says which policies apply and not which rows they let through. diff sees a
+  policy that starts or stops applying, not a change to its condition.
 - Write access is listed per table and not followed through views or
   functions.
 - Phone numbers stored in arrays (`text[]`) are recognized by the column's

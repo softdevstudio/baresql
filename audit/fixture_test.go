@@ -136,6 +136,20 @@ func loadFixture(t *testing.T, name string) *fixture {
 	defer fx.Close()
 	setup := strings.Join(filterVersion(strings.Split(render(t, filepath.Join(dir, "setup.sql"), 2), "\n"), ver, true), "\n")
 	exec(fx, setup)
+	// A second database, for audits of several: setup2.sql runs in
+	// baresql_fx_<name>_b.
+	if _, err := os.Stat(filepath.Join(dir, "setup2.sql")); err == nil {
+		exec(admin, "DROP DATABASE IF EXISTS "+db+"_b WITH (FORCE)")
+		exec(admin, "CREATE DATABASE "+db+"_b OWNER "+name+"_dbowner")
+		cfg2 := base
+		cfg2.Database = db + "_b"
+		fx2, err := pgwire.Connect(ctx, cfg2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer fx2.Close()
+		exec(fx2, strings.Join(filterVersion(strings.Split(render(t, filepath.Join(dir, "setup2.sql"), 3), "\n"), ver, true), "\n"))
+	}
 	res, err := admin.QueryArgs(ctx, "SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolname LIKE $1 ORDER BY 1", name+`\_%`)
 	if err != nil {
 		t.Fatal(err)
@@ -154,6 +168,7 @@ func loadFixture(t *testing.T, name string) *fixture {
 		}
 		defer c.Close()
 		c.Exec(context.Background(), "DROP DATABASE IF EXISTS "+db+" WITH (FORCE)")
+		c.Exec(context.Background(), "DROP DATABASE IF EXISTS "+db+"_b WITH (FORCE)")
 		dropFixtureRoles(t, c, name)
 	})
 	return f

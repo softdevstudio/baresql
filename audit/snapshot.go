@@ -32,6 +32,23 @@ type Snapshot struct {
 
 	// NotSeen lists what the auditor's login couldn't read.
 	NotSeen []NotSeen
+
+	// Prefix is the database name relations are named after, in an audit
+	// of several databases; "" otherwise.
+	Prefix string
+}
+
+// prefixDatabase names relations, functions and foreign servers after the
+// database first, for an audit of several databases.
+func (s *Snapshot) prefixDatabase() {
+	s.Prefix = s.Server.Database
+	db := quoteIdent(s.Prefix) + "."
+	for _, f := range s.Functions {
+		f.Signature = db + f.Signature
+	}
+	for i := range s.Mappings {
+		s.Mappings[i].Server = db + s.Mappings[i].Server
+	}
 }
 
 type ServerInfo struct {
@@ -743,7 +760,11 @@ func (s *Snapshot) QualifiedName(rel *Relation) string {
 	if sc := s.Schemas[rel.Schema]; sc != nil {
 		schema = sc.Name
 	}
-	return quoteIdent(schema) + "." + quoteIdent(rel.Name)
+	name := quoteIdent(schema) + "." + quoteIdent(rel.Name)
+	if s.Prefix != "" {
+		name = quoteIdent(s.Prefix) + "." + name
+	}
+	return name
 }
 
 // RoleName returns a role's name as reports show it, PUBLIC for 0. A name

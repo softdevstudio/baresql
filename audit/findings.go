@@ -2,6 +2,7 @@ package audit
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -179,6 +180,48 @@ func (a *analysis) findings(res *Result) []Finding {
 				name, owner.Name, owner.Name))
 		}
 	}
+	// Policies that pick rows by a setting the session controls.
+	readers := map[string]map[string][]string{} // relation -> policy -> logins
+	for _, l := range res.Logins {
+		for _, c := range l.Read {
+			for _, r := range c.Routes {
+				perm, _, ok := policyList(r.Rows)
+				if !ok {
+					continue
+				}
+				for _, p := range perm {
+					if readers[c.Relation] == nil {
+						readers[c.Relation] = map[string][]string{}
+					}
+					if !slices.Contains(readers[c.Relation][p], l.Name) {
+						readers[c.Relation][p] = append(readers[c.Relation][p], l.Name)
+					}
+				}
+			}
+		}
+	}
+	for _, rel := range sortedRelations(a.s) {
+		if !rel.RLS {
+			continue
+		}
+		name := a.s.QualifiedName(rel)
+		for i := range a.s.Policies {
+			p := &a.s.Policies[i]
+			if p.Rel != rel.OID || !p.Permissive || (p.Cmd != "ALL" && p.Cmd != "SELECT") {
+				continue
+			}
+			m := policyCondition(p, "SELECT")
+			who := readers[name][quoteIdent(p.Name)]
+			if m.kind != rowsSetting || len(who) == 0 {
+				continue
+			}
+			sort.Strings(who)
+			add("rls-session-setting", "medium", name, fmt.Sprintf(
+				"Policy %s on %s picks rows by the setting %s, which any session can set to any value: %s can read rows meant for others by changing it.",
+				quoteIdent(p.Name), name, strings.Join(m.settings, " and "), andList(who)), "where "+m.text)
+		}
+	}
+
 	// Views that hand out rows row security would hide.
 	type bypassed struct{ tables, logins map[string]bool }
 	byView := map[string]*bypassed{}

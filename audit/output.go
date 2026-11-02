@@ -231,7 +231,18 @@ func dedupStrings(ss []string) []string {
 
 // WriteSummary prints the short text the CLI shows after an audit.
 func WriteSummary(w io.Writer, res *Result) {
-	fmt.Fprintf(w, "BareSQL Audit of %s (PostgreSQL %s) as %s\n", quoteIdent(res.Server.Database), cleanText(res.Server.Version),
+	target := quoteIdent(res.Server.Database)
+	if len(res.Server.Databases) > 0 {
+		var names []string
+		for _, d := range res.Server.Databases {
+			names = append(names, quoteIdent(d))
+		}
+		target = fmt.Sprintf("%d databases (%s)", len(names), strings.Join(names, ", "))
+		if len(names) == 1 {
+			target = "1 database (" + names[0] + ")"
+		}
+	}
+	fmt.Fprintf(w, "BareSQL Audit of %s (PostgreSQL %s) as %s\n", target, cleanText(res.Server.Version),
 		quoteIdent(res.Server.Auditor))
 	personal := 0
 	for _, l := range res.Logins {
