@@ -246,6 +246,18 @@ def release_02():
     return terminal("baresql rules", rows, size=17)
 
 
+def release_03():
+    rows = [("cmd", "baresql audit --database baresql_fx_cluster --database baresql_fx_cluster_b \\"),
+            ("cont", "    postgres://postgres@localhost/postgres")]
+    rows += summary_rows("audit/cluster/summary.txt")
+    rows.append(("gap", ""))
+    rows.append(("cmd", "baresql audit --format lines ... | grep -e cannot-connect -e app.orders.email"))
+    for l in grep("audit/cluster/lines.txt", r"^cannot-connect |app\.orders\.email "):
+        for i, w in enumerate(wrap(l, 92)):
+            rows.append(("out", w))
+    return terminal("baresql audit", rows, size=16)
+
+
 def portable_explained():
     rows = [("cmd", "baresql compare --sqlite --postgres postgres://dev@localhost/scratch \\"),
             ("cont", "    --mysql mysql://dev@localhost:3306/ --mariadb mariadb://dev@localhost:3307/ shop.sql")]
@@ -324,6 +336,7 @@ def main():
         (portable_tested(), OUT + "/portable-tested.png"),
         (launch(), OUT + "/launch.png"),
         (release_02(), OUT + "/release-0-2.png"),
+        (release_03(), OUT + "/release-0-3.png"),
         (portable_explained(), OUT + "/portable-explained.png"),
         (quarterly(), OUT + "/case-quarterly-review.png"),
         (compare_case("baresql compare", ["baresql compare --sqlite --postgres postgres://dev@localhost/scratch schema.sql queries.sql"],

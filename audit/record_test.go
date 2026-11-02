@@ -43,6 +43,18 @@ func TestRecordResults(t *testing.T) {
 		countFixture(t, &counts, f, res)
 	}
 	writeFile(t, filepath.Join(out, "counts.txt"), counts.String())
+	// Two databases in one audit, and the policy conditions BareSQL reads.
+	{
+		f := loadFixture(t, "cluster")
+		db := "baresql_fx_cluster"
+		res, err := Run(context.Background(), f.admin, RunOptions{Logins: f.logins, Sample: true,
+			Databases: []string{db, db + "_b"}, Now: time.Date(2026, 10, 26, 12, 0, 0, 0, time.UTC)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		checkLines(t, f, res, "expected.txt")
+		record(t, filepath.Join(out, "cluster"), res)
+	}
 	recordAgent(t, filepath.Join(out, "agent"))
 	recordSupport(t, filepath.Join(out, "support"))
 	recordQuarterly(t, filepath.Join(out, "quarterly"))

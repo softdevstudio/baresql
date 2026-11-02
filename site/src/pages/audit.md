@@ -42,7 +42,7 @@ Here are four lines from the shop's audit, as `--format lines` prints them:
 
 The first says that every role can read the newsletter's subscribers, including roles nobody has created yet. shop_bob belongs to the support team without inheriting its rights, so the customers' email addresses become his after `SET ROLE shop_support_team`, through a view that reads the table with its owner's rights. shop_reporting reaches the same column twice: as a member of `pg_read_all_data` and through the same view.
 
-Each route also says what row security lets through on it: all rows, the rows a named policy allows, or none. When a view's query reads a column that the rights it runs with don't cover, PostgreSQL refuses every query on the view, and the audit marks that route as one that fails. A grant in a schema the login can't use shows as the statistics it still gives away through `pg_stats`, and a login that can't connect to the database is marked as such.
+Each route also says what row security lets through on it: all rows, the rows a named policy allows, or none. For the simple shapes of a policy's condition (true, false, a column compared with the current role's name, a constant or a setting read with `current_setting()`) it adds the condition in words, as in "where tenant_id matches the setting app.tenant_id, which any session can set". When a view's query reads a column that the rights it runs with don't cover, PostgreSQL refuses every query on the view, and the audit marks that route as one that fails. A grant in a schema the login can't use shows as the statistics it still gives away through `pg_stats`, and a login that can't connect to the database is marked as such.
 
 The audit computes every route from the system catalogs, then asks the server's own privilege functions whether the login really has the access. When the two disagree the server wins, and the finding `unexplained-access` lists the places. A gap in BareSQL's reasoning then shows in the report itself.
 
@@ -80,8 +80,8 @@ Any login can run the audit, because the catalogs it reads are visible to every 
 
 ## Limits
 
-- One database per run. Roles belong to the whole server, and tables are audited one database at a time.
-- Row security is judged per table: the report says whether policies apply on a route, and doesn't evaluate their conditions.
+- One database per run, unless `--database` or `--all-databases` names more; then each database is read in its own transaction, so they aren't seen at one single moment.
+- Policy conditions are read, never run, and only in their simple shapes. For other conditions the report names the policies that apply and not which rows they let through, and `--baseline` compares which policies apply, not what they say.
 - Write access is listed per table and not followed through views or functions.
 - Security-definer functions are listed with the role they run as. BareSQL never runs them, so it can't see which columns they read.
 
